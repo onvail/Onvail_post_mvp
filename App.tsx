@@ -1,12 +1,12 @@
 import React, {FunctionComponent} from 'react';
 import {View} from 'react-native';
-import SplashScreen from 'app/onboarding/SplashScreen';
+import Onboarding from 'onboarding/Onboarding';
 import tw from 'lib/tailwind';
 
 const App: FunctionComponent = () => {
   return (
     <View style={tw`flex-1`}>
-      <SplashScreen />
+      <Onboarding />
     </View>
   );
 };
