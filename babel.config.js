@@ -4,7 +4,9 @@ module.exports = {
     [
       'module-resolver',
       {
-        root: ['./src'],
+        src: ['./src'],
+        onboarding: ['./src/app/onboarding'],
+        lib: ['./src/lib'],
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
       },
     ],
