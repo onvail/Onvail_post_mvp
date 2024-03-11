@@ -24,7 +24,9 @@ const screens: ScreenDef[] = [
 
 const AuthNavigator: FunctionComponent = () => {
   return (
-    <Stack.Navigator initialRouteName="AuthLandingScreen">
+    <Stack.Navigator
+      initialRouteName="AuthLandingScreen"
+      screenOptions={{headerShown: false}}>
       {screens.map(({name, screen}) => (
         <Stack.Screen key={name} name={name} component={screen} />
       ))}

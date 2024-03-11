@@ -8,7 +8,7 @@ const RootStack = createStackNavigator<RootStackParamList>();
 
 const RootNavigator: FunctionComponent = () => {
   return (
-    <RootStack.Navigator>
+    <RootStack.Navigator screenOptions={{headerShown: false}}>
       <RootStack.Screen name="AuthNavigator" component={AuthNavigator} />
     </RootStack.Navigator>
   );
