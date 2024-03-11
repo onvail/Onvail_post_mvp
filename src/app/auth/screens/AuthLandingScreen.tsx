@@ -1,9 +1,11 @@
 import React, {FunctionComponent} from 'react';
 import {View, ViewStyle} from 'react-native';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import tw from 'lib/tailwind';
 import RoundedBtn from 'app/components/Buttons/RoundedBtn';
 import CustomText from 'app/components/Text/CustomText';
 import RowContainer from 'app/components/View/RowContainer';
+import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
 
 interface DividerProps {
   width: string;
@@ -14,7 +16,9 @@ const DotDivider = ({width}: DividerProps) => {
   return <View style={style} />;
 };
 
-const AuthLandingScreen: FunctionComponent = () => {
+type Props = NativeStackScreenProps<AuthStackParamList, 'AuthLandingScreen'>;
+
+const AuthLandingScreen: FunctionComponent<Props> = ({navigation}) => {
   return (
     <View style={tw`bg-primary flex-1 justify-center px-4 items-center`}>
       <CustomText style={tw`font-poppinsBold text-2xl w-1/2`}>
@@ -35,7 +39,11 @@ const AuthLandingScreen: FunctionComponent = () => {
       </RowContainer>
       <RowContainer style={tw`mt-8 justify-between w-3/4`}>
         <RoundedBtn title="Login" onPress={() => {}} borderColor="white" />
-        <RoundedBtn title="Signup" onPress={() => {}} borderColor="purple" />
+        <RoundedBtn
+          title="Signup"
+          onPress={() => navigation.navigate('Signup')}
+          borderColor="purple"
+        />
       </RowContainer>
     </View>
   );
