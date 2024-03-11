@@ -2,8 +2,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#0E0E0E",
-        white: "#FFFFFF",
+        primary: '#0E0E0E',
+        white: '#FFFFFF',
+        purple: '#9747FF',
       },
       fontFamily: {
         poppinsBlack: ['Poppins-Black'],
@@ -22,7 +23,11 @@ module.exports = {
         poppinsRegular: ['Poppins-Regular'],
         poppinsSemiBold: ['Poppins-SemiBold'],
         poppinsSemiBoldItalic: ['Poppins-SemiBoldItalic'],
-      }
+      },
+      fontSize: {
+        '2xs': '0.625rem',
+        '3xs': '0.5rem',
+      },
     },
   },
 };
