@@ -3,6 +3,7 @@
     "paths": {
       "src/*": ["./src/*"],
       "lib/*": ["./src/lib/*"],
+      "onboarding/*":["./src/app/onboarding/*"],
       "assets/*": ["./src/assets/*"],
       "app/*": ["./src/app/*"],
       "components/*": ["./src/app/components/*"],
