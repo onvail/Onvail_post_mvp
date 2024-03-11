@@ -4,9 +4,13 @@ module.exports = {
     [
       'module-resolver',
       {
-        src: ['./src'],
-        onboarding: ['./src/app/onboarding'],
-        lib: ['./src/lib'],
+        root: ['./src'],
+        alias: {
+          src: './src/*',
+          onboarding: './src/app/onboarding',
+          components: './src/app/components',
+          lib: './src/lib',
+        },
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
       },
     ],
