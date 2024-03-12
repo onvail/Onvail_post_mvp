@@ -2,7 +2,7 @@ import React, {FunctionComponent} from 'react';
 import {TextInput, TextInputProps, View} from 'react-native';
 import tw from 'lib/tailwind';
 import {Colors} from 'app/styles/colors';
-import Icon from '../Icons/Icon';
+import Icon from 'app/components/Icons/Icon';
 
 interface Props extends TextInputProps {
   inputType?: 'Password' | 'Text';
