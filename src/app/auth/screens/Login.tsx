@@ -1,5 +1,5 @@
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import React, {FunctionComponent} from 'react';
+import React, {FunctionComponent, useState} from 'react';
 import {View} from 'react-native';
 import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
@@ -11,6 +11,7 @@ import tw from 'src/lib/tailwind';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 const Login: FunctionComponent<Props> = ({navigation}) => {
+  const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   return (
     <ScreenContainer>
       <View style={tw`m-8 mt-12`}>
@@ -27,7 +28,13 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
         </View>
         <View style={tw`mt-12`}>
           <CustomTextInput placeholder="Email" />
-          <CustomTextInput placeholder="Password" secureTextEntry />
+          <CustomTextInput
+            placeholder="Password"
+            secureTextEntry={isPasswordVisible}
+            passwordVisibility={isPasswordVisible}
+            inputType="Password"
+            handlePasswordVisibility={() => setIsPasswordVisible(prev => !prev)}
+          />
           <CustomText style={tw`mt-10 text-center`}>
             Forgot Password?{'  '}
             <CustomText
