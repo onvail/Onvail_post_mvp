@@ -7,8 +7,12 @@ import CustomTextInput from 'app/components/TextInput/CustomTextInput';
 import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
 import CustomDropDown from 'src/app/components/Dropdown/CustomDropDown';
 import {roles} from 'src/utils/roles';
+import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
 
-const Signup: FunctionComponent = () => {
+type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
+
+const Signup: FunctionComponent<Props> = ({navigation}) => {
   return (
     <ScreenContainer>
       <View style={tw`m-8 mt-12`}>
@@ -37,7 +41,7 @@ const Signup: FunctionComponent = () => {
             Already have an account?{' '}
             <CustomText
               style={tw`text-purple`}
-              onPress={() => console.log('hello')}>
+              onPress={() => navigation.navigate('Login')}>
               Login
             </CustomText>
           </CustomText>
