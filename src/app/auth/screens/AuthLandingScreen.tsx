@@ -34,13 +34,17 @@ const AuthLandingScreen: FunctionComponent<Props> = ({navigation}) => {
           </CustomText>
         </View>
         <RowContainer style={tw`mt-6`}>
-          <DotDivider width="6" />
+          <DotDivider width="5" />
           <DotDivider width="4" />
           <DotDivider width="3" />
           <DotDivider width="2" />
         </RowContainer>
         <RowContainer style={tw`mt-8 justify-between w-3/4`}>
-          <RoundedBtn title="Login" onPress={() => {}} borderColor="white" />
+          <RoundedBtn
+            title="Login"
+            onPress={() => navigation.navigate('Login')}
+            borderColor="white"
+          />
           <RoundedBtn
             title="Signup"
             onPress={() => navigation.navigate('Signup')}
