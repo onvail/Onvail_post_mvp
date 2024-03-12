@@ -3,6 +3,7 @@ import React, {FunctionComponent} from 'react';
 import {AuthStackParamList} from './types/AuthStackParamList';
 import Signup from 'auth/screens/Signup';
 import AuthLandingScreen from 'auth/screens/AuthLandingScreen';
+import Login from 'auth/screens/Login';
 
 const Stack = createStackNavigator<AuthStackParamList>();
 
@@ -19,6 +20,10 @@ const screens: ScreenDef[] = [
   {
     name: 'Signup',
     screen: Signup,
+  },
+  {
+    name: 'Login',
+    screen: Login,
   },
 ];
 
