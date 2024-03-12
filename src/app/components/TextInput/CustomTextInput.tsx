@@ -9,7 +9,7 @@ const CustomTextInput: FunctionComponent<Props> = ({...props}) => {
   return (
     <TextInput
       placeholderTextColor={Colors.grey}
-      style={tw`bg-white rounded-md font-poppinsRegular p-3 mb-6 text-primary`}
+      style={tw`bg-white rounded-md font-poppinsRegular h-12 text-sm px-3 mb-6 text-primary`}
       {...props}
     />
   );
