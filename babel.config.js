@@ -6,10 +6,11 @@ module.exports = {
       {
         root: ['./src'],
         alias: {
-          src: './src/*',
+          src: './src',
           onboarding: './src/app/onboarding',
           components: './src/app/components',
           lib: './src/lib',
+          auth: './src/app/auth',
         },
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
       },
