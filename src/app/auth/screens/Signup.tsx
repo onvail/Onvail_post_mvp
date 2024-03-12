@@ -1,4 +1,4 @@
-import React, {FunctionComponent} from 'react';
+import React, {FunctionComponent, useState} from 'react';
 import {View} from 'react-native';
 import ScreenContainer from 'app/components/Screens/ScreenContainer';
 import CustomText from 'app/components/Text/CustomText';
@@ -7,8 +7,13 @@ import CustomTextInput from 'app/components/TextInput/CustomTextInput';
 import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
 import CustomDropDown from 'src/app/components/Dropdown/CustomDropDown';
 import {roles} from 'src/utils/roles';
+import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
 
-const Signup: FunctionComponent = () => {
+type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
+
+const Signup: FunctionComponent<Props> = ({navigation}) => {
+  const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   return (
     <ScreenContainer>
       <View style={tw`m-8 mt-12`}>
@@ -22,7 +27,13 @@ const Signup: FunctionComponent = () => {
         <View style={tw`mt-12`}>
           <CustomTextInput placeholder="stage name" />
           <CustomTextInput placeholder="Email" />
-          <CustomTextInput placeholder="Password" secureTextEntry />
+          <CustomTextInput
+            placeholder="Password"
+            secureTextEntry={isPasswordVisible}
+            inputType="Password"
+            passwordVisibility={isPasswordVisible}
+            handlePasswordVisibility={() => setIsPasswordVisible(prev => !prev)}
+          />
           <CustomDropDown
             data={roles}
             onChange={item => console.log(item.key)}
@@ -37,7 +48,7 @@ const Signup: FunctionComponent = () => {
             Already have an account?{' '}
             <CustomText
               style={tw`text-purple`}
-              onPress={() => console.log('hello')}>
+              onPress={() => navigation.navigate('Login')}>
               Login
             </CustomText>
           </CustomText>
