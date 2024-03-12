@@ -5,6 +5,8 @@ import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
 import CustomTextInput from 'app/components/TextInput/CustomTextInput';
 import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
+import CustomDropDown from 'src/app/components/Dropdown/CustomDropDown';
+import {roles} from 'src/utils/roles';
 
 const Signup: FunctionComponent = () => {
   return (
@@ -20,7 +22,14 @@ const Signup: FunctionComponent = () => {
         <View style={tw`mt-12`}>
           <CustomTextInput placeholder="stage name" />
           <CustomTextInput placeholder="Email" />
-          <CustomTextInput placeholder="Password" />
+          <CustomTextInput placeholder="Password" secureTextEntry />
+          <CustomDropDown
+            data={roles}
+            onChange={item => console.log(item.key)}
+            labelField={'key'}
+            valueField={'value'}
+            maxHeight={250}
+          />
         </View>
         <View style={tw`mt-20`}>
           <ProceedBtn title="Submit" onPress={() => {}} />
