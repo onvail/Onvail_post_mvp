@@ -8,7 +8,7 @@ interface Props {
 }
 
 const RowContainer: FunctionComponent<Props> = ({children, style}) => {
-  const rowContainerStyle = tw`flex-row`;
+  const rowContainerStyle = tw`flex-row items-center`;
   return <View style={[rowContainerStyle, style]}>{children}</View>;
 };
 
