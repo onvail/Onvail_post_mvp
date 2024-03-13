@@ -12,7 +12,8 @@
       "api/*": ["./src/api/*"],
       "typeRoots": ["./src/types"],
       "context": ["./src/context/*"],
-      "hooks": ["./src/hooks/*"]
+      "hooks": ["./src/hooks/*"],
+      "assets": ["./assets/*"]
     },
     "allowJs": true,
     "resolveJsonModule": true,
