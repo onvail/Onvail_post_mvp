@@ -37,9 +37,13 @@ const TabBarIcon: FunctionComponent<Props> = ({route, focused}: Props) => {
 
   const Icon = ICON_MAP[route.name][focusedKey(focused)];
 
+  const focusedIconOpacity = focused ? 'opacity-100' : 'opacity-40';
+
   return (
     <View style={tw`items-center`}>
-      <Icon />
+      <View style={tw`${focusedIconOpacity}`}>
+        <Icon />
+      </View>
     </View>
   );
 };
