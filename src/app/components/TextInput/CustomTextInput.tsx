@@ -34,7 +34,7 @@ const CustomTextInput: FunctionComponent<Props> = ({
       {/* if @inputType is Password display eye icon */}
       {inputType === 'Password' && (
         <Icon
-          name={passwordVisibility ? 'eye-off' : 'eye'}
+          icon={passwordVisibility ? 'eye-off' : 'eye'}
           color={Colors.purple}
           onPress={handlePasswordVisibility}
         />
