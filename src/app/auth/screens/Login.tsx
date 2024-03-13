@@ -47,7 +47,11 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
         <ProceedBtn
           title="Submit"
           containerStyle={tw`mt-15`}
-          onPress={() => {}}
+          onPress={() =>
+            navigation.navigate('BottomTabNavigator', {
+              screen: 'Home',
+            })
+          }
         />
       </View>
     </ScreenContainer>
