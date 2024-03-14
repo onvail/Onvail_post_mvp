@@ -8,6 +8,7 @@ import CustomText from 'components/Text/CustomText';
 import {FlashList, ListRenderItem} from '@shopify/flash-list';
 import {generalIcon} from 'components/Icons/generalIcons';
 import RowContainer from 'components/View/RowContainer';
+import MiniMusicPlayer from './MiniMusicPlayer';
 
 interface JoinPartyProps {
   handleJoinPartyBtnPress: () => void;
@@ -25,7 +26,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
     <TouchableOpacity
       onPress={handleJoinPartyBtnPress}
       style={tw`bg-white py-1.7 px-3 rounded-full`}>
-      <CustomText style={tw`text-primary font-poppinsMedium`}>
+      <CustomText style={tw`text-primary text-xs font-poppinsMedium`}>
         Join the party
       </CustomText>
     </TouchableOpacity>
@@ -52,7 +53,7 @@ const PostItem: FunctionComponent<{item: Post}> = memo(({item}) => {
         style={tw`h-100 w-100 mt-4`}
         resizeMode="cover"
       />
-      <CustomText style={tw`mt-2 mx-2`}>{item.postText}</CustomText>
+      <CustomText style={tw`mt-2 mx-2 text-xs`}>{item.postText}</CustomText>
       <RowContainer style={tw`mx-5 mt-4 justify-between`}>
         <RowContainer>
           <RowContainer style={tw`mr-5`}>
@@ -68,7 +69,15 @@ const PostItem: FunctionComponent<{item: Post}> = memo(({item}) => {
             </CustomText>
           </RowContainer>
         </RowContainer>
-        <JoinPartyButton handleJoinPartyBtnPress={() => {}} />
+        {item.postType === 'Music' ? (
+          <MiniMusicPlayer
+            uri={item?.musicUrl ?? ''}
+            artiste={item?.artist ?? ''}
+            musicTitle={item?.musicTitle ?? ''}
+          />
+        ) : (
+          <JoinPartyButton handleJoinPartyBtnPress={() => {}} />
+        )}
       </RowContainer>
     </View>
   );

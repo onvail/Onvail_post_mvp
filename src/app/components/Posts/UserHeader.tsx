@@ -24,12 +24,12 @@ const UserHeader: FunctionComponent<User> = ({
           style={tw`h-9 w-9 rounded-full`}
           resizeMode="cover"
         />
-        <CustomText style={tw`ml-3`}>{name}</CustomText>
+        <CustomText style={tw`ml-3 text-[13px]`}>{name}</CustomText>
       </RowContainer>
       <TouchableOpacity
         onPress={() => handleFollowBtnPress()}
         style={tw`border rounded-full border-white px-5 py-1`}>
-        <CustomText>Follow</CustomText>
+        <CustomText style={tw`text-[13px]`}>Follow</CustomText>
       </TouchableOpacity>
     </RowContainer>
   );
