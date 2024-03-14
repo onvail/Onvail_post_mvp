@@ -43,6 +43,7 @@ const BottomTabNavigator = () => {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: Colors.primary,
+          borderTopWidth: 0,
         },
       })}>
       {tabs.map(({name, component}) => (
