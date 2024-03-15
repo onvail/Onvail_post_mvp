@@ -16,7 +16,7 @@ const events: Event[] = [Event.PlaybackState, Event.PlaybackError];
 
 // Custom hook to control music playback using react-native-track-player
 const useMusicPlayer = ({track}: Props) => {
-  //save and update the current player state
+  // Save and update the current player state
   const [playerState, setPlayerState] = useState<State>(State.None);
 
   // Add track to TrackPlayer on mount of the screen
@@ -59,6 +59,9 @@ const useMusicPlayer = ({track}: Props) => {
   // Get the current player progress
   const {position, buffered, duration} = useProgress();
 
+  // Stop track from playing
+  const stop = async () => await TrackPlayer.stop();
+
   // Return all the control functions to be used by the component
   return {
     play,
@@ -72,6 +75,7 @@ const useMusicPlayer = ({track}: Props) => {
     position,
     buffered,
     duration,
+    stop,
   };
 };
 
