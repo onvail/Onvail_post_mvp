@@ -1,10 +1,14 @@
 import React, {FunctionComponent} from 'react';
 import {TouchableOpacity, View} from 'react-native';
-import RowContainer from '../View/RowContainer';
-import CustomText from '../Text/CustomText';
-import Icon from '../Icons/Icon';
+
+import RowContainer from 'components/View/RowContainer';
+import CustomText from 'components/Text/CustomText';
+import Icon from 'components/Icons/Icon';
 import {Colors} from 'src/app/styles/colors';
 import tw from 'src/lib/tailwind';
+import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
+import {State} from 'react-native-track-player';
+import {AnimatedCircularProgress} from 'react-native-circular-progress';
 
 interface Props {
   musicTitle: string;
@@ -27,6 +31,11 @@ const MiniMusicPlayer: FunctionComponent<Props> = ({
     artwork: 'http://example.com/cover.png', // Load artwork from the network
     duration: 402, // Duration in seconds
   };
+  const {play, pause, playerState, position, duration} = useMusicPlayer({
+    track,
+  });
+  const progress = (position / duration) * 100;
+
   return (
     <View>
       <RowContainer>
@@ -38,9 +47,29 @@ const MiniMusicPlayer: FunctionComponent<Props> = ({
             {artiste}
           </CustomText>
         </View>
-        <View style={tw`bg-white rounded-full`}>
-          <Icon icon={'play'} color={Colors.primary} size={25} />
+        <View style={tw`relative w-10 items-center justify-center`}>
+          <AnimatedCircularProgress
+            size={35}
+            width={15}
+            fill={isNaN(progress) ? 0 : progress}
+            tintColor={Colors.purple}
+            backgroundColor={Colors.primary}
+          />
+          <View style={tw`absolute`}>
+            <View style={tw`bg-primary rounded-full`}>
+              <Icon
+                icon={
+                  playerState === State.Playing ? 'pause-circle' : 'play-circle'
+                }
+                color={Colors.white}
+                size={30}
+                iconProvider="MaterialIcon"
+                onPress={playerState === State.Playing ? pause : play}
+              />
+            </View>
+          </View>
         </View>
+
         <View style={tw`border-[0.5px] h-9 mx-3 border-grey2`} />
         <TouchableOpacity style={tw`bg-white rounded-full  px-2 py-1`}>
           <CustomText style={tw`text-primary text-xs`}>Open</CustomText>
