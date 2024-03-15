@@ -1,7 +1,6 @@
 import TrackPlayer, {Event, RepeatMode} from 'react-native-track-player';
 
 module.exports = async () => {
-  await TrackPlayer.setupPlayer();
   await TrackPlayer.setRepeatMode(RepeatMode.Off);
   try {
     TrackPlayer.addEventListener(Event.RemotePlay, () => {
