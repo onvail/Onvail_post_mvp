@@ -1,11 +1,17 @@
+type PostType = 'Music' | 'Image';
+
 export interface Post {
   key: string;
-  profileImage: string;
-  userName: string;
-  postImage: string;
-  postText: string;
+  profileImage?: string;
+  userName?: string;
+  postImage?: string;
+  postText?: string;
   commentCount?: number;
   likeCount?: number;
+  postType?: PostType;
+  musicUrl?: string;
+  musicTitle?: string;
+  artist?: string;
 }
 
 export const posts: Post[] = [
@@ -38,5 +44,12 @@ export const posts: Post[] = [
       'Sleeping with the fishes made the meats run dry in her episconic sagacious vibe. Listen and be blessed',
     postImage:
       'https://img.buzzfeed.com/buzzfeed-static/complex/images/bebllwzjpsujz9ffwp6s/tyler-the-creator-scum-fuck-flower-boy-cover.png?downsize=920:*&output-format=auto&output-quality=auto',
+  },
+  {
+    key: '4',
+    postType: 'Music',
+    musicUrl: 'https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav',
+    musicTitle: 'Blunt & Business',
+    artist: 'Stovia',
   },
 ];
