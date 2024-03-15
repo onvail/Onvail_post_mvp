@@ -5,6 +5,7 @@ import ProfileSvg from 'src/assets/svg/profile.svg';
 import NotificationBell from 'src/assets/svg/bell.svg';
 import Heart from 'src/assets/svg/heart.svg';
 import Comment from 'src/assets/svg/comment.svg';
+import BackgroundGradient from 'src/assets/svg/background.svg';
 
 type GeneralType =
   | 'Home'
@@ -12,6 +13,7 @@ type GeneralType =
   | 'Logo'
   | 'NotificationBell'
   | 'Heart'
+  | 'BackgroundGradient'
   | 'Comment';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -21,4 +23,5 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['NotificationBell']: NotificationBell,
   ['Heart']: Heart,
   ['Comment']: Comment,
+  ['BackgroundGradient']: BackgroundGradient,
 };
