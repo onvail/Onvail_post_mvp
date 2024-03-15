@@ -26,7 +26,7 @@ const CustomTextInput: FunctionComponent<Props> = ({
     <View
       style={tw`bg-white h-12 rounded-md mb-6 justify-between flex-row items-center px-3`}>
       <TextInput
-        placeholderTextColor={Colors.grey}
+        placeholderTextColor={Colors.grey2}
         style={tw` font-poppinsRegular text-sm w-10/11  text-primary`}
         {...props}
       />
