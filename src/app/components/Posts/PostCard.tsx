@@ -43,17 +43,23 @@ const PostItem: FunctionComponent<{item: Post}> = memo(({item}) => {
   const CommentSvg = generalIcon.Comment;
   return (
     <View key={item.key} style={tw`mb-4 border-b-[0.2px] border-grey2 pb-7`}>
-      <UserHeader
-        name={item.userName}
-        uri={item.profileImage}
-        handleFollowBtnPress={() => {}}
-      />
-      <CustomImage
-        uri={item.postImage}
-        style={tw`h-100 w-100 mt-4`}
-        resizeMode="cover"
-      />
-      <CustomText style={tw`mt-2 mx-2 text-xs`}>{item.postText}</CustomText>
+      {item?.userName && item?.profileImage && (
+        <UserHeader
+          name={item.userName}
+          uri={item.profileImage}
+          handleFollowBtnPress={() => {}}
+        />
+      )}
+      {item?.postImage && (
+        <CustomImage
+          uri={item.postImage}
+          style={tw`h-100 w-100 mt-4`}
+          resizeMode="cover"
+        />
+      )}
+      {item?.postText && (
+        <CustomText style={tw`mt-2 mx-2 text-xs`}>{item.postText}</CustomText>
+      )}
       <RowContainer style={tw`mx-5 mt-4 justify-between`}>
         <RowContainer>
           <RowContainer style={tw`mr-5`}>
