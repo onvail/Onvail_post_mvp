@@ -6,6 +6,11 @@ import NotificationBell from 'src/assets/svg/bell.svg';
 import Heart from 'src/assets/svg/heart.svg';
 import Comment from 'src/assets/svg/comment.svg';
 import BackgroundGradient from 'src/assets/svg/background.svg';
+import Deezer from 'src/assets/svg/Deezer.svg';
+import Google from 'src/assets/svg/Google.svg';
+import Spotify from 'src/assets/svg/Spotify.svg';
+import X from 'src/assets/svg/X.svg';
+import Stripe from 'src/assets/svg/Stripe.svg';
 
 type GeneralType =
   | 'Home'
@@ -14,6 +19,11 @@ type GeneralType =
   | 'NotificationBell'
   | 'Heart'
   | 'BackgroundGradient'
+  | 'Deezer'
+  | 'Google'
+  | 'Spotify'
+  | 'X'
+  | 'Stripe'
   | 'Comment';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -24,4 +34,9 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['Heart']: Heart,
   ['Comment']: Comment,
   ['BackgroundGradient']: BackgroundGradient,
+  ['Deezer']: Deezer,
+  ['Google']: Google,
+  ['Spotify']: Spotify,
+  ['X']: X,
+  ['Stripe']: Stripe,
 };
