@@ -5,7 +5,7 @@ import Home from 'app/home/screens/Home';
 import TabBarIcon from 'components/Icons/TabBarIcon';
 import {RouteProp} from '@react-navigation/native';
 import Profile from 'app/profile/screen/Profile';
-import {Colors} from '../styles/colors';
+import {Colors} from 'app/styles/colors';
 import MainNavigator from './MainNavigator';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
