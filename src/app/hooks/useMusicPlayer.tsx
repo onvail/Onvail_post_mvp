@@ -1,15 +1,25 @@
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import TrackPlayer, {
   AddTrack,
   State,
   Event,
   useTrackPlayerEvents,
   useProgress,
+  RepeatMode,
 } from 'react-native-track-player';
 
 interface Props {
   track: AddTrack;
 }
+
+const sample2 = {
+  id: '3',
+  url: 'https://sample-music.netlify.app/Bad%20Liar.mp3',
+  artwork: '',
+  title: 'Bad Liar',
+  artist: 'Rain alphred',
+  duration: 40,
+};
 
 // Subscribing to the following events inside MyComponent
 const events: Event[] = [Event.PlaybackState, Event.PlaybackError];
@@ -19,13 +29,21 @@ const useMusicPlayer = ({track}: Props) => {
   // Save and update the current player state
   const [playerState, setPlayerState] = useState<State>(State.None);
 
-  // Add track to TrackPlayer on mount of the screen
-  useEffect(() => {
-    TrackPlayer.add([track]);
+  // Add track to trackplayer and setRepeatmode to off
+  const addTrackToPlayer = useCallback(async () => {
+    await Promise.all([
+      TrackPlayer.add([track, sample2]),
+      TrackPlayer.setRepeatMode(RepeatMode.Off),
+    ]);
   }, [track]);
 
+  // Add track to TrackPlayer on mount of the screen
+  useEffect(() => {
+    addTrackToPlayer();
+  }, [addTrackToPlayer]);
+
   // Play the current track
-  const play = () => TrackPlayer.play();
+  const play = async () => await TrackPlayer.play();
 
   // Pause the current track
   const pause = () => TrackPlayer.pause();
