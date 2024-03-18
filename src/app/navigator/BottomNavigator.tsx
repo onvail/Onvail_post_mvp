@@ -6,6 +6,7 @@ import TabBarIcon from 'components/Icons/TabBarIcon';
 import {RouteProp} from '@react-navigation/native';
 import Profile from 'app/profile/screen/Profile';
 import {Colors} from '../styles/colors';
+import MainNavigator from './MainNavigator';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -22,6 +23,10 @@ const tabs: ScreenDef[] = [
   {
     name: 'Profile',
     component: Profile,
+  },
+  {
+    name: 'MainAppNavigator',
+    component: MainNavigator,
   },
 ];
 

@@ -17,8 +17,8 @@ const TabBarIcon: FunctionComponent<Props> = ({route, focused}: Props) => {
   const ProfileSvg = generalIcon.Profile;
   type IconMapType = {
     [key in keyof BottomTabParamList]: {
-      true: FC<SvgProps>;
-      false: FC<SvgProps>;
+      true: FC<SvgProps> | null;
+      false: FC<SvgProps> | null;
     };
   };
 
@@ -31,20 +31,28 @@ const TabBarIcon: FunctionComponent<Props> = ({route, focused}: Props) => {
       true: ProfileSvg,
       false: ProfileSvg,
     },
+    MainAppNavigator: {
+      true: null,
+      false: null,
+    },
   };
 
-  const focusedKey = (isfocused: boolean) => (isfocused ? 'true' : 'false');
+  const focusedKey = (isFocused: boolean) => (isFocused ? 'true' : 'false');
 
   const Icon = ICON_MAP[route.name][focusedKey(focused)];
 
   const focusedIconOpacity = focused ? 'opacity-100' : 'opacity-40';
 
   return (
-    <View style={tw`items-center`}>
-      <View style={tw`${focusedIconOpacity}`}>
-        <Icon />
-      </View>
-    </View>
+    <>
+      {Icon ? (
+        <View style={tw`items-center`}>
+          <View style={tw`${focusedIconOpacity}`}>
+            <Icon />
+          </View>
+        </View>
+      ) : null}
+    </>
   );
 };
 
