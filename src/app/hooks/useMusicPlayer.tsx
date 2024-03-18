@@ -12,15 +12,6 @@ interface Props {
   track: AddTrack;
 }
 
-const sample2 = {
-  id: '3',
-  url: 'https://sample-music.netlify.app/Bad%20Liar.mp3',
-  artwork: '',
-  title: 'Bad Liar',
-  artist: 'Rain alphred',
-  duration: 40,
-};
-
 // Subscribing to the following events inside MyComponent
 const events: Event[] = [Event.PlaybackState, Event.PlaybackError];
 
@@ -32,7 +23,7 @@ const useMusicPlayer = ({track}: Props) => {
   // Add track to trackplayer and setRepeatmode to off
   const addTrackToPlayer = useCallback(async () => {
     await Promise.all([
-      TrackPlayer.add([track, sample2]),
+      TrackPlayer.add([track]),
       TrackPlayer.setRepeatMode(RepeatMode.Off),
     ]);
   }, [track]);
