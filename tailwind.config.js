@@ -5,7 +5,11 @@ module.exports = {
         primary: '#0E0E0E',
         white: '#FFFFFF',
         purple: '#9747FF',
-        grey: '#9B9B9B',
+        purple2: '#710867',
+        purple3: '#572896',
+        purple4: '#392655',
+        grey: '#FEFEFE',
+        grey2: '#717171',
       },
       fontFamily: {
         poppinsBlack: ['Poppins-Black'],

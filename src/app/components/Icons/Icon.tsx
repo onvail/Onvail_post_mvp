@@ -4,16 +4,19 @@ import AntDesignIcon from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Octicons from 'react-native-vector-icons/Octicons';
+import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
+import {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 
 export type IconProviders =
   | 'MaterialCommunity'
   | 'AntDesign'
   | 'Octicons'
-  | 'MaterialIcon';
+  | 'MaterialIcon'
+  | 'FontAwesome';
 
 interface Props {
   iconProvider?: IconProviders;
-  name: string;
+  icon: string | IconDefinition;
   color: string;
   size?: number;
   onPress?: () => void;
@@ -25,11 +28,12 @@ const ICON_MAP: Record<IconProviders, ComponentType<any>> = {
   MaterialCommunity: MaterialCommunityIcon,
   Octicons: Octicons,
   MaterialIcon: MaterialIcons,
+  FontAwesome: FontAwesomeIcon,
 };
 
 const Icon: FC<Props> = ({
   iconProvider = 'MaterialCommunity',
-  name,
+  icon,
   color,
   onPress,
   size = 20,
@@ -37,13 +41,25 @@ const Icon: FC<Props> = ({
 }) => {
   const IconComponent = ICON_MAP[iconProvider];
   return (
-    <IconComponent
-      name={name}
-      color={color}
-      size={size}
-      onPress={onPress}
-      style={style}
-    />
+    <>
+      {iconProvider === 'FontAwesome' ? (
+        <IconComponent
+          icon={icon}
+          color={color}
+          size={size}
+          onPress={onPress}
+          style={style}
+        />
+      ) : (
+        <IconComponent
+          name={icon}
+          color={color}
+          size={size}
+          onPress={onPress}
+          style={style}
+        />
+      )}
+    </>
   );
 };
 
