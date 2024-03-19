@@ -11,6 +11,7 @@ import Google from 'src/assets/svg/Google.svg';
 import Spotify from 'src/assets/svg/Spotify.svg';
 import X from 'src/assets/svg/X.svg';
 import Stripe from 'src/assets/svg/Stripe.svg';
+import AddSquare from 'src/assets/svg/add-square.svg';
 
 type GeneralType =
   | 'Home'
@@ -24,6 +25,7 @@ type GeneralType =
   | 'Spotify'
   | 'X'
   | 'Stripe'
+  | 'AddSquare'
   | 'Comment';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -39,4 +41,5 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['Spotify']: Spotify,
   ['X']: X,
   ['Stripe']: Stripe,
+  ['AddSquare']: AddSquare,
 };
