@@ -22,7 +22,13 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           <RowContainer style={tw`justify-between`}>
             <LogoSvg />
             <RowContainer>
-              <AddSqurareSvg />
+              <AddSqurareSvg
+                onPress={() =>
+                  navigation.navigate('MainAppNavigator', {
+                    screen: 'CreateNewPost',
+                  })
+                }
+              />
               <NotificationBellSvg
                 onPress={() =>
                   navigation.navigate('MainAppNavigator', {
