@@ -14,20 +14,24 @@ type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 const Home: FunctionComponent<Props> = ({navigation}) => {
   const LogoSvg = generalIcon.Logo;
   const NotificationBellSvg = generalIcon.NotificationBell;
+  const AddSqurareSvg = generalIcon.AddSquare;
   return (
     <ScreenContainer>
       <View style={tw`flex-1`}>
         <View style={tw`mx-3`}>
           <RowContainer style={tw`justify-between`}>
             <LogoSvg />
-            <NotificationBellSvg
-              onPress={() =>
-                navigation.navigate('MainAppNavigator', {
-                  screen: 'Notifications',
-                })
-              }
-              style={tw`mr-5`}
-            />
+            <RowContainer>
+              <AddSqurareSvg />
+              <NotificationBellSvg
+                onPress={() =>
+                  navigation.navigate('MainAppNavigator', {
+                    screen: 'Notifications',
+                  })
+                }
+                style={tw`ml-5 mr-3`}
+              />
+            </RowContainer>
           </RowContainer>
           <View style={tw`mt-4`}>
             <Status />
