@@ -118,6 +118,7 @@ export const styles = StyleSheet.create({
     padding: 20,
   },
   shawdow: {
+    backgroundColor: 'transparent',
     shadowColor: '#DDDDDD',
     shadowOffset: {
       width: 0,
