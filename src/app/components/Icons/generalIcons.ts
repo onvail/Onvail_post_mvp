@@ -16,6 +16,8 @@ import Gallery from 'src/assets/svg/gallery.svg';
 import MusicSquareIcon from 'src/assets/svg/music-square-add.svg';
 import SendIcon from 'src/assets/svg/send.svg';
 import VideoIcon from 'src/assets/svg/video-square.svg';
+import FloatingIcon from 'src/assets/svg/floatinIcon.svg';
+import CameraSwitch from 'src/assets/svg/cameraSwitch.svg';
 
 type GeneralType =
   | 'Home'
@@ -34,6 +36,8 @@ type GeneralType =
   | 'MusicSquareIcon'
   | 'SendIcon'
   | 'VideoIcon'
+  | 'FloatingIcon'
+  | 'CameraSwitch'
   | 'Comment';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -54,4 +58,6 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['MusicSquareIcon']: MusicSquareIcon,
   ['SendIcon']: SendIcon,
   ['VideoIcon']: VideoIcon,
+  ['FloatingIcon']: FloatingIcon,
+  ['CameraSwitch']: CameraSwitch,
 };
