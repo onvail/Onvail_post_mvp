@@ -146,7 +146,7 @@ const CreateNewPosts: FunctionComponent = () => {
                   setSelectedPostOptions(post);
                   setDisplayLastTakenImage(false);
                 }}
-                style={tw`mr-10 w-15 items-center pb-2 ${activeBackground}`}
+                style={tw` w-15 justify-center items-center pb-10 ${activeBackground}`}
                 key={post}>
                 <CustomText style={tw`text-white`}>{post}</CustomText>
               </Pressable>
