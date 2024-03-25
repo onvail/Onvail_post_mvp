@@ -29,11 +29,11 @@ const StatusItemComponent: FunctionComponent<{item: StatusItem}> = memo(
       <View style={tw`items-center`}>
         <LinearGradient
           colors={gradients[randomGradientIndex]}
-          style={tw`h-20 w-20 border-white rounded-full mr-2 items-center justify-center`}>
+          style={tw`h-23 w-20 border-white rounded-md mr-4 items-center justify-center`}>
           <CustomImage
             resizeMode="cover"
             uri={imageSource.uri!}
-            style={tw`rounded-full h-18.5 w-18.5 p-2 border-2`}
+            style={tw`rounded-md h-21.5 w-18.5 p-2 border-2`}
           />
         </LinearGradient>
         <Text style={tw`text-white mt-2 font-poppinsMedium text-xs`}>
