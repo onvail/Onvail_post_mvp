@@ -56,6 +56,7 @@ const Status: FunctionComponent = () => {
         renderItem={renderItem}
         estimatedItemSize={10}
         horizontal
+        keyExtractor={item => item.name}
         showsHorizontalScrollIndicator={false}
       />
     </View>
