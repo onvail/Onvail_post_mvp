@@ -10,6 +10,7 @@ module.exports = {
         purple4: '#392655',
         grey: '#FEFEFE',
         grey2: '#717171',
+        grey3: '#333333',
       },
       fontFamily: {
         poppinsBlack: ['Poppins-Black'],
