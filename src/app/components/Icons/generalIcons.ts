@@ -20,6 +20,7 @@ import FloatingIcon from 'src/assets/svg/action button.svg';
 import EditIcon from 'src/assets/svg/editIcon.svg';
 import BeatIcon from 'src/assets/svg/beats.svg';
 import CameraSwitch from 'src/assets/svg/cameraSwitch.svg';
+import GalleryThumbnail from 'src/assets/svg/image.svg';
 
 type GeneralType =
   | 'Home'
@@ -42,6 +43,7 @@ type GeneralType =
   | 'CameraSwitch'
   | 'BeatIcon'
   | 'EditIcon'
+  | 'GalleryThumbnail'
   | 'Comment';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -66,4 +68,5 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['CameraSwitch']: CameraSwitch,
   ['BeatIcon']: BeatIcon,
   ['EditIcon']: EditIcon,
+  ['GalleryThumbnail']: GalleryThumbnail,
 };
