@@ -63,7 +63,7 @@ const onvailBtnOptions: OnvailBtnProps[] = [
   {
     title: 'Plan a party',
     icon: BeatIconSvg,
-    route: 'CreateNewPost',
+    route: 'PlanYourParty',
   },
 ];
 
@@ -90,6 +90,7 @@ const CustomOnvailButton: FunctionComponent<NavigationProps> = ({
               const Icon = item.icon;
               return (
                 <TouchableOpacity
+                  key={item.title}
                   onPress={() => {
                     navigation.navigate('MainAppNavigator', {
                       screen: item.route,
