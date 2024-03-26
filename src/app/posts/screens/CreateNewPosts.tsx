@@ -81,7 +81,8 @@ const CreateNewPosts: FunctionComponent = () => {
               placeholder="wanna say something?"
               placeholderTextColor={'white'}
               multiline
-              style={tw` h-10/12 text-sm rounded-lg mt-2 font-poppinsRegular text-white`}
+              textAlignVertical="top"
+              style={tw` h-9/12 text-sm rounded-lg mt-2 font-poppinsRegular text-white`}
             />
             <RowContainer style={tw`mt-2 items-end flex-1 justify-between`}>
               <RowContainer style={tw`w-2/5 justify-between`}>
@@ -131,7 +132,7 @@ const CreateNewPosts: FunctionComponent = () => {
           </View>
         )}
 
-        <RowContainer style={tw`mb-6 mx-5 items-end flex-1 justify-center`}>
+        <RowContainer style={tw`mb-6 mx-5 mt-5 items-end  justify-center`}>
           {lastImage && selectedPostOptions === 'Story' && (
             <Pressable onPress={() => setDisplayLastTakenImage(true)}>
               <CustomImage uri={lastImage} style={tw`h-16 w-16 rounded-lg`} />
@@ -146,7 +147,7 @@ const CreateNewPosts: FunctionComponent = () => {
                   setSelectedPostOptions(post);
                   setDisplayLastTakenImage(false);
                 }}
-                style={tw` w-15 justify-center items-center pb-10 ${activeBackground}`}
+                style={tw` w-15 justify-center items-center ${activeBackground}`}
                 key={post}>
                 <CustomText style={tw`text-white`}>{post}</CustomText>
               </Pressable>
