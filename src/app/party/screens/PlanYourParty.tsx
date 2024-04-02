@@ -84,7 +84,6 @@ const PlanYourParty: FunctionComponent = () => {
             }}
           />
         </View>
-        {console.log('iscalendar visible', isDatePickerVisible)}
         <View style={tw`mt-6`}>
           <SwitchSelector description="Add voting poll" optional />
         </View>
