@@ -14,7 +14,7 @@ type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 const Home: FunctionComponent<Props> = ({navigation}) => {
   const LogoSvg = generalIcon.Logo;
   const NotificationBellSvg = generalIcon.NotificationBell;
-  const AddSqurareSvg = generalIcon.AddSquare;
+  // const AddSqurareSvg = generalIcon.AddSquare;
   return (
     <ScreenContainer>
       <View style={tw`flex-1`}>
@@ -22,7 +22,13 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           <RowContainer style={tw`justify-between`}>
             <LogoSvg />
             <RowContainer>
-              <AddSqurareSvg />
+              {/* <AddSqurareSvg
+                onPress={() =>
+                  navigation.navigate('MainAppNavigator', {
+                    screen: 'CreateNewPost',
+                  })
+                }
+              /> */}
               <NotificationBellSvg
                 onPress={() =>
                   navigation.navigate('MainAppNavigator', {

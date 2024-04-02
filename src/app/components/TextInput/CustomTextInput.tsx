@@ -14,23 +14,38 @@ interface Props extends TextInputProps {
   inputType?: 'Password' | 'Text';
   passwordVisibility?: boolean;
   handlePasswordVisibility?: () => void;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: string;
+  height?: number;
 }
 
 const CustomTextInput: FunctionComponent<Props> = ({
   inputType,
   passwordVisibility,
   handlePasswordVisibility,
+  backgroundColor = 'white',
+  borderColor = 'white',
+  borderWidth = '0',
+  height = 48,
   ...props
 }) => {
   return (
     <View
-      style={tw`bg-white h-12 rounded-md mb-6 justify-between flex-row items-center px-3`}>
+      style={[
+        tw` rounded-md mb-6 justify-between flex-row items-center px-3`,
+        {
+          backgroundColor: backgroundColor,
+          borderColor: borderColor,
+          borderWidth: parseInt(borderWidth, 10),
+          height: height,
+        },
+      ]}>
       <TextInput
         placeholderTextColor={Colors.grey2}
-        style={tw` font-poppinsRegular text-sm w-10/11  text-primary`}
+        style={tw`font-poppinsRegular text-sm w-10/11 text-primary`}
         {...props}
       />
-
       {/* if @inputType is Password display eye icon */}
       {inputType === 'Password' && (
         <Icon

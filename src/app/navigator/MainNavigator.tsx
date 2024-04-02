@@ -2,6 +2,8 @@ import {createStackNavigator} from '@react-navigation/stack';
 import React, {FunctionComponent} from 'react';
 import {MainStackParamList} from './types/MainStackParamList';
 import Notification from '../notifications/screens/Notification';
+import CreateNewPosts from 'app/posts/screens/CreateNewPosts';
+import PlanYourParty from '../party/screens/PlanYourParty';
 
 const Stack = createStackNavigator<MainStackParamList>();
 
@@ -14,6 +16,14 @@ const screens: ScreenDef[] = [
   {
     name: 'Notifications',
     screen: Notification,
+  },
+  {
+    name: 'CreateNewPost',
+    screen: CreateNewPosts,
+  },
+  {
+    name: 'PlanYourParty',
+    screen: PlanYourParty,
   },
 ];
 

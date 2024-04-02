@@ -12,6 +12,15 @@ import Spotify from 'src/assets/svg/Spotify.svg';
 import X from 'src/assets/svg/X.svg';
 import Stripe from 'src/assets/svg/Stripe.svg';
 import AddSquare from 'src/assets/svg/add-square.svg';
+import Gallery from 'src/assets/svg/gallery.svg';
+import MusicSquareIcon from 'src/assets/svg/music-square-add.svg';
+import SendIcon from 'src/assets/svg/send.svg';
+import VideoIcon from 'src/assets/svg/video-square.svg';
+import FloatingIcon from 'src/assets/svg/action button.svg';
+import EditIcon from 'src/assets/svg/editIcon.svg';
+import BeatIcon from 'src/assets/svg/beats.svg';
+import CameraSwitch from 'src/assets/svg/cameraSwitch.svg';
+import GalleryThumbnail from 'src/assets/svg/image.svg';
 
 type GeneralType =
   | 'Home'
@@ -26,6 +35,15 @@ type GeneralType =
   | 'X'
   | 'Stripe'
   | 'AddSquare'
+  | 'Gallery'
+  | 'MusicSquareIcon'
+  | 'SendIcon'
+  | 'VideoIcon'
+  | 'FloatingIcon'
+  | 'CameraSwitch'
+  | 'BeatIcon'
+  | 'EditIcon'
+  | 'GalleryThumbnail'
   | 'Comment';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -42,4 +60,13 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['X']: X,
   ['Stripe']: Stripe,
   ['AddSquare']: AddSquare,
+  ['Gallery']: Gallery,
+  ['MusicSquareIcon']: MusicSquareIcon,
+  ['SendIcon']: SendIcon,
+  ['VideoIcon']: VideoIcon,
+  ['FloatingIcon']: FloatingIcon,
+  ['CameraSwitch']: CameraSwitch,
+  ['BeatIcon']: BeatIcon,
+  ['EditIcon']: EditIcon,
+  ['GalleryThumbnail']: GalleryThumbnail,
 };
