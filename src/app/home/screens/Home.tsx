@@ -14,7 +14,6 @@ type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 const Home: FunctionComponent<Props> = ({navigation}) => {
   const LogoSvg = generalIcon.Logo;
   const NotificationBellSvg = generalIcon.NotificationBell;
-  // const AddSqurareSvg = generalIcon.AddSquare;
   return (
     <ScreenContainer>
       <View style={tw`flex-1`}>
@@ -44,7 +43,13 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           </View>
         </View>
         <View style={tw`mt-8 flex-1 `}>
-          <PostCard />
+          <PostCard
+            handleJoinPartyBtnPress={() =>
+              navigation.navigate('MainAppNavigator', {
+                screen: 'PartyScreen',
+              })
+            }
+          />
         </View>
       </View>
     </ScreenContainer>
