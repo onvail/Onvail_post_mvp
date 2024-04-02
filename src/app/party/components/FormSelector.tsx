@@ -10,15 +10,18 @@ interface Props {
   description: string;
   instruction: string;
   icon: string;
+  onPress: () => void;
 }
 
 const FormSelector: FunctionComponent<Props> = ({
   description,
   instruction,
   icon,
+  onPress,
 }) => {
   return (
     <Pressable
+      onPress={onPress}
       style={tw`border border-grey2 rounded-md h-13 items-center justify-center px-3 `}>
       <RowContainer style={tw`w-full items-center justify-between`}>
         <CustomText>{description}</CustomText>
