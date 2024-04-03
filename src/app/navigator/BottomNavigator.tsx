@@ -77,37 +77,35 @@ const CustomOnvailButton: FunctionComponent<NavigationProps> = ({
   const [showNavOptions, setShowNavOptions] = useState<boolean>(false);
   return (
     <View style={tw`relative  items-center `}>
-      {
-        <Modal
-          isVisible={showNavOptions}
-          backdropOpacity={0.87}
-          animationIn={'zoomIn'}
-          animationOut={'zoomOut'}
-          onBackdropPress={() => setShowNavOptions(false)}
-          style={tw`absolute items-center justify-center left-20 right-20 bottom-20`}>
-          <View style={tw`flex-1 self-center items-center justify-center`}>
-            {onvailBtnOptions.map((item, _) => {
-              const Icon = item.icon;
-              return (
-                <TouchableOpacity
-                  key={item.title}
-                  onPress={() => {
-                    navigation.navigate('MainAppNavigator', {
-                      screen: item.route,
-                    });
-                    setShowNavOptions(false);
-                  }}
-                  style={tw`bg-white flex-row items-center rounded-full justify-between px-3   py-2 mb-3 w-50`}>
-                  <Text style={tw`font-poppinsMedium text-base`}>
-                    {item.title}
-                  </Text>
-                  <Icon height={21} width={21} />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Modal>
-      }
+      <Modal
+        isVisible={showNavOptions}
+        backdropOpacity={0.87}
+        animationIn={'zoomIn'}
+        animationOut={'zoomOut'}
+        onBackdropPress={() => setShowNavOptions(false)}
+        style={tw`absolute items-center justify-center left-20 right-20 bottom-20`}>
+        <View style={tw`flex-1 self-center items-center justify-center`}>
+          {onvailBtnOptions.map((item, _) => {
+            const Icon = item.icon;
+            return (
+              <TouchableOpacity
+                key={item.title}
+                onPress={() => {
+                  navigation.navigate('MainAppNavigator', {
+                    screen: item.route,
+                  });
+                  setShowNavOptions(false);
+                }}
+                style={tw`bg-white flex-row items-center rounded-full justify-between px-3   py-2 mb-3 w-50`}>
+                <Text style={tw`font-poppinsMedium text-base`}>
+                  {item.title}
+                </Text>
+                <Icon height={21} width={21} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Modal>
       <TouchableOpacity
         onPress={() => setShowNavOptions(prev => !prev)}
         style={tw`mb-4 justify-center items-center`}>
