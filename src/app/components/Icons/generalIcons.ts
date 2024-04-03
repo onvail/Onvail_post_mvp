@@ -21,6 +21,11 @@ import EditIcon from 'src/assets/svg/editIcon.svg';
 import BeatIcon from 'src/assets/svg/beats.svg';
 import CameraSwitch from 'src/assets/svg/cameraSwitch.svg';
 import GalleryThumbnail from 'src/assets/svg/image.svg';
+import StormzyCover from 'src/assets/svg/stormzy.svg';
+import HighLightLeft from 'src/assets/svg/highlightLeft.svg';
+import HighLightRight from 'src/assets/svg/highlightRight.svg';
+import PauseIcon from 'src/assets/svg/pauseIcon.svg';
+import PlayIcon from 'src/assets/svg/playIcon.svg';
 
 type GeneralType =
   | 'Home'
@@ -44,6 +49,11 @@ type GeneralType =
   | 'BeatIcon'
   | 'EditIcon'
   | 'GalleryThumbnail'
+  | 'StormzyCover'
+  | 'HighLightLeft'
+  | 'HighLightRight'
+  | 'PauseIcon'
+  | 'PlayIcon'
   | 'Comment';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -69,4 +79,9 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['BeatIcon']: BeatIcon,
   ['EditIcon']: EditIcon,
   ['GalleryThumbnail']: GalleryThumbnail,
+  ['StormzyCover']: StormzyCover,
+  ['HighLightRight']: HighLightRight,
+  ['HighLightLeft']: HighLightLeft,
+  ['PlayIcon']: PlayIcon,
+  ['PauseIcon']: PauseIcon,
 };
