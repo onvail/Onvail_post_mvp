@@ -9,7 +9,7 @@ import {generalIcon} from 'components/Icons/generalIcons';
 import {SvgProps} from 'react-native-svg';
 import {Colors} from 'src/app/styles/colors';
 import MainNavigator from './MainNavigator';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useNavigationState} from '@react-navigation/native';
 import Modal from 'react-native-modal';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {MainStackParamList} from './types/MainStackParamList';
@@ -154,13 +154,19 @@ const BottomTabNavigator = () => {
   const renderCustomOnvailButton = () => {
     return <CustomOnvailButton navigation={navigation} />;
   };
+  // Indexes defines screen positions.
+  // Home = 0; Profile = 1; MainNavigator = 2
+  const screenIndex = useNavigationState(
+    state => state.routes[state.index]?.state?.index,
+  );
+
   return (
     <CurvedBottomBar.Navigator
       screenOptions={{
         headerShown: false,
       }}
       type="DOWN"
-      style={tw`bg-primary`}
+      style={tw`bg-primary ${screenIndex === 2 ? 'hidden' : 'flex'}`}
       shadowStyle={styles.shawdow}
       height={65}
       circleWidth={55}
