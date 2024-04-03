@@ -47,8 +47,7 @@ const CustomBottomSheetInner: ForwardRefRenderFunction<
       ref={bottomSheetRef}
       snapPoints={snapPoints}
       backgroundStyle={tw`bg-black`}
-      handleIndicatorStyle={tw`bg-white w-15`}
-      containerStyle={tw`mt-4 rounded-t-xl`}>
+      handleIndicatorStyle={tw`bg-white h-1.8 w-15`}>
       {children}
     </BottomSheet>
   );
