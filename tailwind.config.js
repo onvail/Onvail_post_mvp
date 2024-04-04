@@ -11,6 +11,8 @@ module.exports = {
         grey: '#FEFEFE',
         grey2: '#717171',
         grey3: '#333333',
+        grey4: '#A2A2A2',
+        darkGreen: '#0B1E1A',
       },
       fontFamily: {
         poppinsBlack: ['Poppins-Black'],
