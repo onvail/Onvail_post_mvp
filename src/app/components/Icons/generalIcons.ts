@@ -26,6 +26,7 @@ import HighLightLeft from 'src/assets/svg/highlightLeft.svg';
 import HighLightRight from 'src/assets/svg/highlightRight.svg';
 import PauseIcon from 'src/assets/svg/pauseIcon.svg';
 import PlayIcon from 'src/assets/svg/playIcon.svg';
+import ProfileImage from 'src/assets/svg/profileImage.svg';
 
 type GeneralType =
   | 'Home'
@@ -54,6 +55,7 @@ type GeneralType =
   | 'HighLightRight'
   | 'PauseIcon'
   | 'PlayIcon'
+  | 'ProfileImage'
   | 'Comment';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -84,4 +86,5 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['HighLightLeft']: HighLightLeft,
   ['PlayIcon']: PlayIcon,
   ['PauseIcon']: PauseIcon,
+  ['ProfileImage']: ProfileImage,
 };
