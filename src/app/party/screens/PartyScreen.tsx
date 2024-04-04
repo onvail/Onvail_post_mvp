@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useRef} from 'react';
+import React, {FunctionComponent, useRef, useState} from 'react';
 import {
   Pressable,
   SafeAreaView,
@@ -30,6 +30,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
   const SendIcon = generalIcon.SendIcon;
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
 
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
   const openBottomSheet = () => {
     bottomSheetRef.current?.open();
   };
@@ -44,33 +46,36 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
         </View>
         <View style={tw`mt-8 items-center`}>
           <StormzyCover />
-          <View style={tw`w-[80%] mt-8 flex-row items-center justify-between`}>
+          <View style={tw` mt-8 flex-row items-center justify-between`}>
             <HighLightLeft />
-            <CustomText style={tw`font-poppinsBold`}>LIVE</CustomText>
+            <CustomText style={tw`font-poppinsBold w-10`}>LIVE</CustomText>
             <Pressable onPress={() => openBottomSheet()}>
               <HighLightRight />
             </Pressable>
           </View>
-          <View style={tw`mt-6 w-[80%]  justify-center  items-center`}>
-            <PauseIcon />
-            <View style={tw`flex-row mt-6 items-center`}>
-              <Icon icon={'volume-low'} color="white" />
-              <Slider
-                style={tw`w-70`}
-                minimumValue={0}
-                maximumValue={1}
-                minimumTrackTintColor="#FFFFFF"
-                maximumTrackTintColor="#000000"
-                thumbTintColor="#FFFF"
-              />
-              <Icon icon={'volume-medium'} color="white" />
-            </View>
+          <View style={tw`mt-6 w-[90%]  justify-center  items-center`}>
+            <Pressable
+              onPress={() => setIsPlaying(!isPlaying)}
+              style={tw`w-10 items-center `}>
+              {isPlaying ? <PlayIcon /> : <PauseIcon />}
+            </Pressable>
+          </View>
+          <View style={tw`flex-row w-[90%] mt-6 items-center`}>
+            <Icon icon={'volume-low'} color="white" />
+            <Slider
+              style={tw`w-70`}
+              minimumValue={0}
+              maximumValue={1}
+              minimumTrackTintColor="#FFFFFF"
+              maximumTrackTintColor="#000000"
+              thumbTintColor="#FFFF"
+            />
+            <Icon icon={'volume-medium'} color="white" />
           </View>
         </View>
       </SafeAreaView>
       <CustomBottomSheet
         ref={bottomSheetRef}
-        id="party-sheet"
         customSnapPoints={[30, 300, 500, 700]}
         visibilityHandler={() => {}}>
         <View style={tw`flex-1 py-3  pb-7`}>
