@@ -1,5 +1,5 @@
 import React, {FunctionComponent, useRef} from 'react';
-import {Pressable, SafeAreaView, View} from 'react-native';
+import {Pressable, SafeAreaView, View, TextInput} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'src/app/components/Icons/Icon';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
@@ -20,6 +20,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
   const HighLightRight = generalIcon.HighLightRight;
   const PauseIcon = generalIcon.PauseIcon;
   const PlayIcon = generalIcon.PlayIcon;
+  const SendIcon = generalIcon.SendIcon;
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
 
   const openBottomSheet = () => {
@@ -65,9 +66,20 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
         id="party-sheet"
         customSnapPoints={[30, 300]}
         visibilityHandler={() => {}}>
-        <View style={tw`h-[100%]`}>
-          <CustomText>Hello there</CustomText>
-          <CustomText>Hello there</CustomText>
+        <View style={tw`flex-1`}>
+          <View style={tw`flex-1  justify-end py-6 px-4`}>
+            <View
+              style={tw`border flex-row items-center justify-between px-3 h-10 rounded-lg border-grey4`}>
+              <TextInput
+                placeholder="Add comment"
+                style={tw`text-white text-sm w-[90%] font-poppinsItalic h-10`}
+                placeHolderColor={'#A2A2A2'}
+              />
+              <Pressable>
+                <SendIcon />
+              </Pressable>
+            </View>
+          </View>
         </View>
       </CustomBottomSheet>
     </LinearGradient>
