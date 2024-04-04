@@ -1,5 +1,11 @@
 import React, {FunctionComponent, useRef} from 'react';
-import {Pressable, SafeAreaView, View, TextInput} from 'react-native';
+import {
+  Pressable,
+  SafeAreaView,
+  View,
+  TextInput,
+  ScrollView,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'src/app/components/Icons/Icon';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
@@ -11,6 +17,7 @@ import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
 import CustomBottomSheet, {
   CustomBottomSheetRef,
 } from 'src/app/components/BottomSheet/CustomBottomsheet';
+import CommentCards from 'src/app/components/Cards/CommentCards';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -64,16 +71,21 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
       <CustomBottomSheet
         ref={bottomSheetRef}
         id="party-sheet"
-        customSnapPoints={[30, 300]}
+        customSnapPoints={[30, 300, 500, 700]}
         visibilityHandler={() => {}}>
-        <View style={tw`flex-1`}>
-          <View style={tw`flex-1  justify-end py-6 px-4`}>
+        <View style={tw`flex-1 py-3  pb-7`}>
+          <ScrollView style={tw`flex-1 mb-4`}>
+            {Array.from({length: 20}).map((_, index) => (
+              <CommentCards key={index} />
+            ))}
+          </ScrollView>
+          <View style={tw` px-4  justify-end `}>
             <View
               style={tw`border flex-row items-center justify-between px-3 h-10 rounded-lg border-grey4`}>
               <TextInput
                 placeholder="Add comment"
                 style={tw`text-white text-sm w-[90%] font-poppinsItalic h-10`}
-                placeHolderColor={'#A2A2A2'}
+                placeholderTextColor={'#A2A2A2'}
               />
               <Pressable>
                 <SendIcon />
