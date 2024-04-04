@@ -18,6 +18,7 @@ import CustomBottomSheet, {
   CustomBottomSheetRef,
 } from 'src/app/components/BottomSheet/CustomBottomsheet';
 import CommentCards from 'src/app/components/Cards/CommentCards';
+import RowContainer from 'src/app/components/View/RowContainer';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -31,6 +32,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   const openBottomSheet = () => {
     bottomSheetRef.current?.open();
@@ -84,9 +86,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
               <CommentCards key={index} />
             ))}
           </ScrollView>
-          <View style={tw` px-4  justify-end `}>
+          <RowContainer style={tw` px-6  justify-between `}>
             <View
-              style={tw`border flex-row items-center justify-between px-3 h-10 rounded-lg border-grey4`}>
+              style={tw`border flex-row items-center mr-3 justify-between px-3 h-10 rounded-lg border-grey4`}>
               <TextInput
                 placeholder="Add comment"
                 style={tw`text-white text-sm w-[90%] font-poppinsItalic h-10`}
@@ -96,7 +98,14 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
                 <SendIcon />
               </Pressable>
             </View>
-          </View>
+            <Pressable onPress={() => setIsMuted(!isMuted)} style={tw``}>
+              <Icon
+                icon={isMuted ? 'microphone' : 'microphone-off'}
+                color="white"
+                size={25}
+              />
+            </Pressable>
+          </RowContainer>
         </View>
       </CustomBottomSheet>
     </LinearGradient>
