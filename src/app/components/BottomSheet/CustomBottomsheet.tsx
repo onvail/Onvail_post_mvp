@@ -10,10 +10,7 @@ import tw from 'src/lib/tailwind';
 interface Props {
   children: React.ReactNode;
   visibilityHandler: (isVisbile: boolean) => void;
-  customSnapPoints?: number[];
-  initialSnapIndex?: number;
-  id: string;
-  heading?: string;
+  customSnapPoints?: number[] | string[];
 }
 
 export type CustomBottomSheetRef = {
