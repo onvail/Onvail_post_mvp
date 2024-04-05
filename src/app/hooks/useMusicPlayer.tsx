@@ -1,6 +1,5 @@
 import {useCallback, useEffect, useState} from 'react';
 import TrackPlayer, {
-  AddTrack,
   State,
   Event,
   useTrackPlayerEvents,
@@ -8,26 +7,26 @@ import TrackPlayer, {
   RepeatMode,
   Track,
 } from 'react-native-track-player';
-
-interface Props {
-  track?: AddTrack;
-}
+import {MusicStoreState, useMusicStore} from 'app/zustand/store';
 
 // Subscribing to the following events inside MyComponent
 const events: Event[] = [Event.PlaybackState, Event.PlaybackError];
 
 // Custom hook to control music playback using react-native-track-player
-const useMusicPlayer = ({track}: Props) => {
+const useMusicPlayer = () => {
   // Save and update the current player state
   const [playerState, setPlayerState] = useState<State>(State.None);
   const [currentTrack, setCurrentTrack] = useState<Track | undefined>(
     {} as Track,
   );
 
+  // Fetch tracks from zustand store
+  const track = useMusicStore((state: MusicStoreState) => state.tracks);
+
   // Add track to trackplayer and setRepeatmode to off
   const addTrackToPlayer = useCallback(async () => {
     await Promise.all([
-      track && TrackPlayer.add([track]),
+      track && TrackPlayer.add(track),
       TrackPlayer.setRepeatMode(RepeatMode.Off),
     ]);
   }, [track]);
@@ -43,12 +42,6 @@ const useMusicPlayer = ({track}: Props) => {
 
   // Play the current track
   const play = async () => {
-    if (track && track.id !== currentTrack?.id) {
-      console.log('removing track');
-      await removeTrack();
-      console.log(track.artist);
-      await TrackPlayer.add([track]);
-    }
     await TrackPlayer.play();
   };
 
