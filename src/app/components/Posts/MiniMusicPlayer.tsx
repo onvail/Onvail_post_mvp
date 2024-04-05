@@ -1,4 +1,4 @@
-import React, {FunctionComponent} from 'react';
+import React, {FunctionComponent, useEffect, useMemo} from 'react';
 import {TouchableOpacity, View} from 'react-native';
 
 import RowContainer from 'components/View/RowContainer';
@@ -9,6 +9,7 @@ import tw from 'src/lib/tailwind';
 import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {State} from 'react-native-track-player';
 import {AnimatedCircularProgress} from 'react-native-circular-progress';
+import {useMusicStore} from 'src/app/zustand/store';
 
 interface Props {
   musicTitle: string;
@@ -21,19 +22,31 @@ const MiniMusicPlayer: FunctionComponent<Props> = ({
   uri,
   artiste,
 }) => {
-  const track = {
-    url: uri, // Load media from the network
-    title: musicTitle,
-    artist: artiste,
-    album: 'while(1<2)',
-    genre: 'Progressive House, Electro House',
-    date: '2014-05-20T07:00:00+00:00', // RFC 3339
-    artwork: 'http://example.com/cover.png', // Load artwork from the network
-    duration: 402, // Duration in seconds
-  };
-  const {play, pause, playerState, position, duration} = useMusicPlayer({
-    track,
-  });
+  // sample track
+  const track = useMemo(
+    () => ({
+      url: uri,
+      title: musicTitle,
+      artist: artiste,
+      album: 'while(1<2)',
+      genre: 'Progressive House, Electro House',
+      date: '2014-05-20T07:00:00+00:00',
+      artwork: 'http://example.com/cover.png',
+      duration: 402,
+      id: 'new-id',
+    }),
+    [uri, musicTitle, artiste],
+  );
+
+  // add tracks via zustand
+  const addTracks = useMusicStore(state => state.addTracks);
+
+  // add tracks on mount
+  useEffect(() => {
+    addTracks(track);
+  }, [addTracks, track]);
+
+  const {play, pause, playerState, position, duration} = useMusicPlayer();
   const progress = (position / duration) * 100;
 
   return (
