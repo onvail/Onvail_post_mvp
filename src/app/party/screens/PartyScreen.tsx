@@ -19,6 +19,11 @@ import CustomBottomSheet, {
 } from 'src/app/components/BottomSheet/CustomBottomsheet';
 import CommentCards from 'src/app/components/Cards/CommentCards';
 import RowContainer from 'src/app/components/View/RowContainer';
+import {FlashList, ListRenderItem} from '@shopify/flash-list';
+import {SongsProps, sampleSongs} from 'src/utils/data';
+import MusicList from '../components/MusicList';
+import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
+import {VolumeManager} from 'react-native-volume-manager';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -31,22 +36,36 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
   const SendIcon = generalIcon.SendIcon;
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
 
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
   const openBottomSheet = () => {
     bottomSheetRef.current?.open();
   };
 
+  const {play, pause, isPlaying} = useMusicPlayer();
+
+  const renderItem: ListRenderItem<SongsProps> = ({item, index}) => {
+    const {artist, title, duration, songUrl} = item;
+    return (
+      <MusicList
+        duration={duration}
+        title={title}
+        index={index + 1}
+        artist={artist}
+        songUrl={songUrl}
+      />
+    );
+  };
+
   return (
     <LinearGradient style={tw`h-full p-4`} colors={['#0E0E0E', '#087352']}>
-      <SafeAreaView>
+      <SafeAreaView style={tw`flex-1`}>
         <View style={tw`items-end`}>
           <Pressable onPress={() => navigation.goBack()}>
             <Icon icon="close-circle-outline" color="white" size={35} />
           </Pressable>
         </View>
-        <View style={tw`mt-8 items-center`}>
+        <View style={tw`mt-8 mb-3 items-center`}>
           <StormzyCover />
           <View style={tw` mt-8 flex-row items-center justify-between`}>
             <HighLightLeft />
@@ -57,9 +76,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
           </View>
           <View style={tw`mt-6 w-[90%]  justify-center  items-center`}>
             <Pressable
-              onPress={() => setIsPlaying(!isPlaying)}
+              onPress={() => (isPlaying ? pause() : play())}
               style={tw`w-10 items-center `}>
-              {isPlaying ? <PlayIcon /> : <PauseIcon />}
+              {isPlaying ? <PauseIcon /> : <PlayIcon />}
             </Pressable>
           </View>
           <View style={tw`flex-row w-[90%] mt-6 items-center`}>
@@ -75,6 +94,17 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
             <Icon icon={'volume-medium'} color="white" />
           </View>
         </View>
+        <FlashList
+          data={sampleSongs}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => item.title + index}
+          estimatedItemSize={20}
+          estimatedListSize={{
+            height: 200,
+            width: 300,
+          }}
+          showsVerticalScrollIndicator={false}
+        />
       </SafeAreaView>
       <CustomBottomSheet
         ref={bottomSheetRef}
