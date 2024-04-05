@@ -6,10 +6,11 @@ import TrackPlayer, {
   useTrackPlayerEvents,
   useProgress,
   RepeatMode,
+  Track,
 } from 'react-native-track-player';
 
 interface Props {
-  track: AddTrack;
+  track?: AddTrack;
 }
 
 // Subscribing to the following events inside MyComponent
@@ -19,11 +20,14 @@ const events: Event[] = [Event.PlaybackState, Event.PlaybackError];
 const useMusicPlayer = ({track}: Props) => {
   // Save and update the current player state
   const [playerState, setPlayerState] = useState<State>(State.None);
+  const [currentTrack, setCurrentTrack] = useState<Track | undefined>(
+    {} as Track,
+  );
 
   // Add track to trackplayer and setRepeatmode to off
   const addTrackToPlayer = useCallback(async () => {
     await Promise.all([
-      TrackPlayer.add([track]),
+      track && TrackPlayer.add([track]),
       TrackPlayer.setRepeatMode(RepeatMode.Off),
     ]);
   }, [track]);
@@ -33,8 +37,20 @@ const useMusicPlayer = ({track}: Props) => {
     addTrackToPlayer();
   }, [addTrackToPlayer]);
 
+  useEffect(() => {
+    fetchCurrentTrack();
+  }, []);
+
   // Play the current track
-  const play = async () => await TrackPlayer.play();
+  const play = async () => {
+    if (track && track.id !== currentTrack?.id) {
+      console.log('removing track');
+      await removeTrack();
+      console.log(track.artist);
+      await TrackPlayer.add([track]);
+    }
+    await TrackPlayer.play();
+  };
 
   // Pause the current track
   const pause = () => TrackPlayer.pause();
@@ -71,6 +87,19 @@ const useMusicPlayer = ({track}: Props) => {
   // Stop track from playing
   const stop = async () => await TrackPlayer.stop();
 
+  // Set currently playing track
+  const fetchCurrentTrack = async () =>
+    await TrackPlayer.getActiveTrack().then(response => {
+      setCurrentTrack(response);
+    });
+
+  // Remove track from queue
+  const removeTrack = async () =>
+    await TrackPlayer.remove(0).then(async () => [
+      await TrackPlayer.removeUpcomingTracks(),
+      console.log(await TrackPlayer.getActiveTrack()),
+    ]);
+
   // Return all the control functions to be used by the component
   return {
     play,
@@ -85,6 +114,8 @@ const useMusicPlayer = ({track}: Props) => {
     buffered,
     duration,
     stop,
+    currentTrack,
+    removeTrack,
   };
 };
 
