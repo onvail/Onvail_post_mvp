@@ -1,4 +1,10 @@
-import React, {FunctionComponent, useRef, useState} from 'react';
+import React, {
+  FunctionComponent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   Pressable,
   SafeAreaView,
@@ -37,12 +43,21 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [volume, setVolume] = useState<number>(0.5);
 
   const openBottomSheet = () => {
     bottomSheetRef.current?.open();
   };
 
   const {play, pause, isPlaying} = useMusicPlayer();
+
+  const volumeHandler = useCallback(async () => {
+    await VolumeManager.setVolume(volume);
+  }, [volume]);
+
+  useEffect(() => {
+    volumeHandler();
+  }, [volume, volumeHandler]);
 
   const renderItem: ListRenderItem<SongsProps> = ({item, index}) => {
     const {artist, title, duration, songUrl} = item;
@@ -90,6 +105,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
               minimumTrackTintColor="#FFFFFF"
               maximumTrackTintColor="#000000"
               thumbTintColor="#FFFF"
+              onValueChange={value => setVolume(value)}
             />
             <Icon icon={'volume-medium'} color="white" />
           </View>
