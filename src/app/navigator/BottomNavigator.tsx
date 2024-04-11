@@ -4,15 +4,16 @@ import {BottomTabParamList} from './types/BottomTabParamList';
 import Home from 'app/home/screens/Home';
 import Profile from 'app/profile/screen/Profile';
 import tw from 'src/lib/tailwind';
-import {Animated, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Animated, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {generalIcon} from 'components/Icons/generalIcons';
 import {SvgProps} from 'react-native-svg';
 import {Colors} from 'src/app/styles/colors';
 import MainNavigator from './MainNavigator';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useNavigationState} from '@react-navigation/native';
 import Modal from 'react-native-modal';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {MainStackParamList} from './types/MainStackParamList';
+import CustomText from '../components/Text/CustomText';
 
 const HomeSvg = generalIcon.Home;
 const ProfileSvg = generalIcon.Profile;
@@ -77,37 +78,35 @@ const CustomOnvailButton: FunctionComponent<NavigationProps> = ({
   const [showNavOptions, setShowNavOptions] = useState<boolean>(false);
   return (
     <View style={tw`relative  items-center `}>
-      {
-        <Modal
-          isVisible={showNavOptions}
-          backdropOpacity={0.87}
-          animationIn={'zoomIn'}
-          animationOut={'zoomOut'}
-          onBackdropPress={() => setShowNavOptions(false)}
-          style={tw`absolute items-center justify-center left-20 right-20 bottom-20`}>
-          <View style={tw`flex-1 self-center items-center justify-center`}>
-            {onvailBtnOptions.map((item, _) => {
-              const Icon = item.icon;
-              return (
-                <TouchableOpacity
-                  key={item.title}
-                  onPress={() => {
-                    navigation.navigate('MainAppNavigator', {
-                      screen: item.route,
-                    });
-                    setShowNavOptions(false);
-                  }}
-                  style={tw`bg-white flex-row items-center rounded-full justify-between px-3   py-2 mb-3 w-50`}>
-                  <Text style={tw`font-poppinsMedium text-base`}>
-                    {item.title}
-                  </Text>
-                  <Icon height={21} width={21} />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Modal>
-      }
+      <Modal
+        isVisible={showNavOptions}
+        backdropOpacity={0.87}
+        animationIn={'zoomIn'}
+        animationOut={'zoomOut'}
+        onBackdropPress={() => setShowNavOptions(false)}
+        style={tw`absolute items-center justify-center left-20 right-20 bottom-20`}>
+        <View style={tw`flex-1 self-center items-center justify-center`}>
+          {onvailBtnOptions.map((item, _) => {
+            const Icon = item.icon;
+            return (
+              <TouchableOpacity
+                key={item.title}
+                onPress={() => {
+                  navigation.navigate('MainAppNavigator', {
+                    screen: item.route,
+                  });
+                  setShowNavOptions(false);
+                }}
+                style={tw`bg-white flex-row items-center rounded-full justify-between px-3   py-2 mb-3 w-50`}>
+                <CustomText style={tw`text-primary text-base`}>
+                  {item.title}
+                </CustomText>
+                <Icon height={21} width={21} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Modal>
       <TouchableOpacity
         onPress={() => setShowNavOptions(prev => !prev)}
         style={tw`mb-4 justify-center items-center`}>
@@ -156,13 +155,19 @@ const BottomTabNavigator = () => {
   const renderCustomOnvailButton = () => {
     return <CustomOnvailButton navigation={navigation} />;
   };
+  // Indexes defines screen positions.
+  // Home = 0; Profile = 1; MainNavigator = 2
+  const screenIndex = useNavigationState(
+    state => state.routes[state.index]?.state?.index,
+  );
+
   return (
     <CurvedBottomBar.Navigator
       screenOptions={{
         headerShown: false,
       }}
       type="DOWN"
-      style={tw`bg-primary`}
+      style={tw`bg-primary ${screenIndex === 2 ? 'hidden' : 'flex'}`}
       shadowStyle={styles.shawdow}
       height={65}
       circleWidth={55}

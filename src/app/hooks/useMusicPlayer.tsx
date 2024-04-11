@@ -1,15 +1,14 @@
-import {useCallback, useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import TrackPlayer, {
-  AddTrack,
   State,
   Event,
   useTrackPlayerEvents,
   useProgress,
-  RepeatMode,
+  Track,
 } from 'react-native-track-player';
 
 interface Props {
-  track: AddTrack;
+  track: Track[];
 }
 
 // Subscribing to the following events inside MyComponent
@@ -19,22 +18,21 @@ const events: Event[] = [Event.PlaybackState, Event.PlaybackError];
 const useMusicPlayer = ({track}: Props) => {
   // Save and update the current player state
   const [playerState, setPlayerState] = useState<State>(State.None);
+  const [currentTrack, setCurrentTrack] = useState<Track | undefined>(
+    {} as Track,
+  );
 
-  // Add track to trackplayer and setRepeatmode to off
-  const addTrackToPlayer = useCallback(async () => {
-    await Promise.all([
-      TrackPlayer.add([track]),
-      TrackPlayer.setRepeatMode(RepeatMode.Off),
-    ]);
-  }, [track]);
+  // Fetch tracks from zustand store
+  // const track = useMusicStore((state: MusicStoreState) => state.tracks);
 
-  // Add track to TrackPlayer on mount of the screen
   useEffect(() => {
-    addTrackToPlayer();
-  }, [addTrackToPlayer]);
+    fetchCurrentTrack();
+  }, [playerState]);
 
   // Play the current track
-  const play = async () => await TrackPlayer.play();
+  const play = async () => {
+    await TrackPlayer.play();
+  };
 
   // Pause the current track
   const pause = () => TrackPlayer.pause();
@@ -71,6 +69,49 @@ const useMusicPlayer = ({track}: Props) => {
   // Stop track from playing
   const stop = async () => await TrackPlayer.stop();
 
+  // Set currently playing track
+  const fetchCurrentTrack = async () =>
+    await TrackPlayer.getActiveTrack().then(response => {
+      setCurrentTrack(response);
+    });
+
+  // Remove track from queue
+  const removeTrack = async () =>
+    await TrackPlayer.remove(0).then(async () => [
+      await TrackPlayer.removeUpcomingTracks(),
+    ]);
+
+  // Check if music player is playing
+  const isPlaying = playerState === State.Playing;
+
+  // Check if music player is paused
+  const isPaused = playerState === State.Paused;
+
+  // Check if music player is paused
+  const isStopped = playerState === State.None || playerState === State.Stopped;
+
+  const handlePauseAndPlayTrack = async () => {
+    if (!track) {
+      return;
+    } // Exit early if there is no track
+    const isCurrentTrack = currentTrack?.id === track[0]?.id;
+    // If it's the current track and it's playing, just pause it.
+    if (isCurrentTrack && isPlaying) {
+      pause();
+      return;
+    }
+    // If it's the current track and it's paused, resume playing.
+    if (isCurrentTrack && isPaused) {
+      play();
+      return;
+    }
+    // For cases where it's either stopped or a different track, reset and add the new/current track, then play.
+    // This includes the scenario where it's the current track but not playing or paused (e.g., it's loading).
+    await TrackPlayer.reset();
+    await TrackPlayer.add(track);
+    play();
+  };
+
   // Return all the control functions to be used by the component
   return {
     play,
@@ -85,6 +126,12 @@ const useMusicPlayer = ({track}: Props) => {
     buffered,
     duration,
     stop,
+    currentTrack,
+    removeTrack,
+    isPaused,
+    isPlaying,
+    isStopped,
+    handlePauseAndPlayTrack,
   };
 };
 

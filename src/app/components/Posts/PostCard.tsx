@@ -38,7 +38,10 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
  * @returns Functional component rendered as individual posts
  */
 
-const PostItem: FunctionComponent<{item: Post}> = memo(({item}) => {
+const PostItem: FunctionComponent<{
+  item: Post;
+  handleJoinPartyBtnPress: () => void;
+}> = memo(({item, handleJoinPartyBtnPress}) => {
   const HeartSvg = generalIcon.Heart;
   const CommentSvg = generalIcon.Comment;
   return (
@@ -82,7 +85,7 @@ const PostItem: FunctionComponent<{item: Post}> = memo(({item}) => {
             musicTitle={item?.musicTitle ?? ''}
           />
         ) : (
-          <JoinPartyButton handleJoinPartyBtnPress={() => {}} />
+          <JoinPartyButton handleJoinPartyBtnPress={handleJoinPartyBtnPress} />
         )}
       </RowContainer>
     </View>
@@ -94,8 +97,16 @@ const PostItem: FunctionComponent<{item: Post}> = memo(({item}) => {
  * @param handleJoinPartyBtnPress
  * @returns FlashList component that renders posts vertically.
  */
-const PostCard: FunctionComponent = () => {
-  const renderItem: ListRenderItem<Post> = ({item}) => <PostItem item={item} />;
+
+interface PostCardProps {
+  handleJoinPartyBtnPress: () => void;
+}
+const PostCard: FunctionComponent<PostCardProps> = ({
+  handleJoinPartyBtnPress,
+}) => {
+  const renderItem: ListRenderItem<Post> = ({item}) => (
+    <PostItem item={item} handleJoinPartyBtnPress={handleJoinPartyBtnPress} />
+  );
   return (
     <FlashList
       data={posts}

@@ -3,7 +3,8 @@ import React, {FunctionComponent} from 'react';
 import {MainStackParamList} from './types/MainStackParamList';
 import Notification from '../notifications/screens/Notification';
 import CreateNewPosts from 'app/posts/screens/CreateNewPosts';
-import PlanYourParty from '../party/screens/PlanYourParty';
+import PlanYourParty from 'app/party/screens/PlanYourParty';
+import PartyScreen from 'app/party/screens/PartyScreen';
 
 const Stack = createStackNavigator<MainStackParamList>();
 
@@ -24,6 +25,10 @@ const screens: ScreenDef[] = [
   {
     name: 'PlanYourParty',
     screen: PlanYourParty,
+  },
+  {
+    name: 'PartyScreen',
+    screen: PartyScreen,
   },
 ];
 

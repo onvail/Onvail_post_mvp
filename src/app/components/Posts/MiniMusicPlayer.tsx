@@ -1,4 +1,4 @@
-import React, {FunctionComponent} from 'react';
+import React, {FunctionComponent, useMemo} from 'react';
 import {TouchableOpacity, View} from 'react-native';
 
 import RowContainer from 'components/View/RowContainer';
@@ -21,20 +21,40 @@ const MiniMusicPlayer: FunctionComponent<Props> = ({
   uri,
   artiste,
 }) => {
-  const track = {
-    url: uri, // Load media from the network
-    title: musicTitle,
-    artist: artiste,
-    album: 'while(1<2)',
-    genre: 'Progressive House, Electro House',
-    date: '2014-05-20T07:00:00+00:00', // RFC 3339
-    artwork: 'http://example.com/cover.png', // Load artwork from the network
-    duration: 402, // Duration in seconds
-  };
-  const {play, pause, playerState, position, duration} = useMusicPlayer({
-    track,
+  // sample track
+  const track = useMemo(
+    () => [
+      {
+        url: uri,
+        title: musicTitle,
+        artist: artiste,
+        album: 'while(1<2)',
+        genre: 'Progressive House, Electro House',
+        date: '2014-05-20T07:00:00+00:00',
+        artwork: 'http://example.com/cover.png',
+        duration: 402,
+        id: 'new-id',
+      },
+    ],
+    [uri, musicTitle, artiste],
+  );
+
+  const {
+    playerState,
+    position,
+    duration,
+    currentTrack,
+    handlePauseAndPlayTrack,
+  } = useMusicPlayer({
+    track: track,
   });
   const progress = (position / duration) * 100;
+
+  const currentPlayerStateIcon = useMemo(() => {
+    return currentTrack?.id === track[0]?.id && playerState === State.Playing
+      ? 'pause-circle'
+      : 'play-circle';
+  }, [currentTrack, playerState, track]);
 
   return (
     <View>
@@ -48,23 +68,23 @@ const MiniMusicPlayer: FunctionComponent<Props> = ({
           </CustomText>
         </View>
         <View style={tw`relative w-10 items-center justify-center`}>
-          <AnimatedCircularProgress
-            size={35}
-            width={15}
-            fill={isNaN(progress) ? 0 : progress}
-            tintColor={Colors.purple}
-            backgroundColor={Colors.primary}
-          />
+          {currentTrack?.id === track[0]?.id && (
+            <AnimatedCircularProgress
+              size={35}
+              width={15}
+              fill={isNaN(progress) ? 0 : progress}
+              tintColor={Colors.purple}
+              backgroundColor={Colors.primary}
+            />
+          )}
           <View style={tw`absolute`}>
             <View style={tw`bg-primary rounded-full`}>
               <Icon
-                icon={
-                  playerState === State.Playing ? 'pause-circle' : 'play-circle'
-                }
+                icon={currentPlayerStateIcon}
                 color={Colors.white}
                 size={30}
                 iconProvider="MaterialIcon"
-                onPress={playerState === State.Playing ? pause : play}
+                onPress={handlePauseAndPlayTrack}
               />
             </View>
           </View>
