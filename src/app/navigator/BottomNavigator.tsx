@@ -4,7 +4,7 @@ import {BottomTabParamList} from './types/BottomTabParamList';
 import Home from 'app/home/screens/Home';
 import Profile from 'app/profile/screen/Profile';
 import tw from 'src/lib/tailwind';
-import {Animated, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Animated, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {generalIcon} from 'components/Icons/generalIcons';
 import {SvgProps} from 'react-native-svg';
 import {Colors} from 'src/app/styles/colors';
@@ -13,6 +13,7 @@ import {useNavigation, useNavigationState} from '@react-navigation/native';
 import Modal from 'react-native-modal';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {MainStackParamList} from './types/MainStackParamList';
+import CustomText from '../components/Text/CustomText';
 
 const HomeSvg = generalIcon.Home;
 const ProfileSvg = generalIcon.Profile;
@@ -97,9 +98,9 @@ const CustomOnvailButton: FunctionComponent<NavigationProps> = ({
                   setShowNavOptions(false);
                 }}
                 style={tw`bg-white flex-row items-center rounded-full justify-between px-3   py-2 mb-3 w-50`}>
-                <Text style={tw`font-poppinsMedium text-base`}>
+                <CustomText style={tw`text-primary text-base`}>
                   {item.title}
-                </Text>
+                </CustomText>
                 <Icon height={21} width={21} />
               </TouchableOpacity>
             );
