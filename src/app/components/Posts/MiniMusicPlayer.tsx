@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useEffect, useMemo} from 'react';
+import React, {FunctionComponent, useMemo} from 'react';
 import {TouchableOpacity, View} from 'react-native';
 
 import RowContainer from 'components/View/RowContainer';
@@ -9,7 +9,6 @@ import tw from 'src/lib/tailwind';
 import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {State} from 'react-native-track-player';
 import {AnimatedCircularProgress} from 'react-native-circular-progress';
-import {useMusicStore} from 'src/app/zustand/store';
 
 interface Props {
   musicTitle: string;
@@ -24,30 +23,38 @@ const MiniMusicPlayer: FunctionComponent<Props> = ({
 }) => {
   // sample track
   const track = useMemo(
-    () => ({
-      url: uri,
-      title: musicTitle,
-      artist: artiste,
-      album: 'while(1<2)',
-      genre: 'Progressive House, Electro House',
-      date: '2014-05-20T07:00:00+00:00',
-      artwork: 'http://example.com/cover.png',
-      duration: 402,
-      id: 'new-id',
-    }),
+    () => [
+      {
+        url: uri,
+        title: musicTitle,
+        artist: artiste,
+        album: 'while(1<2)',
+        genre: 'Progressive House, Electro House',
+        date: '2014-05-20T07:00:00+00:00',
+        artwork: 'http://example.com/cover.png',
+        duration: 402,
+        id: 'new-id',
+      },
+    ],
     [uri, musicTitle, artiste],
   );
 
-  // add tracks via zustand
-  const addTracks = useMusicStore(state => state.addTracks);
-
-  // add tracks on mount
-  useEffect(() => {
-    addTracks(track);
-  }, [addTracks, track]);
-
-  const {play, pause, playerState, position, duration} = useMusicPlayer();
+  const {
+    playerState,
+    position,
+    duration,
+    currentTrack,
+    handlePauseAndPlayTrack,
+  } = useMusicPlayer({
+    track: track,
+  });
   const progress = (position / duration) * 100;
+
+  const currentPlayerStateIcon = useMemo(() => {
+    return currentTrack?.id === track[0]?.id && playerState === State.Playing
+      ? 'pause-circle'
+      : 'play-circle';
+  }, [currentTrack, playerState, track]);
 
   return (
     <View>
@@ -61,23 +68,23 @@ const MiniMusicPlayer: FunctionComponent<Props> = ({
           </CustomText>
         </View>
         <View style={tw`relative w-10 items-center justify-center`}>
-          <AnimatedCircularProgress
-            size={35}
-            width={15}
-            fill={isNaN(progress) ? 0 : progress}
-            tintColor={Colors.purple}
-            backgroundColor={Colors.primary}
-          />
+          {currentTrack?.id === track[0]?.id && (
+            <AnimatedCircularProgress
+              size={35}
+              width={15}
+              fill={isNaN(progress) ? 0 : progress}
+              tintColor={Colors.purple}
+              backgroundColor={Colors.primary}
+            />
+          )}
           <View style={tw`absolute`}>
             <View style={tw`bg-primary rounded-full`}>
               <Icon
-                icon={
-                  playerState === State.Playing ? 'pause-circle' : 'play-circle'
-                }
+                icon={currentPlayerStateIcon}
                 color={Colors.white}
                 size={30}
                 iconProvider="MaterialIcon"
-                onPress={playerState === State.Playing ? pause : play}
+                onPress={handlePauseAndPlayTrack}
               />
             </View>
           </View>

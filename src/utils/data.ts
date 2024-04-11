@@ -41,7 +41,7 @@ export interface SongsProps {
   artist: string;
   duration: number;
   index?: number;
-  songUrl: string;
+  url: string;
 }
 
 export const sampleSongs: SongsProps[] = [
@@ -49,42 +49,36 @@ export const sampleSongs: SongsProps[] = [
     title: 'Heavy is the head',
     artist: 'Stormzy',
     duration: 170,
-    songUrl:
-      'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
+    url: 'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
   },
   {
     title: 'Who goes Der',
     artist: 'Dandizzy',
     duration: 140,
-    songUrl:
-      'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
+    url: 'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
   },
   {
     title: 'Let her go',
     artist: 'Passenger',
     duration: 200,
-    songUrl:
-      'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
+    url: 'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
   },
   {
     title: 'Everything',
     artist: 'Passenger',
     duration: 210,
-    songUrl:
-      'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
+    url: 'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
   },
   {
     title: 'Declan Rice',
     artist: 'OdumoduBlvck',
     duration: 190,
-    songUrl:
-      'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
+    url: 'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
   },
   {
     title: 'Last Last',
     artist: 'Burnaboy',
     duration: 150,
-    songUrl:
-      'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
+    url: 'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
   },
 ];

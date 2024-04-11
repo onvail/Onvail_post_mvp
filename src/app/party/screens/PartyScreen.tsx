@@ -2,6 +2,7 @@ import React, {
   FunctionComponent,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -30,6 +31,7 @@ import {SongsProps, sampleSongs} from 'src/utils/data';
 import MusicList from '../components/MusicList';
 import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {VolumeManager} from 'react-native-volume-manager';
+import {State, Track} from 'react-native-track-player';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -49,7 +51,28 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
     bottomSheetRef.current?.open();
   };
 
-  const {play, pause, isPlaying} = useMusicPlayer();
+  const allTracks = useMemo(() => {
+    let tracks: Track[] = [];
+    for (let i = 0; i < sampleSongs.length; i++) {
+      const track = {
+        url: sampleSongs[i]?.url,
+        title: sampleSongs[i]?.title,
+        artist: sampleSongs[i]?.artist,
+        album: 'while(1<2)',
+        genre: 'stormzy',
+        date: '2014-05-20T07:00:00+00:00',
+        artwork: 'http://example.com/cover.png',
+        duration: sampleSongs[i].duration,
+        id: i.toString(), // Ensure ID is a string if Track type expects it
+      };
+      tracks.push(track); // Correctly push each track into the tracks array
+    }
+    return tracks;
+  }, []);
+
+  const {handlePauseAndPlayTrack, currentTrack, playerState} = useMusicPlayer({
+    track: allTracks,
+  });
 
   const volumeHandler = useCallback(async () => {
     await VolumeManager.setVolume(volume);
@@ -60,17 +83,25 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
   }, [volume, volumeHandler]);
 
   const renderItem: ListRenderItem<SongsProps> = ({item, index}) => {
-    const {artist, title, duration, songUrl} = item;
+    const {artist, title, duration, url} = item;
     return (
       <MusicList
         duration={duration}
         title={title}
-        index={index + 1}
+        index={index}
         artist={artist}
-        songUrl={songUrl}
+        url={url}
+        currentTrackId={currentTrack?.id}
       />
     );
   };
+
+  const currentItem = useMemo(() => {
+    return currentTrack?.id === allTracks[0]?.id &&
+      playerState === State.Playing
+      ? true
+      : false;
+  }, [allTracks, currentTrack, playerState]);
 
   return (
     <LinearGradient style={tw`h-full p-4`} colors={['#0E0E0E', '#087352']}>
@@ -91,9 +122,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
           </View>
           <View style={tw`mt-6 w-[90%]  justify-center  items-center`}>
             <Pressable
-              onPress={() => (isPlaying ? pause() : play())}
+              onPress={handlePauseAndPlayTrack}
               style={tw`w-10 items-center `}>
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              {currentItem ? <PauseIcon /> : <PlayIcon />}
             </Pressable>
           </View>
           <View style={tw`flex-row w-[90%] mt-6 items-center`}>
