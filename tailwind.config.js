@@ -15,6 +15,7 @@ module.exports = {
         green: '#0E271C33',
         darkGreen: '#0B1E1A',
         red: '#CC1435',
+        orange: '#BF5330',
       },
       fontFamily: {
         poppinsBlack: ['Poppins-Black'],
