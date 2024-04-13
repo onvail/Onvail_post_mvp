@@ -33,7 +33,7 @@ const CustomTextInput: FunctionComponent<Props> = ({
   return (
     <View
       style={[
-        tw` rounded-md mb-6 justify-between flex-row items-center px-3`,
+        tw` rounded-md mb-3 justify-between flex-row items-center px-3`,
         {
           backgroundColor: backgroundColor,
           borderColor: borderColor,
