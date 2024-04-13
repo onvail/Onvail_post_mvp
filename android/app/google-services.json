@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "501656283700",
+    "project_id": "onvail-8cd57",
+    "storage_bucket": "onvail-8cd57.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501656283700:android:f4e15361e9646168cf7861",
+        "android_client_info": {
+          "package_name": "com.onvail"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVF5kc6CHbXhJrgUQ8Xv78Z0liMgAkCl0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
