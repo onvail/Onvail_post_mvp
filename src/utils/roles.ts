@@ -1,30 +1,37 @@
-export const roles = [
+import {UserType} from 'src/types/authType';
+
+type Roles = {
+  key: string;
+  value: UserType;
+};
+
+export const roles: Roles[] = [
   {
     key: 'Artiste',
-    value: 'artiste',
+    value: UserType.Artist,
   },
   {
     key: 'Producer',
-    value: 'producer',
+    value: UserType.Producer,
   },
   {
     key: 'A&R',
-    value: 'a&r',
+    value: UserType.AR,
   },
   {
     key: 'Manager',
-    value: 'manager',
+    value: UserType.Manager,
   },
   {
     key: 'Label Representative',
-    value: 'label representative',
+    value: UserType.Label_Representative,
   },
   {
     key: 'Music Content Creator',
-    value: 'cusic content creator',
+    value: UserType.Music_Content_Creator,
   },
   {
     key: 'Other',
-    value: 'other',
+    value: UserType.Other,
   },
 ];
