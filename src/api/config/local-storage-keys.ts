@@ -10,7 +10,6 @@ export default {
   useBiometrics: 'use-biometrics',
   pushNotificationEnabled: 'push-notification-enabled',
   pushNotificationLastPrompt: 'push-notification-last-prompt',
-  rememberMe: 'remember-me',
   loginDetails: 'login-details',
   deviceName: 'device-name',
   profileImage: 'profile-image',
