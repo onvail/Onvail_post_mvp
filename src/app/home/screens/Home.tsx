@@ -44,7 +44,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           <Status />
         </View>
         <View
-          style={tw`items-center flex-row w-2/3 p-2 self-center h-14 rounded-full justify-center my-6 bg-grey6`}>
+          style={tw`items-center flex-row w-2/3 p-2 self-center h-12 rounded-full justify-center my-6 bg-grey6`}>
           {tabs.map((item, _) => {
             const isActive = item === selectedTab;
             const background = isActive ? 'white' : 'transparent';
@@ -53,10 +53,10 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
               <AnimatedButton
                 onPress={() => handleTabSwitch(item)}
                 style={[
-                  tw`h-11 w-1/2 rounded-full bg-${background} justify-center items-center`,
+                  tw`h-10 w-1/2 rounded-full bg-${background} justify-center items-center`,
                 ]}
                 key={item}>
-                <CustomText style={tw`text-${text} text-lg font-medium`}>
+                <CustomText style={tw`text-${text} text-base font-medium`}>
                   {item}
                 </CustomText>
               </AnimatedButton>
