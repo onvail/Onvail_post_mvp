@@ -44,7 +44,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           <Status />
         </View>
         <View
-          style={tw`items-center flex-row w-2/3 p-2 self-center h-12 rounded-full justify-center my-2 bg-grey6`}>
+          style={tw`items-center flex-row w-2/3 p-2 self-center h-12 rounded-full justify-center my-8 bg-grey6`}>
           {tabs.map((item, _) => {
             const isActive = item === selectedTab;
             const background = isActive ? 'white' : 'transparent';
