@@ -43,7 +43,7 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
       });
       AsyncStorage.multiSet([
         [localStorageKeys.accessToken, response?.data?.accessToken],
-        [localStorageKeys.userInfo, response?.data],
+        [localStorageKeys.userInfo, JSON.stringify(response?.data)],
       ]);
       navigation.navigate('BottomTabNavigator', {
         screen: 'Home',
