@@ -25,7 +25,9 @@ const SwitchSelector: FunctionComponent<Props> = ({
         <RowContainer>
           <CustomText>{description}</CustomText>
           {optional && (
-            <CustomText style={tw`ml-3 text-grey2`}>(optional)</CustomText>
+            <CustomText style={tw`ml-3 text-grey7 text-xs`}>
+              (optional)
+            </CustomText>
           )}
         </RowContainer>
         <Switch
