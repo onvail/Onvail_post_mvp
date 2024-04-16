@@ -8,12 +8,16 @@ import LinearGradient from 'react-native-linear-gradient';
 
 interface Props {
   showTimePicker: boolean;
-  onChangeTime: (time: string) => void;
+  onChangeTime: (timeObj: {
+    hours: number;
+    minutes: number;
+    seconds: number;
+  }) => void;
   handleVisibility: () => void;
   onCancel: () => void;
 }
 
-const CustomDatePicker: React.FC<Props> = ({
+const CustomDateTimePicker: React.FC<Props> = ({
   showTimePicker,
   onChangeTime,
   handleVisibility,
@@ -27,7 +31,7 @@ const CustomDatePicker: React.FC<Props> = ({
           visible={showTimePicker}
           setIsVisible={handleVisibility}
           onConfirm={pickedDuration => {
-            console.log(pickedDuration);
+            onChangeTime(pickedDuration);
           }}
           hourLabel=":"
           minuteLabel=":"
@@ -46,4 +50,4 @@ const CustomDatePicker: React.FC<Props> = ({
   );
 };
 
-export default CustomDatePicker;
+export default CustomDateTimePicker;
