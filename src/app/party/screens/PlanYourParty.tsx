@@ -17,6 +17,7 @@ import useDocumentPicker from 'src/app/hooks/useDocumentPicker';
 import {DocumentPickerResponse} from 'react-native-document-picker';
 import {truncateText} from 'src/utils/utilities';
 import ErrorText from 'src/app/components/Text/ErrorText';
+import VotingPoll from '../components/VotingPoll';
 
 const PlanYourParty: FunctionComponent = () => {
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
@@ -221,13 +222,8 @@ const PlanYourParty: FunctionComponent = () => {
             name="date"
           />
         </View>
-        <View style={tw`mt-3`}>
-          <SwitchSelector
-            description="Add voting poll"
-            optional
-            onValueChange={state => console.log(state)}
-          />
-        </View>
+
+        <VotingPoll />
         <View style={tw`mt-4`}>
           <Controller
             control={control}
