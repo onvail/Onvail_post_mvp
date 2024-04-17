@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@backpackapp-io/react-native-toast": "^0.10.0",
     "@candlefinance/faster-image": "^1.4.3",
     "@fortawesome/fontawesome-svg-core": "^6.5.1",
     "@fortawesome/free-brands-svg-icons": "^6.5.1",
