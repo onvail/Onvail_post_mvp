@@ -1,12 +1,5 @@
 import React, {FunctionComponent, useState} from 'react';
-import {
-  Pressable,
-  View,
-  TouchableOpacity,
-  KeyboardAvoidingView as RNKeyboardAvoidingView,
-  KeyboardAvoidingViewProps as RNKeyboardAvoidingViewProps,
-  Platform,
-} from 'react-native';
+import {Pressable, View, TouchableOpacity} from 'react-native';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
 import CustomText from 'src/app/components/Text/CustomText';
@@ -26,19 +19,6 @@ import {truncateText} from 'src/utils/utilities';
 import ErrorText from 'src/app/components/Text/ErrorText';
 import VotingPoll from '../components/VotingPoll';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
-
-const BEHAVIOR = Platform.OS === 'ios' ? 'padding' : undefined;
-
-const KeyboardAvoidingView = ({
-  style,
-  ...props
-}: RNKeyboardAvoidingViewProps) => (
-  <RNKeyboardAvoidingView
-    style={[tw`flex-1`, style]}
-    behavior={BEHAVIOR}
-    {...props}
-  />
-);
 
 const PlanYourParty: FunctionComponent = () => {
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
@@ -160,7 +140,6 @@ const PlanYourParty: FunctionComponent = () => {
                 <Pressable
                   onPress={async () => {
                     const image = await handleSelectPhoto('openPicker');
-                    console.log(image);
                     onChange(image);
                   }}
                   style={tw`border border-grey2 h-50  items-center justify-center rounded-md`}>
