@@ -9,7 +9,7 @@ import tw from 'src/lib/tailwind';
 import FormSelector from '../components/FormSelector';
 import SwitchSelector from '../components/SwitchSelector';
 import CustomCalendar from 'src/app/components/Calendar/CustomCalendar';
-import {Party} from 'src/types/partyTypes';
+import {Party, PartyError} from 'src/types/partyTypes';
 import {useForm, Controller} from 'react-hook-form';
 import useImageService from 'src/app/hooks/useImageService';
 import CustomImage from 'src/app/components/Image/CustomImage';
@@ -18,7 +18,9 @@ import {DocumentPickerResponse} from 'react-native-document-picker';
 import {truncateText} from 'src/utils/utilities';
 import ErrorText from 'src/app/components/Text/ErrorText';
 import VotingPoll from '../components/VotingPoll';
+import {toast, Toasts, ToastPosition} from '@backpackapp-io/react-native-toast';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
+import api from 'src/api/api';
 
 const PlanYourParty: FunctionComponent = () => {
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
@@ -40,18 +42,50 @@ const PlanYourParty: FunctionComponent = () => {
     date: '',
     guests: [],
     visibility: 'public',
+    pollOptions: [],
+    pollQuestion: '',
   };
 
   const {
     control,
     handleSubmit,
     formState: {errors},
+    setValue,
   } = useForm({
     defaultValues: defaultValues,
     mode: 'all',
   });
   const onSubmit = async (data: Party) => {
-    console.log('data', data);
+    try {
+      const response = await api.post({
+        url: '/parties/create-party',
+        data,
+        requiresToken: true,
+        authorization: true,
+      });
+      toast('Party created! 🎉 🎊', {
+        duration: 4000,
+        position: ToastPosition.TOP,
+        styles: {
+          view: tw``,
+          pressable: tw`-top-20 justify-center items-center bg-purple4`,
+          text: tw`text-white font-poppinsBold`,
+        },
+      });
+      console.log(response);
+    } catch (error: unknown) {
+      const createPartyError = error as PartyError;
+      console.log(createPartyError.response?.data);
+      toast("Oops! Party didn't create🚨", {
+        duration: 4000,
+        position: ToastPosition.TOP,
+        styles: {
+          view: tw``,
+          pressable: tw`-top-20 justify-center items-center bg-orange`,
+          text: tw`text-white font-poppinsBold`,
+        },
+      });
+    }
   };
 
   const {selectDocument} = useDocumentPicker();
@@ -140,7 +174,7 @@ const PlanYourParty: FunctionComponent = () => {
                 <Pressable
                   onPress={async () => {
                     const image = await handleSelectPhoto('openPicker');
-                    onChange(image);
+                    onChange(image?.file?.uri);
                   }}
                   style={tw`border border-grey2 h-50  items-center justify-center rounded-md`}>
                   {selectedImage ? (
@@ -173,14 +207,12 @@ const PlanYourParty: FunctionComponent = () => {
                     description="Add music file"
                     instruction="(max 500mb)"
                     icon="library-music"
-                    onPress={() => {
-                      const data = handleSelectMusicFile();
-                      const items = data.then(res =>
-                        res?.map(item => ({
-                          name: item.name,
-                          file_url: item.uri,
-                        })),
-                      );
+                    onPress={async () => {
+                      const data = await handleSelectMusicFile();
+                      const items = data?.map(item => ({
+                        name: item.name,
+                        file_url: item.uri,
+                      }));
                       onChange(items);
                     }}
                   />
@@ -220,7 +252,11 @@ const PlanYourParty: FunctionComponent = () => {
             />
           </View>
 
-          <VotingPoll />
+          <VotingPoll
+            handlePollOptions={data => setValue('pollOptions', data)}
+            handlePollQuestions={data => setValue('pollQuestion', data)}
+          />
+
           <View style={tw`mt-4`}>
             <Controller
               control={control}
@@ -262,6 +298,7 @@ const PlanYourParty: FunctionComponent = () => {
           />
         </View>
       </KeyboardAwareScrollView>
+      <Toasts />
     </ScreenContainer>
   );
 };
