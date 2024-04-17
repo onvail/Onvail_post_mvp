@@ -113,6 +113,7 @@ const VotingPoll: FunctionComponent = () => {
             onDragEnd={({data}) => setPollData(data)}
             keyExtractor={item => item.key.toString()}
             renderItem={renderItem}
+            scrollEnabled={false}
           />
           <TouchableOpacity
             onPress={() =>
