@@ -3,6 +3,10 @@ type Songs = {
   file_url: string;
 };
 
+export type PollType = {
+  option: string;
+};
+
 export type Party = {
   partyName: string;
   partyDesc: string;
@@ -11,4 +15,16 @@ export type Party = {
   date: string;
   visibility: 'public' | 'private';
   guests: [];
+  pollQuestion: string;
+  pollOptions: PollType[];
+};
+
+export type PartyError = {
+  response?: {
+    data?: {
+      message?: string;
+      statusCode?: number;
+    };
+  };
+  code?: string;
 };
