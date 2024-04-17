@@ -63,7 +63,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
             );
           })}
         </View>
-        <View style={tw`flex-1`}>
+        <View style={tw`flex-1 mb-12`}>
           <PostCard
             handleJoinPartyBtnPress={() =>
               navigation.navigate('MainAppNavigator', {screen: 'PartyScreen'})
