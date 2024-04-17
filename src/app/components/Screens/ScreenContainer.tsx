@@ -1,5 +1,5 @@
 import React, {FunctionComponent} from 'react';
-import {SafeAreaView, View} from 'react-native';
+import {Platform, SafeAreaView, StatusBar, View} from 'react-native';
 import tw from 'lib/tailwind';
 import Icon from 'components/Icons/Icon';
 import RowContainer from 'components/View/RowContainer';
@@ -18,8 +18,11 @@ const ScreenContainer: FunctionComponent<Props> = ({
   screenHeader,
 }: Props) => {
   const navigation = useNavigation();
+  const marginForAndroid = Platform.OS === 'android' ? 10 : 0;
   return (
-    <SafeAreaView style={tw`bg-primary flex-1 `}>
+    <View style={tw`bg-primary flex-1 pt-${marginForAndroid}`}>
+      <SafeAreaView />
+      <StatusBar barStyle={'light-content'} translucent={true} />
       <RowContainer style={tw`mx-3 justify-between mt-3`}>
         {goBack ? (
           <Icon
@@ -35,7 +38,7 @@ const ScreenContainer: FunctionComponent<Props> = ({
         {screenHeader && goBack && <View />}
       </RowContainer>
       <View style={tw`bg-primary flex-1`}>{children}</View>
-    </SafeAreaView>
+    </View>
   );
 };
 

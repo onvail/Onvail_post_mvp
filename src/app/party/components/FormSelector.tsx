@@ -11,6 +11,7 @@ interface Props {
   instruction: string;
   icon: string;
   onPress: () => void;
+  value?: string;
 }
 
 const FormSelector: FunctionComponent<Props> = ({
@@ -18,7 +19,9 @@ const FormSelector: FunctionComponent<Props> = ({
   instruction,
   icon,
   onPress,
+  value,
 }) => {
+  description = value && value?.length > 0 ? value : description;
   return (
     <Pressable
       onPress={onPress}

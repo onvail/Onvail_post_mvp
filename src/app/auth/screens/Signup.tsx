@@ -1,5 +1,6 @@
-import React, {FunctionComponent, useState} from 'react';
+import React, {FunctionComponent, useEffect, useState} from 'react';
 import {View} from 'react-native';
+import {useForm, Controller} from 'react-hook-form';
 import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
 import CustomTextInput from 'app/components/TextInput/CustomTextInput';
@@ -9,12 +10,80 @@ import {roles} from 'src/utils/roles';
 import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
+import {AuthError, SignInProps, UserType} from 'src/types/authType';
+import ErrorText from 'src/app/components/Text/ErrorText';
+import api from 'src/api/api';
+import messaging from '@react-native-firebase/messaging';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import localStorageKeys from 'src/api/config/local-storage-keys';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 const Signup: FunctionComponent<Props> = ({navigation}) => {
   const BackgroundGradientSvg = generalIcon.BackgroundGradient;
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
+  const [apnToken, setApnToken] = useState<string>('');
+  const [signUpError, setSignUpError] = useState<string | undefined>(undefined);
+
+  const defaultValues: SignInProps = {
+    name: '',
+    email: '',
+    password: '',
+    userType: '' as UserType,
+  };
+
+  const {
+    control,
+    handleSubmit,
+    formState: {errors},
+  } = useForm({
+    defaultValues: defaultValues,
+    mode: 'all',
+  });
+  const onSubmit = async (data: SignInProps) => {
+    setSignUpError(undefined);
+    const formData = {
+      ...data,
+      FCMToken: apnToken,
+    };
+    try {
+      const response = await api.post({
+        url: 'users/register',
+        data: formData,
+      });
+      AsyncStorage.multiSet([
+        [localStorageKeys.accessToken, response?.data?.accessToken],
+        [localStorageKeys.userInfo, JSON.stringify(response?.data)],
+      ]);
+      navigation.navigate('BottomTabNavigator', {
+        screen: 'Home',
+      });
+    } catch (err: unknown) {
+      const error = err as AuthError;
+      console.log(error.response?.data);
+      setSignUpError(error?.response?.data?.message);
+    }
+  };
+
+  useEffect(() => {
+    requestUserPermission();
+  }, []);
+
+  const requestUserPermission = async () => {
+    try {
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      if (enabled) {
+        const push_notification_token = await messaging().getToken();
+        setApnToken(push_notification_token);
+      }
+    } catch (error) {
+      console.log('error', error);
+    }
+  };
+
   return (
     <View style={tw`relative pt-13`}>
       <BackgroundGradientSvg style={tw`absolute h-full w-full -z-10`} />
@@ -27,26 +96,101 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
           </CustomText>
         </View>
         <View style={tw`mt-12`}>
-          <CustomTextInput placeholder="stage name" />
-          <CustomTextInput placeholder="Email" />
-          <CustomTextInput
-            placeholder="Password"
-            secureTextEntry={isPasswordVisible}
-            inputType="Password"
-            passwordVisibility={isPasswordVisible}
-            handlePasswordVisibility={() => setIsPasswordVisible(prev => !prev)}
-          />
-          <CustomDropDown
-            data={roles}
-            onChange={item => console.log(item.key)}
-            labelField={'key'}
-            valueField={'value'}
-            maxHeight={250}
-          />
+          <View>
+            <ErrorText>{errors?.name?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'name is required',
+                maxLength: 30,
+              }}
+              render={({field: {onChange, onBlur, value}}) => (
+                <CustomTextInput
+                  placeholder="stage name"
+                  onChangeText={onChange}
+                  value={value}
+                  onBlur={onBlur}
+                />
+              )}
+              name="name"
+            />
+          </View>
+          <View>
+            <ErrorText>{errors?.email?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'email is required',
+                pattern: {
+                  value: /^[+a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/,
+                  message: 'Invalid email address',
+                },
+              }}
+              render={({field: {onChange, onBlur, value}}) => (
+                <CustomTextInput
+                  placeholder="email"
+                  onChangeText={onChange}
+                  value={value}
+                  onBlur={onBlur}
+                />
+              )}
+              name="email"
+            />
+          </View>
+          <View>
+            <ErrorText>{errors?.password?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'password is required',
+                minLength: 5,
+              }}
+              render={({field: {onChange, onBlur, value}}) => (
+                <CustomTextInput
+                  placeholder="password"
+                  onChangeText={onChange}
+                  value={value}
+                  onBlur={onBlur}
+                  secureTextEntry={isPasswordVisible}
+                  inputType="Password"
+                  passwordVisibility={isPasswordVisible}
+                  handlePasswordVisibility={() =>
+                    setIsPasswordVisible(prev => !prev)
+                  }
+                />
+              )}
+              name="password"
+            />
+          </View>
+          <View>
+            <ErrorText>{errors?.userType?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'select a user type',
+              }}
+              render={({field: {onChange, onBlur, value}}) => (
+                <CustomDropDown
+                  data={roles}
+                  onChange={item => onChange(item.value)}
+                  labelField={'key'}
+                  valueField={'value'}
+                  maxHeight={250}
+                  value={value}
+                  onBlur={onBlur}
+                  placeholder="Select user type"
+                />
+              )}
+              name="userType"
+            />
+          </View>
+          <View style={tw`items-center justify-center mt-3`}>
+            {signUpError && <ErrorText>{signUpError}</ErrorText>}
+          </View>
         </View>
-        <View style={tw`mt-20`}>
-          <ProceedBtn title="Submit" onPress={() => {}} />
-          <CustomText style={tw`mt-20 text-center`}>
+        <View style={tw`mt-16`}>
+          <ProceedBtn title="Submit" onPress={handleSubmit(onSubmit)} />
+          <CustomText style={tw`mt-16 text-center`}>
             Already have an account?{' '}
             <CustomText
               style={tw`text-purple`}

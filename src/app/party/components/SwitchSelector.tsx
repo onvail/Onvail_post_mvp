@@ -8,10 +8,15 @@ import {Switch} from 'react-native-paper';
 interface Props {
   description: string;
   optional?: boolean;
+  onValueChange: (state: boolean) => void;
 }
 
-const SwitchSelector: FunctionComponent<Props> = ({description, optional}) => {
-  const [checked, setChecked] = useState(false);
+const SwitchSelector: FunctionComponent<Props> = ({
+  description,
+  optional,
+  onValueChange,
+}) => {
+  const [checked, setChecked] = useState(true);
 
   return (
     <Pressable
@@ -20,12 +25,17 @@ const SwitchSelector: FunctionComponent<Props> = ({description, optional}) => {
         <RowContainer>
           <CustomText>{description}</CustomText>
           {optional && (
-            <CustomText style={tw`ml-3 text-grey2`}>(optional)</CustomText>
+            <CustomText style={tw`ml-3 text-grey7 text-xs`}>
+              (optional)
+            </CustomText>
           )}
         </RowContainer>
         <Switch
           value={checked}
-          onValueChange={setChecked}
+          onValueChange={value => {
+            setChecked(prev => !prev);
+            onValueChange(value);
+          }}
           thumbColor={'white'}
         />
       </RowContainer>
