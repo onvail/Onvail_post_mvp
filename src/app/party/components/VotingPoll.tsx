@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useState} from 'react';
+import React, {FunctionComponent, useEffect, useState} from 'react';
 import {
   Pressable,
   TextInput,
@@ -23,7 +23,15 @@ type PollData = {
   option: string;
 };
 
-const VotingPoll: FunctionComponent = () => {
+type Props = {
+  handlePollOptions: (data: {option: string}[]) => void;
+  handlePollQuestions: (pollQuestions: string) => void;
+};
+
+const VotingPoll: FunctionComponent<Props> = ({
+  handlePollOptions,
+  handlePollQuestions,
+}) => {
   const [checked, setChecked] = useState<boolean>(true);
 
   const initialPollData: PollData[] = [...Array(2)].map((d, index) => {
@@ -34,6 +42,15 @@ const VotingPoll: FunctionComponent = () => {
   });
 
   const [pollData, setPollData] = useState<PollData[]>(initialPollData);
+  const [pollQuestion, setPollQuestion] = useState<string>('');
+
+  useEffect(() => {
+    handlePollOptions(pollData.map(item => ({option: item.option})));
+  }, [pollData, handlePollOptions, pollQuestion]);
+
+  useEffect(() => {
+    handlePollQuestions(pollQuestion);
+  }, [handlePollQuestions, pollQuestion]);
 
   // Remove textInput for poll options
   const removePollItem = (key: number) => {
@@ -107,6 +124,7 @@ const VotingPoll: FunctionComponent = () => {
             style={tw`text-white font-poppinsRegular`}
             backgroundColor="transparent"
             containerStyle={tw`border border-dashed border-grey7`}
+            onChangeText={text => setPollQuestion(text)}
           />
           <DraggableFlatList
             data={pollData}
