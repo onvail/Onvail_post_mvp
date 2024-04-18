@@ -1,4 +1,4 @@
-import React, {FunctionComponent, memo} from 'react';
+import React, {FunctionComponent} from 'react';
 import {TouchableOpacity, View} from 'react-native';
 import {Post, posts} from 'src/utils/posts';
 import UserHeader from './UserHeader';
@@ -9,6 +9,7 @@ import {FlashList, ListRenderItem} from '@shopify/flash-list';
 import {generalIcon} from 'components/Icons/generalIcons';
 import RowContainer from 'components/View/RowContainer';
 import MiniMusicPlayer from './MiniMusicPlayer';
+import {PartiesResponse} from 'src/types/partyTypes';
 
 interface JoinPartyProps {
   handleJoinPartyBtnPress: () => void;
@@ -39,46 +40,42 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
  */
 
 const PostItem: FunctionComponent<{
-  item: Post;
+  item: PartiesResponse;
   handleJoinPartyBtnPress: () => void;
-}> = memo(({item, handleJoinPartyBtnPress}) => {
+}> = ({item, handleJoinPartyBtnPress}) => {
   const HeartSvg = generalIcon.Heart;
   const CommentSvg = generalIcon.Comment;
+
   return (
-    <View key={item.key} style={tw`mb-4 border-b-[0.2px] border-grey2 pb-7`}>
-      {item?.userName && item?.profileImage && (
-        <UserHeader
-          name={item.userName}
-          uri={item.profileImage}
-          handleFollowBtnPress={() => {}}
-        />
-      )}
-      {item?.postImage && (
-        <CustomImage
-          uri={item.postImage}
-          style={tw`h-100 w-100 mt-4`}
-          resizeMode="cover"
-        />
-      )}
-      {item?.postText && (
-        <CustomText style={tw`mt-2 mx-2 text-xs`}>{item.postText}</CustomText>
-      )}
+    <View style={tw`mb-4 border-b-[0.2px] border-grey2 pb-7`}>
+      <UserHeader
+        name={item?.artist?.name}
+        uri={item?.artist?.profile?.image}
+        handleFollowBtnPress={() => {}}
+      />
+      <CustomImage
+        uri={item?.albumPicture ?? ''}
+        style={tw`h-100 w-100 mt-4`}
+        resizeMode="cover"
+      />
+      <CustomText style={tw`mt-2 mx-2 text-xs`}>{item?.partyDesc}</CustomText>
+
       <RowContainer style={tw`mx-5 mt-4 justify-between`}>
         <RowContainer>
           <RowContainer style={tw`mr-5`}>
             <HeartSvg />
             <CustomText style={tw`ml-2 text-grey2`}>
-              {item.likeCount ?? 0}
+              {item?.likes?.length ?? 0}
             </CustomText>
           </RowContainer>
           <RowContainer>
             <CommentSvg />
             <CustomText style={tw`ml-2 text-grey2`}>
-              {item.likeCount ?? 0}
+              {item?.likes?.length ?? 0}
             </CustomText>
           </RowContainer>
         </RowContainer>
-        {item.postType === 'Music' ? (
+        {/* {item.postType === 'Music' ? (
           <MiniMusicPlayer
             uri={item?.musicUrl ?? ''}
             artiste={item?.artist ?? ''}
@@ -86,11 +83,11 @@ const PostItem: FunctionComponent<{
           />
         ) : (
           <JoinPartyButton handleJoinPartyBtnPress={handleJoinPartyBtnPress} />
-        )}
+        )} */}
       </RowContainer>
     </View>
   );
-});
+};
 
 /**
  * Post Card
@@ -100,18 +97,21 @@ const PostItem: FunctionComponent<{
 
 interface PostCardProps {
   handleJoinPartyBtnPress: () => void;
+  data: PartiesResponse[];
 }
 const PostCard: FunctionComponent<PostCardProps> = ({
   handleJoinPartyBtnPress,
+  data,
 }) => {
-  const renderItem: ListRenderItem<Post> = ({item}) => (
+  const renderItem: ListRenderItem<PartiesResponse> = ({item}) => (
     <PostItem item={item} handleJoinPartyBtnPress={handleJoinPartyBtnPress} />
   );
+
   return (
     <FlashList
-      data={posts}
+      data={data}
       renderItem={renderItem}
-      estimatedItemSize={10}
+      estimatedItemSize={15}
       showsHorizontalScrollIndicator={false}
     />
   );
