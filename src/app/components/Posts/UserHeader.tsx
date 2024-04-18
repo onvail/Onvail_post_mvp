@@ -6,8 +6,8 @@ import CustomText from 'components/Text/CustomText';
 import RowContainer from '../View/RowContainer';
 
 interface User {
-  name: string;
-  uri: string;
+  name?: string;
+  uri?: string;
   handleFollowBtnPress: () => void;
 }
 
@@ -19,12 +19,14 @@ const UserHeader: FunctionComponent<User> = ({
   return (
     <RowContainer style={tw`px-4 justify-between`}>
       <RowContainer>
-        <CustomImage
-          uri={uri}
-          style={tw`h-9 w-9 rounded-full`}
-          resizeMode="cover"
-        />
-        <CustomText style={tw`ml-3 text-[13px]`}>{name}</CustomText>
+        {uri && (
+          <CustomImage
+            uri={uri}
+            style={tw`h-9 w-9 rounded-full`}
+            resizeMode="cover"
+          />
+        )}
+        {name && <CustomText style={tw`ml-3 text-[13px]`}>{name}</CustomText>}
       </RowContainer>
       <TouchableOpacity
         onPress={() => handleFollowBtnPress()}
