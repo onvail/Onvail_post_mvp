@@ -1,6 +1,5 @@
 import React, {FunctionComponent, useEffect, useState} from 'react';
 import {Pressable, TouchableOpacity, View} from 'react-native';
-import {Post, posts} from 'src/utils/posts';
 import UserHeader from './UserHeader';
 import CustomImage from 'components/Image/CustomImage';
 import tw from 'src/lib/tailwind';
@@ -54,7 +53,7 @@ const PostItem: FunctionComponent<{
 
   const [like, setLike] = useState<boolean>(false);
 
-  const mutation = useMutation({
+  const handleFollowMutation = useMutation({
     mutationFn: () => {
       if (isFollowing) {
         return api.post({
@@ -74,20 +73,33 @@ const PostItem: FunctionComponent<{
         });
       }
     },
-    onSuccess: data => {
+    onSuccess: () => {
+      queryClient.refetchQueries({queryKey: ['parties']});
+    },
+  });
+
+  const handleLikeMutation = useMutation({
+    mutationFn: () => {
+      return api.post({
+        url: `/parties/like-party/${item?._id}`,
+        authorization: true,
+      });
+    },
+    onSuccess: () => {
       queryClient.refetchQueries({queryKey: ['parties']});
     },
   });
 
   const canFollowUser = item?.artist?._id !== userId;
   const isFollowing = item?.artist?.followers?.includes(userId);
+  const isLiked = item?.likes?.some(likes => likes?._id === userId);
 
   return (
     <View style={tw`mb-4 border-b-[0.2px] border-grey2 pb-7`}>
       <UserHeader
         name={item?.artist?.name}
         uri={item?.artist?.profile?.image}
-        handleFollowBtnPress={() => mutation.mutate()}
+        handleFollowBtnPress={() => handleFollowMutation.mutate()}
         canFollow={canFollowUser}
         isFollowing={isFollowing}
       />
@@ -101,10 +113,12 @@ const PostItem: FunctionComponent<{
       <RowContainer style={tw`mx-5 mt-4 justify-between`}>
         <RowContainer>
           <RowContainer style={tw`mr-5`}>
-            <Pressable>
-              <Icon icon={'heart'} color="transparent" />
-            </Pressable>
-            <HeartSvg />
+            <Icon
+              icon={isLiked ? 'heart' : 'heart-outline'}
+              color={isLiked ? 'red' : 'white'}
+              onPress={() => handleLikeMutation.mutate()}
+              size={20}
+            />
             <CustomText style={tw`ml-2 text-grey2`}>
               {item?.likes?.length ?? 0}
             </CustomText>
