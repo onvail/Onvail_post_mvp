@@ -5,6 +5,7 @@ import Notification from '../notifications/screens/Notification';
 import CreateNewPosts from 'app/posts/screens/CreateNewPosts';
 import PlanYourParty from 'app/party/screens/PlanYourParty';
 import PartyScreen from 'app/party/screens/PartyScreen';
+import BottomNavigator from './BottomNavigator';
 
 const Stack = createStackNavigator<MainStackParamList>();
 
@@ -29,6 +30,10 @@ const screens: ScreenDef[] = [
   {
     name: 'PartyScreen',
     screen: PartyScreen,
+  },
+  {
+    name: 'BottomNavigator',
+    screen: BottomNavigator,
   },
 ];
 
