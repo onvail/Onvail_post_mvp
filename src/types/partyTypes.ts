@@ -28,3 +28,30 @@ export type PartyError = {
   };
   code?: string;
 };
+
+export type PartiesResponse = {
+  __v: number;
+  _id: string;
+  albumPicture: string;
+  artist: {
+    FCMToken: string;
+    __v: number;
+    _id: string;
+    email: string;
+    followers: string[];
+    following: string[];
+    name: string;
+    userType: string;
+    profile?: any;
+  };
+  comments: any[]; // Define further if the structure of comments is known
+  date: string;
+  endParty: boolean;
+  guests: string[];
+  likes: any[]; // Define further if the structure of likes is known
+  partyDesc: string;
+  partyName: string;
+  pollOptions: PollType[];
+  songs: any[]; // Define further if the structure of songs is known
+  visibility: string;
+};
