@@ -1,5 +1,5 @@
-import React, {FunctionComponent, useState} from 'react';
-import {TouchableOpacity, View} from 'react-native';
+import React, {FunctionComponent, useEffect, useState} from 'react';
+import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import PostCard from 'src/app/components/Posts/PostCard';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
@@ -10,6 +10,8 @@ import tw from 'src/lib/tailwind';
 import CustomText from 'src/app/components/Text/CustomText';
 import Animated from 'react-native-reanimated';
 import {BottomTabParamList} from 'src/app/navigator/types/BottomTabParamList';
+import api from 'src/api/api';
+import {PartiesResponse} from 'src/types/partyTypes';
 
 type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 
@@ -19,12 +21,32 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
   type Tabs = 'Parties' | 'Feeds';
   const tabs: Tabs[] = ['Parties', 'Feeds'];
   const [selectedTab, setSelectedTab] = useState<Tabs>('Parties');
+  const [parties, setParties] = useState<PartiesResponse[]>([]);
+  const [isLoadingParties, setIsLoadingParties] = useState<boolean>(false);
 
   const handleTabSwitch = (item: Tabs) => {
     setSelectedTab(item);
   };
 
   const AnimatedButton = Animated.createAnimatedComponent(TouchableOpacity);
+
+  const fetchParties = async () => {
+    setIsLoadingParties(true);
+    try {
+      const res = await api.get({
+        url: 'parties',
+        authorization: true,
+      });
+      setParties(res.data.parties);
+    } catch (error) {
+      console.log(error);
+    }
+    setIsLoadingParties(false);
+  };
+
+  useEffect(() => {
+    fetchParties();
+  }, []);
 
   return (
     <ScreenContainer>
@@ -64,10 +86,16 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           })}
         </View>
         <View style={tw`flex-1 mb-12`}>
+          {isLoadingParties ? (
+            <View style={tw`flex-1 justify-center items-center`}>
+              <ActivityIndicator size={30} />
+            </View>
+          ) : null}
           <PostCard
             handleJoinPartyBtnPress={() =>
               navigation.navigate('MainAppNavigator', {screen: 'PartyScreen'})
             }
+            data={parties}
           />
         </View>
       </View>
