@@ -11,7 +11,8 @@ import CustomText from 'src/app/components/Text/CustomText';
 import Animated from 'react-native-reanimated';
 import {BottomTabParamList} from 'src/app/navigator/types/BottomTabParamList';
 import api from 'src/api/api';
-import {PartiesResponse} from 'src/types/partyTypes';
+import {useQuery} from '@tanstack/react-query';
+import {fetchParties} from 'src/actions/parties';
 
 type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 
@@ -21,8 +22,6 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
   type Tabs = 'Parties' | 'Feeds';
   const tabs: Tabs[] = ['Parties', 'Feeds'];
   const [selectedTab, setSelectedTab] = useState<Tabs>('Parties');
-  const [parties, setParties] = useState<PartiesResponse[]>([]);
-  const [isLoadingParties, setIsLoadingParties] = useState<boolean>(false);
 
   const handleTabSwitch = (item: Tabs) => {
     setSelectedTab(item);
@@ -30,23 +29,10 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
 
   const AnimatedButton = Animated.createAnimatedComponent(TouchableOpacity);
 
-  const fetchParties = async () => {
-    setIsLoadingParties(true);
-    try {
-      const res = await api.get({
-        url: 'parties',
-        authorization: true,
-      });
-      setParties(res.data.parties);
-    } catch (error) {
-      console.log(error);
-    }
-    setIsLoadingParties(false);
-  };
-
-  useEffect(() => {
-    fetchParties();
-  }, []);
+  const {isPending, data, isFetching} = useQuery({
+    queryKey: ['parties'],
+    queryFn: fetchParties,
+  });
 
   return (
     <ScreenContainer>
@@ -86,7 +72,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           })}
         </View>
         <View style={tw`flex-1 mb-12`}>
-          {isLoadingParties ? (
+          {isPending ? (
             <View style={tw`flex-1 justify-center items-center`}>
               <ActivityIndicator size={30} />
             </View>
@@ -95,7 +81,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
             handleJoinPartyBtnPress={() =>
               navigation.navigate('MainAppNavigator', {screen: 'PartyScreen'})
             }
-            data={parties}
+            data={data}
           />
         </View>
       </View>
