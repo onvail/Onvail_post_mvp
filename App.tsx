@@ -1,3 +1,6 @@
+if (__DEV__) {
+  require('./ReactotronConfig');
+}
 import React, {FunctionComponent} from 'react';
 import {View} from 'react-native';
 import tw from 'lib/tailwind';
