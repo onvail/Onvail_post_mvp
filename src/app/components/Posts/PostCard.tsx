@@ -1,5 +1,5 @@
-import React, {FunctionComponent} from 'react';
-import {TouchableOpacity, View} from 'react-native';
+import React, {FunctionComponent, useEffect, useState} from 'react';
+import {Pressable, TouchableOpacity, View} from 'react-native';
 import {Post, posts} from 'src/utils/posts';
 import UserHeader from './UserHeader';
 import CustomImage from 'components/Image/CustomImage';
@@ -10,6 +10,10 @@ import {generalIcon} from 'components/Icons/generalIcons';
 import RowContainer from 'components/View/RowContainer';
 import MiniMusicPlayer from './MiniMusicPlayer';
 import {PartiesResponse} from 'src/types/partyTypes';
+import Icon from '../Icons/Icon';
+import api from 'src/api/api';
+import useUser, {User} from 'src/app/hooks/useUserInfo';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
 
 interface JoinPartyProps {
   handleJoinPartyBtnPress: () => void;
@@ -41,17 +45,51 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
 
 const PostItem: FunctionComponent<{
   item: PartiesResponse;
+  userId: string;
   handleJoinPartyBtnPress: () => void;
-}> = ({item, handleJoinPartyBtnPress}) => {
+}> = ({item, handleJoinPartyBtnPress, userId}) => {
   const HeartSvg = generalIcon.Heart;
   const CommentSvg = generalIcon.Comment;
+  const queryClient = useQueryClient();
+
+  const [like, setLike] = useState<boolean>(false);
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      if (isFollowing) {
+        return api.post({
+          url: 'users/unFollowUser',
+          authorization: true,
+          data: {
+            userIdTounFollow: item?.artist?._id,
+          },
+        });
+      } else {
+        return api.post({
+          url: 'users/followUser',
+          authorization: true,
+          data: {
+            userIdToFollow: item?.artist?._id,
+          },
+        });
+      }
+    },
+    onSuccess: data => {
+      queryClient.refetchQueries({queryKey: ['parties']});
+    },
+  });
+
+  const canFollowUser = item?.artist?._id !== userId;
+  const isFollowing = item?.artist?.followers?.includes(userId);
 
   return (
     <View style={tw`mb-4 border-b-[0.2px] border-grey2 pb-7`}>
       <UserHeader
         name={item?.artist?.name}
         uri={item?.artist?.profile?.image}
-        handleFollowBtnPress={() => {}}
+        handleFollowBtnPress={() => mutation.mutate()}
+        canFollow={canFollowUser}
+        isFollowing={isFollowing}
       />
       <CustomImage
         uri={item?.albumPicture ?? ''}
@@ -63,6 +101,9 @@ const PostItem: FunctionComponent<{
       <RowContainer style={tw`mx-5 mt-4 justify-between`}>
         <RowContainer>
           <RowContainer style={tw`mr-5`}>
+            <Pressable>
+              <Icon icon={'heart'} color="transparent" />
+            </Pressable>
             <HeartSvg />
             <CustomText style={tw`ml-2 text-grey2`}>
               {item?.likes?.length ?? 0}
@@ -103,10 +144,15 @@ const PostCard: FunctionComponent<PostCardProps> = ({
   handleJoinPartyBtnPress,
   data,
 }) => {
-  const renderItem: ListRenderItem<PartiesResponse> = ({item}) => (
-    <PostItem item={item} handleJoinPartyBtnPress={handleJoinPartyBtnPress} />
-  );
+  const {user} = useUser();
 
+  const renderItem: ListRenderItem<PartiesResponse> = ({item}) => (
+    <PostItem
+      item={item}
+      handleJoinPartyBtnPress={handleJoinPartyBtnPress}
+      userId={user?._id ?? ''}
+    />
+  );
   return (
     <FlashList
       data={data}
