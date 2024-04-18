@@ -21,8 +21,11 @@ import VotingPoll from '../components/VotingPoll';
 import {toast, Toasts, ToastPosition} from '@backpackapp-io/react-native-toast';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import api from 'src/api/api';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
 
-const PlanYourParty: FunctionComponent = () => {
+type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
+const PlanYourParty: FunctionComponent<Props> = ({navigation}) => {
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
 
   const GalleryThumbnailSvg = generalIcon.GalleryThumbnail;
@@ -57,7 +60,7 @@ const PlanYourParty: FunctionComponent = () => {
   });
   const onSubmit = async (data: Party) => {
     try {
-      const response = await api.post({
+      await api.post({
         url: '/parties/create-party',
         data,
         requiresToken: true,
@@ -72,7 +75,9 @@ const PlanYourParty: FunctionComponent = () => {
           text: tw`text-white font-poppinsBold`,
         },
       });
-      console.log(response);
+      navigation.navigate('BottomNavigator', {
+        screen: 'Home',
+      });
     } catch (error: unknown) {
       const createPartyError = error as PartyError;
       console.log(createPartyError.response?.data);
@@ -109,7 +114,7 @@ const PlanYourParty: FunctionComponent = () => {
   return (
     <ScreenContainer screenHeader="Plan your party" goBack>
       <KeyboardAwareScrollView style={tw`flex-1`}>
-        <View style={tw`mx-4 flex-1 mt-12 mb-10`}>
+        <View style={tw`mx-4 flex-1 mt-4 mb-10`}>
           <View style={tw`  `}>
             <RowContainer style={tw`mb-2 justify-between`}>
               <CustomText>Title</CustomText>
