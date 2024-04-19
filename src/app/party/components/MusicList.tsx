@@ -1,24 +1,24 @@
 import React, {FunctionComponent} from 'react';
 import {Pressable} from 'react-native';
-import {generalIcon} from 'src/app/components/Icons/generalIcons';
+import {State, Track} from 'react-native-track-player';
 import CustomText from 'src/app/components/Text/CustomText';
 import RowContainer from 'src/app/components/View/RowContainer';
 import {Colors} from 'src/app/styles/colors';
 import tw from 'src/lib/tailwind';
-import {SongsProps} from 'src/utils/data';
+import LottieView from 'lottie-react-native';
+import {MusicStoreState, useMusicStore} from 'src/app/zustand/store';
+import {truncateText} from 'src/utils/utilities';
 
-interface Props extends SongsProps {
-  currentTrackId: string;
-}
+interface Props extends Track {}
 
-const MusicList: FunctionComponent<Props> = ({
-  title,
-  duration,
-  index,
-  currentTrackId,
-}) => {
+const MusicList: FunctionComponent<Props> = ({title, duration, index, id}) => {
   const bgColor = index && index % 2 === 0 ? 'transparent' : 'green';
-  const VoiceSquare = generalIcon.VoiceSquare;
+  const currentlyPlayingTrack = useMusicStore(
+    (state: MusicStoreState) => state.currentTrack,
+  );
+  const playerState = useMusicStore(
+    (state: MusicStoreState) => state.currentPlayerState,
+  );
 
   return (
     <Pressable>
@@ -31,8 +31,17 @@ const MusicList: FunctionComponent<Props> = ({
           <CustomText style={tw`text-white text-xs`}>
             {Number(index) + 1}
           </CustomText>
-          <CustomText style={tw`ml-4 text-xs`}>{title}</CustomText>
-          {currentTrackId === index?.toString() && <VoiceSquare />}
+          <CustomText style={tw`ml-4 text-xs`}>
+            {truncateText(title ?? '', 27)}
+          </CustomText>
+          {currentlyPlayingTrack?.id === id && (
+            <LottieView
+              source={require('../../../assets/audio-wave.json')}
+              style={tw`h-5 w-5`}
+              autoPlay={playerState === State.Playing}
+              loop={playerState === State.Playing}
+            />
+          )}
         </RowContainer>
         <CustomText style={tw`text-white text-xs`}>{duration}</CustomText>
       </RowContainer>
