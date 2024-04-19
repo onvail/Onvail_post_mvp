@@ -1,8 +1,9 @@
-import React, {FunctionComponent} from 'react';
+import React, {FunctionComponent, useState} from 'react';
 import {Calendar} from 'react-native-calendars';
 import Modal from 'react-native-modal/dist/modal';
 import {Colors} from 'src/app/styles/colors';
 import tw from 'src/lib/tailwind';
+import {formatDate} from 'src/utils/utilities';
 
 interface Props {
   isCalendarVisible: boolean;
@@ -15,20 +16,24 @@ const CustomCalendar: FunctionComponent<Props> = ({
   onBackDropPress,
   onDateSelected,
 }) => {
+  const [selectedDay, setSelectedDay] = useState<string>(
+    formatDate(new Date()),
+  );
   return (
     <Modal isVisible={isCalendarVisible} onBackdropPress={onBackDropPress}>
       <Calendar
         // Customize the appearance of the calendar
-        style={tw`border border-grey rounded-lg h-80`}
+        style={tw`border border-grey rounded-lg `}
         // Specify the current date
-        current={'2012-03-01'}
+        current={formatDate(new Date())}
         // Callback that gets called when the user selects a day
         onDayPress={day => {
           onDateSelected(day.dateString);
+          setSelectedDay(day.dateString);
         }}
         // Mark specific dates as marked
         markedDates={{
-          '2024-03-01': {
+          [selectedDay]: {
             selected: true,
             selectedColor: Colors.purple,
           },
