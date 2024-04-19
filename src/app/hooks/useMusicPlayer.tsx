@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useCallback} from 'react';
 import TrackPlayer, {
   State,
   Event,
@@ -6,6 +6,7 @@ import TrackPlayer, {
   useProgress,
   Track,
 } from 'react-native-track-player';
+import {MusicStoreState, useMusicStore} from '../zustand/store';
 
 interface Props {
   track: Track[];
@@ -22,12 +23,29 @@ const useMusicPlayer = ({track}: Props) => {
     {} as Track,
   );
 
-  // Fetch tracks from zustand store
-  // const track = useMusicStore((state: MusicStoreState) => state.tracks);
+  // Update tracks in zustand store
+  const updateCurrentStoreTrack = useMusicStore(
+    (state: MusicStoreState) => state.setCurrentlyPlayingTrack,
+  );
+
+  // Update store state
+  const updatePlayerState = useMusicStore(
+    (state: MusicStoreState) => state.setPlayerState,
+  );
+
+  // Set currently playing track
+  const fetchCurrentTrack = useCallback(
+    async () =>
+      await TrackPlayer.getActiveTrack().then(response => {
+        setCurrentTrack(response);
+        updateCurrentStoreTrack(response ?? ({} as Track));
+      }),
+    [updateCurrentStoreTrack],
+  );
 
   useEffect(() => {
     fetchCurrentTrack();
-  }, [playerState]);
+  }, [playerState, fetchCurrentTrack]);
 
   // Play the current track
   const play = async () => {
@@ -60,6 +78,7 @@ const useMusicPlayer = ({track}: Props) => {
     }
     if (event.type === Event.PlaybackState) {
       setPlayerState(event.state);
+      updatePlayerState(event.state);
     }
   });
 
@@ -68,12 +87,6 @@ const useMusicPlayer = ({track}: Props) => {
 
   // Stop track from playing
   const stop = async () => await TrackPlayer.stop();
-
-  // Set currently playing track
-  const fetchCurrentTrack = async () =>
-    await TrackPlayer.getActiveTrack().then(response => {
-      setCurrentTrack(response);
-    });
 
   // Remove track from queue
   const removeTrack = async () =>
