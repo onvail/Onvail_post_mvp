@@ -1,3 +1,4 @@
+import {NavigatorScreenParams} from '@react-navigation/native';
 import {BottomTabParamList} from './BottomTabParamList';
 
 export type MainStackParamList = {
@@ -5,5 +6,5 @@ export type MainStackParamList = {
   CreateNewPost: undefined;
   PlanYourParty: undefined;
   PartyScreen: undefined;
-  BottomNavigator: {screen: keyof BottomTabParamList; params?: any};
+  BottomNavigator: NavigatorScreenParams<BottomTabParamList>;
 };

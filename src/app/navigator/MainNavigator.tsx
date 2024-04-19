@@ -1,46 +1,14 @@
 import {createStackNavigator} from '@react-navigation/stack';
 import React, {FunctionComponent} from 'react';
 import {MainStackParamList} from './types/MainStackParamList';
-import Notification from '../notifications/screens/Notification';
-import CreateNewPosts from 'app/posts/screens/CreateNewPosts';
-import PlanYourParty from 'app/party/screens/PlanYourParty';
-import PartyScreen from 'app/party/screens/PartyScreen';
-import BottomNavigator from './BottomNavigator';
+import {mainNavigatorScreens} from './types/mainscreens';
 
 const Stack = createStackNavigator<MainStackParamList>();
-
-interface ScreenDef {
-  name: keyof MainStackParamList;
-  screen: React.ComponentType<any>;
-}
-
-const screens: ScreenDef[] = [
-  {
-    name: 'Notifications',
-    screen: Notification,
-  },
-  {
-    name: 'CreateNewPost',
-    screen: CreateNewPosts,
-  },
-  {
-    name: 'PlanYourParty',
-    screen: PlanYourParty,
-  },
-  {
-    name: 'PartyScreen',
-    screen: PartyScreen,
-  },
-  {
-    name: 'BottomNavigator',
-    screen: BottomNavigator,
-  },
-];
 
 const MainNavigator: FunctionComponent = () => {
   return (
     <Stack.Navigator screenOptions={{headerShown: false}}>
-      {screens.map(({name, screen}) => (
+      {mainNavigatorScreens.map(({name, screen}) => (
         <Stack.Screen key={name} name={name} component={screen} />
       ))}
     </Stack.Navigator>
