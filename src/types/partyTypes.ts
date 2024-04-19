@@ -29,6 +29,12 @@ export type PartyError = {
   code?: string;
 };
 
+export type Song = {
+  name: string;
+  file_url: string;
+  _id: string;
+};
+
 export type PartiesResponse = {
   __v: number;
   _id: string;
@@ -52,6 +58,6 @@ export type PartiesResponse = {
   partyDesc: string;
   partyName: string;
   pollOptions: PollType[];
-  songs: any[]; // Define further if the structure of songs is known
+  songs: Song[]; // Define further if the structure of songs is known
   visibility: string;
 };
