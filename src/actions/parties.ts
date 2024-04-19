@@ -19,7 +19,6 @@ export const fetchPosts = async () => {
       authorization: true,
     });
     return res?.data?.posts;
-    return res.data;
   } catch (error) {
     return error;
   }
