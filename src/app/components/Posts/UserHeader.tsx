@@ -4,7 +4,8 @@ import CustomImage from 'components/Image/CustomImage';
 import tw from 'src/lib/tailwind';
 import CustomText from 'components/Text/CustomText';
 import RowContainer from '../View/RowContainer';
-import useUser from 'src/app/hooks/useUserInfo';
+import Icon from '../Icons/Icon';
+import {Colors} from 'src/app/styles/colors';
 
 interface User {
   name?: string;
@@ -21,16 +22,17 @@ const UserHeader: FunctionComponent<User> = ({
   isFollowing,
   canFollow,
 }) => {
-  const {user} = useUser();
   return (
     <RowContainer style={tw`px-4 justify-between`}>
       <RowContainer>
-        {uri && (
+        {uri ? (
           <CustomImage
             uri={uri}
             style={tw`h-9 w-9 rounded-full`}
             resizeMode="cover"
           />
+        ) : (
+          <Icon icon="account-circle" color={Colors.grey} size={35} />
         )}
         {name && <CustomText style={tw`ml-3 text-[13px]`}>{name}</CustomText>}
       </RowContainer>
@@ -43,7 +45,7 @@ const UserHeader: FunctionComponent<User> = ({
           {
             <CustomText
               style={tw`text-${isFollowing ? 'black' : 'white'} text-[13px]`}>
-              {isFollowing ? 'Unfollow' : 'Follow'}
+              {isFollowing ? 'Following' : 'Follow'}
             </CustomText>
           }
         </TouchableOpacity>
