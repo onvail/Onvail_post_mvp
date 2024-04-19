@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useEffect, useState} from 'react';
+import React, {FunctionComponent, useState} from 'react';
 import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import PostCard from 'src/app/components/Posts/PostCard';
@@ -10,9 +10,8 @@ import tw from 'src/lib/tailwind';
 import CustomText from 'src/app/components/Text/CustomText';
 import Animated from 'react-native-reanimated';
 import {BottomTabParamList} from 'src/app/navigator/types/BottomTabParamList';
-import api from 'src/api/api';
 import {useQuery} from '@tanstack/react-query';
-import {fetchParties} from 'src/actions/parties';
+import {fetchParties, fetchPosts} from 'src/actions/parties';
 
 type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 
@@ -29,9 +28,14 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
 
   const AnimatedButton = Animated.createAnimatedComponent(TouchableOpacity);
 
-  const {isPending, data, isFetching} = useQuery({
+  const parties = useQuery({
     queryKey: ['parties'],
     queryFn: fetchParties,
+  });
+
+  const posts = useQuery({
+    queryKey: ['posts'],
+    queryFn: fetchPosts,
   });
 
   return (
@@ -72,7 +76,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           })}
         </View>
         <View style={tw`flex-1 mb-12`}>
-          {isPending ? (
+          {parties.isPending || posts.isPending ? (
             <View style={tw`flex-1 justify-center items-center`}>
               <ActivityIndicator size={30} />
             </View>
@@ -81,7 +85,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
             handleJoinPartyBtnPress={() =>
               navigation.navigate('MainAppNavigator', {screen: 'PartyScreen'})
             }
-            data={data}
+            data={selectedTab === 'Parties' ? parties.data : posts.data}
           />
         </View>
       </View>
