@@ -296,7 +296,10 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation}) => {
               <CustomCalendar
                 isCalendarVisible={isCalendarVisible}
                 onBackDropPress={() => setIsCalendarVisible(false)}
-                onDateSelected={date => onChange(date)}
+                onDateSelected={date => {
+                  onChange(date);
+                  setIsCalendarVisible(false);
+                }}
               />
             )}
             name="date"
