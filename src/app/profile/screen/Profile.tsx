@@ -95,6 +95,7 @@ const Profile: FunctionComponent = () => {
           </View>
           <SociaMediaIcons />
         </View>
+        <View style={tw`h-25`} />
       </ScrollView>
     </View>
   );
