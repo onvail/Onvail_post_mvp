@@ -27,16 +27,17 @@ import CustomBottomSheet, {
 import CommentCards from 'src/app/components/Cards/CommentCards';
 import RowContainer from 'src/app/components/View/RowContainer';
 import {FlashList, ListRenderItem} from '@shopify/flash-list';
-import {SongsProps, sampleSongs} from 'src/utils/data';
 import MusicList from '../components/MusicList';
 import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {VolumeManager} from 'react-native-volume-manager';
 import {State, Track} from 'react-native-track-player';
+import CustomImage from 'src/app/components/Image/CustomImage';
+import {Song} from 'src/types/partyTypes';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
-const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
-  const StormzyCover = generalIcon.StormzyCover;
+const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
+  const {party} = route.params;
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
   const PauseIcon = generalIcon.PauseIcon;
@@ -51,24 +52,26 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
     bottomSheetRef.current?.open();
   };
 
+  const songs: Song[] = party?.songs;
+
   const allTracks = useMemo(() => {
     let tracks: Track[] = [];
-    for (let i = 0; i < sampleSongs.length; i++) {
+    for (let i = 0; i < songs.length; i++) {
       const track = {
-        url: sampleSongs[i]?.url,
-        title: sampleSongs[i]?.title,
-        artist: sampleSongs[i]?.artist,
-        album: 'while(1<2)',
-        genre: 'stormzy',
-        date: '2014-05-20T07:00:00+00:00',
-        artwork: 'http://example.com/cover.png',
-        duration: sampleSongs[i].duration,
-        id: i.toString(), // Ensure ID is a string if Track type expects it
+        url: songs?.[i]?.file_url,
+        title: songs?.[i]?.name,
+        artist: party?.artist?.name,
+        album: '',
+        genre: '',
+        date: party?.date,
+        artwork: party?.albumPicture,
+        duration: 30,
+        id: songs?.[i]?._id, // Ensure ID is a string if Track type expects it
       };
       tracks.push(track); // Correctly push each track into the tracks array
     }
     return tracks;
-  }, []);
+  }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
 
   const {handlePauseAndPlayTrack, currentTrack, playerState} = useMusicPlayer({
     track: allTracks,
@@ -82,7 +85,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
     volumeHandler();
   }, [volume, volumeHandler]);
 
-  const renderItem: ListRenderItem<SongsProps> = ({item, index}) => {
+  const renderItem: ListRenderItem<Track> = ({item, index}) => {
     const {artist, title, duration, url} = item;
     return (
       <MusicList
@@ -91,13 +94,13 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
         index={index}
         artist={artist}
         url={url}
-        currentTrackId={currentTrack?.id}
+        id={item?.id}
       />
     );
   };
 
   const currentItem = useMemo(() => {
-    return currentTrack?.id === allTracks[0]?.id &&
+    return allTracks.some(item => currentTrack?.id === item.id) &&
       playerState === State.Playing
       ? true
       : false;
@@ -112,7 +115,10 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
           </Pressable>
         </View>
         <View style={tw`mt-8 mb-3 items-center`}>
-          <StormzyCover />
+          <CustomImage
+            uri={party.albumPicture}
+            style={tw`h-70 w-70  rounded-lg`}
+          />
           <View style={tw` mt-8 flex-row items-center justify-between`}>
             <HighLightLeft />
             <CustomText style={tw`font-poppinsBold w-10`}>LIVE</CustomText>
@@ -142,9 +148,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
           </View>
         </View>
         <FlashList
-          data={sampleSongs}
+          data={allTracks}
           renderItem={renderItem}
-          keyExtractor={(item, index) => item.title + index}
+          keyExtractor={item => item?.id}
           estimatedItemSize={20}
           estimatedListSize={{
             height: 200,
