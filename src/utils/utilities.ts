@@ -19,3 +19,11 @@ export const convertTimeToString = (timeObj: {
   // Construct the time string in HH:mm:ss format
   return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
 };
+
+export const formatDate = (date: Date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-indexed, add 1 to adjust
+  const day = d.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
