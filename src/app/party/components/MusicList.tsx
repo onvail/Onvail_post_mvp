@@ -1,24 +1,30 @@
 import React, {FunctionComponent} from 'react';
 import {Pressable} from 'react-native';
-import {State, Track} from 'react-native-track-player';
+import {State, Track, useProgress} from 'react-native-track-player';
 import CustomText from 'src/app/components/Text/CustomText';
 import RowContainer from 'src/app/components/View/RowContainer';
 import {Colors} from 'src/app/styles/colors';
 import tw from 'src/lib/tailwind';
 import LottieView from 'lottie-react-native';
 import {MusicStoreState, useMusicStore} from 'src/app/zustand/store';
-import {truncateText} from 'src/utils/utilities';
+import {secondsToMinutesAndSeconds, truncateText} from 'src/utils/utilities';
 
 interface Props extends Track {}
 
-const MusicList: FunctionComponent<Props> = ({title, duration, index, id}) => {
-  const bgColor = index && index % 2 === 0 ? 'transparent' : 'green';
+const MusicList: FunctionComponent<Props> = ({title, index, id}) => {
+  const bgColor = index && (index + 1) % 2 === 0 ? 'transparent' : 'green';
   const currentlyPlayingTrack = useMusicStore(
     (state: MusicStoreState) => state.currentTrack,
   );
   const playerState = useMusicStore(
     (state: MusicStoreState) => state.currentPlayerState,
   );
+
+  const {position} = useProgress();
+  const currentItemPosition =
+    currentlyPlayingTrack?.id === id
+      ? secondsToMinutesAndSeconds(position)
+      : '-- : --';
 
   return (
     <Pressable>
@@ -43,7 +49,9 @@ const MusicList: FunctionComponent<Props> = ({title, duration, index, id}) => {
             />
           )}
         </RowContainer>
-        <CustomText style={tw`text-white text-xs`}>{duration}</CustomText>
+        <CustomText style={tw`text-white text-xs`}>
+          {currentItemPosition}
+        </CustomText>
       </RowContainer>
     </Pressable>
   );
