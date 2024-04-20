@@ -75,15 +75,20 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
             );
           })}
         </View>
-        <View style={tw`flex-1 mb-12`}>
+        <View style={tw`flex-1`}>
           {parties.isPending || posts.isPending ? (
             <View style={tw`flex-1 justify-center items-center`}>
               <ActivityIndicator size={30} />
             </View>
           ) : null}
           <PostCard
-            handleJoinPartyBtnPress={() =>
-              navigation.navigate('MainAppNavigator', {screen: 'PartyScreen'})
+            handleJoinPartyBtnPress={item =>
+              navigation.navigate('MainAppNavigator', {
+                screen: 'PartyScreen',
+                params: {
+                  party: item,
+                },
+              })
             }
             data={selectedTab === 'Parties' ? parties.data : posts.data}
           />
