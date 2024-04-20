@@ -2,6 +2,7 @@ import React, {
   FunctionComponent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -30,7 +31,7 @@ import {FlashList, ListRenderItem} from '@shopify/flash-list';
 import MusicList from '../components/MusicList';
 import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {VolumeManager} from 'react-native-volume-manager';
-import {State, Track} from 'react-native-track-player';
+import {Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
 
@@ -44,6 +45,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const PlayIcon = generalIcon.PlayIcon;
   const SendIcon = generalIcon.SendIcon;
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
+  const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
@@ -58,24 +60,25 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     let tracks: Track[] = [];
     for (let i = 0; i < songs.length; i++) {
       const track = {
-        url: songs?.[i]?.file_url,
-        title: songs?.[i]?.name,
-        artist: party?.artist?.name,
-        album: '',
         genre: '',
-        date: party?.date,
+        album: '',
         artwork: party?.albumPicture,
         duration: 30,
-        id: songs?.[i]?._id, // Ensure ID is a string if Track type expects it
+        url: songs?.[i]?.file_url,
+        id: songs?.[i]?._id,
+        date: party?.date,
+        title: songs?.[i]?.name,
+        artist: party?.artist?.name,
       };
-      tracks.push(track); // Correctly push each track into the tracks array
+      tracks.push(track);
     }
     return tracks;
   }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
 
-  const {handlePauseAndPlayTrack, currentTrack, playerState} = useMusicPlayer({
-    track: allTracks,
-  });
+  const {handlePauseAndPlayTrack, playerState, checkIfTrackQueueIsDifferent} =
+    useMusicPlayer({
+      track: allTracks,
+    });
 
   const volumeHandler = useCallback(async () => {
     await VolumeManager.setVolume(volume);
@@ -99,12 +102,15 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     );
   };
 
-  const currentItem = useMemo(() => {
-    return allTracks.some(item => currentTrack?.id === item.id) &&
-      playerState === State.Playing
-      ? true
-      : false;
-  }, [allTracks, currentTrack, playerState]);
+  const handleSameQueueItemState = useCallback(async () => {
+    const sameQueue = await checkIfTrackQueueIsDifferent();
+    setIsSameQueue(sameQueue);
+    return sameQueue;
+  }, [checkIfTrackQueueIsDifferent]);
+
+  useLayoutEffect(() => {
+    handleSameQueueItemState();
+  }, [handleSameQueueItemState]);
 
   return (
     <LinearGradient style={tw`h-full p-4`} colors={['#0E0E0E', '#087352']}>
@@ -130,7 +136,11 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
             <Pressable
               onPress={handlePauseAndPlayTrack}
               style={tw`w-10 items-center `}>
-              {currentItem ? <PauseIcon /> : <PlayIcon />}
+              {isSameQueue && playerState === 'playing' ? (
+                <PauseIcon />
+              ) : (
+                <PlayIcon />
+              )}
             </Pressable>
           </View>
           <View style={tw`flex-row w-[90%] mt-6 items-center`}>
