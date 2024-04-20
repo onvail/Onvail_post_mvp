@@ -27,3 +27,9 @@ export const formatDate = (date: Date) => {
   const day = d.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+
+export const secondsToMinutesAndSeconds = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60); // Divide by 60 to get minutes
+  const remainingSeconds = Math.floor(seconds % 60); // Use modulo to get remaining seconds
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`; // Pad with zero if necessary
+};
