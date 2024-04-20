@@ -24,6 +24,7 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const [apnToken, setApnToken] = useState<string>('');
   const [signUpError, setSignUpError] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const defaultValues: SignInProps = {
     name: '',
@@ -41,6 +42,7 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
     mode: 'all',
   });
   const onSubmit = async (data: SignInProps) => {
+    setIsLoading(true);
     setSignUpError(undefined);
     const formData = {
       ...data,
@@ -60,9 +62,10 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
       });
     } catch (err: unknown) {
       const error = err as AuthError;
-      console.log(error.response?.data);
+      console.log(error.response);
       setSignUpError(error?.response?.data?.message);
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -189,7 +192,11 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
           </View>
         </View>
         <View style={tw`mt-16`}>
-          <ProceedBtn title="Submit" onPress={handleSubmit(onSubmit)} />
+          <ProceedBtn
+            title="Submit"
+            isLoading={isLoading}
+            onPress={handleSubmit(onSubmit)}
+          />
           <CustomText style={tw`mt-16 text-center`}>
             Already have an account?{' '}
             <CustomText

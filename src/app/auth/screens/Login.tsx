@@ -20,6 +20,7 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
   const BackgroundGradientSvg = generalIcon.BackgroundGradient;
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const defaultValues: LoginProps = {
     email: '',
@@ -36,6 +37,7 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
   });
   const onSubmit = async (data: LoginProps) => {
     setLoginError(undefined);
+    setIsLoading(true);
     try {
       const response = await api.post({
         url: 'users/login',
@@ -52,6 +54,7 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
       const error = err as AuthError;
       setLoginError(error?.response?.data?.message);
     }
+    setIsLoading(false);
   };
 
   return (
@@ -133,6 +136,7 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
           title="Submit"
           containerStyle={tw`mt-12`}
           onPress={handleSubmit(onSubmit)}
+          isLoading={isLoading}
         />
       </View>
     </View>
