@@ -22,6 +22,7 @@ const useMusicPlayer = ({track}: Props) => {
   const [currentTrack, setCurrentTrack] = useState<Track | undefined>(
     {} as Track,
   );
+  const [trackPlayerQueue, setTrackPlayerQueue] = useState<Track[]>([]);
 
   // Update tracks in zustand store
   const updateCurrentStoreTrack = useMusicStore(
@@ -47,6 +48,10 @@ const useMusicPlayer = ({track}: Props) => {
     fetchCurrentTrack();
   }, [playerState, fetchCurrentTrack]);
 
+  useEffect(() => {
+    handleTrackPlayerQueue();
+  }, []);
+
   // Play the current track
   const play = async () => {
     await TrackPlayer.play();
@@ -70,6 +75,14 @@ const useMusicPlayer = ({track}: Props) => {
 
   // Skip to the previous track in the queue
   const skipToPrevious = async () => await TrackPlayer.skipToPrevious();
+
+  // Get TrackPlayerQueue
+  const handleTrackPlayerQueue = async () => {
+    return await TrackPlayer.getQueue().then(res => {
+      console.log('updating queue');
+      setTrackPlayerQueue(res);
+    });
+  };
 
   // Handle Player current state
   useTrackPlayerEvents(events, event => {
@@ -103,26 +116,61 @@ const useMusicPlayer = ({track}: Props) => {
   // Check if music player is paused
   const isStopped = playerState === State.None || playerState === State.Stopped;
 
+  const checkIfTrackQueueIsDifferent = async () => {
+    const playerQueue = await TrackPlayer.getQueue();
+
+    // Early exit if the counts differ
+    if (track.length !== playerQueue.length) {
+      return false;
+    }
+
+    // Check if every element in `track` has a corresponding element in `playerQueue`
+    return track.every(t1 =>
+      playerQueue.some(t2 => t1.id === t2.id && t1.url === t2.url),
+    );
+  };
+
   const handlePauseAndPlayTrack = async () => {
-    if (!track) {
-      return;
-    } // Exit early if there is no track
-    const isCurrentTrack = currentTrack?.id === track[0]?.id;
-    // If it's the current track and it's playing, just pause it.
-    if (isCurrentTrack && isPlaying) {
-      pause();
+    // Exit early if there is no track
+    if (!track || track.length === 0) {
+      console.log('No track available to play or pause.');
       return;
     }
-    // If it's the current track and it's paused, resume playing.
-    if (isCurrentTrack && isPaused) {
-      play();
+
+    // Check if the current queue in the player matches the desired track
+    const isSameTrackArray = await checkIfTrackQueueIsDifferent();
+
+    // Add a tolerance of 0.2 milliseconds as the end position could be 0.2ms less
+    const tolerance = 0.2;
+
+    // Track can be defined as completed if duration - position is <= 0.2ms
+    const isCompleted = duration - position <= tolerance;
+
+    // If it's the same track as the current one and it's already playing, pause it.
+    if (isSameTrackArray && isPlaying) {
+      await pause();
       return;
     }
-    // For cases where it's either stopped or a different track, reset and add the new/current track, then play.
-    // This includes the scenario where it's the current track but not playing or paused (e.g., it's loading).
+
+    // If it's the same track and is paused and is completed playback.
+    if (isSameTrackArray && isPaused && isCompleted) {
+      await TrackPlayer.reset();
+      await TrackPlayer.add(track);
+      await play();
+      return;
+    }
+
+    // If it's the same track as the current one and it's paused, resume playing.
+    if (isSameTrackArray && isPaused) {
+      await play();
+      return;
+    }
+
+    // If the track is different or the player is stopped, reset the player,
+    // add the new/current track to the queue, and start playback.
     await TrackPlayer.reset();
     await TrackPlayer.add(track);
-    play();
+    await play();
   };
 
   // Return all the control functions to be used by the component
@@ -145,6 +193,8 @@ const useMusicPlayer = ({track}: Props) => {
     isPlaying,
     isStopped,
     handlePauseAndPlayTrack,
+    trackPlayerQueue,
+    checkIfTrackQueueIsDifferent,
   };
 };
 
