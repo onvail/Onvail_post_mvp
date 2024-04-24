@@ -171,7 +171,7 @@ const PostCard: FunctionComponent<PostCardProps> = ({
     />
   );
 
-  // NOTE
+  // NOTE:
   // The custom navbar gets a background color placed behind the Onvail button when a margin-bottom is used to push the last-item to a visible position.
   // Adding a Footer component adds an extra item that makes the last component appear within users view, which in-turn helps for interaction.
   const renderFooterComponent = () => <View style={tw`h-12`} />;
