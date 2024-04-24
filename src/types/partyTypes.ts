@@ -61,3 +61,15 @@ export type PartiesResponse = {
   songs: Song[]; // Define further if the structure of songs is known
   visibility: string;
 };
+
+export type FeedResponse = {
+  __v: number;
+  _id: string;
+  comments: any[];
+  createdAt: string;
+  likes: any[];
+  mediaFiles: string[];
+  text: string;
+  updatedAt: string;
+  user: string;
+};
