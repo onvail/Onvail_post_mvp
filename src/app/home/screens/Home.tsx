@@ -12,6 +12,7 @@ import Animated from 'react-native-reanimated';
 import {BottomTabParamList} from 'src/app/navigator/types/BottomTabParamList';
 import {useQuery} from '@tanstack/react-query';
 import {fetchParties, fetchPosts} from 'src/actions/parties';
+import Feeds from 'src/app/components/Feed/screens/Feeds';
 
 type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 
@@ -81,17 +82,20 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
               <ActivityIndicator size={30} />
             </View>
           ) : null}
-          <PostCard
-            handleJoinPartyBtnPress={item =>
-              navigation.navigate('MainAppNavigator', {
-                screen: 'PartyScreen',
-                params: {
-                  party: item,
-                },
-              })
-            }
-            data={selectedTab === 'Parties' ? parties.data : posts.data}
-          />
+          {selectedTab === 'Parties' && (
+            <PostCard
+              handleJoinPartyBtnPress={item =>
+                navigation.navigate('MainAppNavigator', {
+                  screen: 'PartyScreen',
+                  params: {
+                    party: item,
+                  },
+                })
+              }
+              data={posts.data}
+            />
+          )}
+          {selectedTab === 'Feeds' && <Feeds data={posts.data} />}
         </View>
       </View>
     </ScreenContainer>
