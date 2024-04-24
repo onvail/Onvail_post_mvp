@@ -4,6 +4,7 @@ import CreateNewPosts from 'src/app/posts/screens/CreateNewPosts';
 import PlanYourParty from 'src/app/party/screens/PlanYourParty';
 import PartyScreen from 'src/app/party/screens/PartyScreen';
 import BottomNavigator from '../BottomNavigator';
+import PartyOptionScreen from 'src/app/party/screens/PartyOptionScreen';
 
 interface ScreenDef {
   name: keyof MainStackParamList;
@@ -26,6 +27,10 @@ export const mainNavigatorScreens: ScreenDef[] = [
   {
     name: 'PartyScreen',
     screen: PartyScreen,
+  },
+  {
+    name: 'PartyOptions',
+    screen: PartyOptionScreen,
   },
   {
     name: 'BottomNavigator',
