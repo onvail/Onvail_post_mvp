@@ -25,8 +25,11 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
-const PlanYourParty: FunctionComponent<Props> = ({navigation}) => {
+const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
+  const {partyType} = route.params;
+
+  console.log(partyType);
 
   const GalleryThumbnailSvg = generalIcon.GalleryThumbnail;
   const [selectedImage, setSelectedImage] = useState<string | undefined>(
@@ -260,6 +263,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation}) => {
           <VotingPoll
             handlePollOptions={data => setValue('pollOptions', data)}
             handlePollQuestions={data => setValue('pollQuestion', data)}
+            partyType={partyType}
           />
 
           <View style={tw`mt-4`}>
