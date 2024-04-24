@@ -32,7 +32,7 @@ const onvailBtnOptions: OnvailBtnProps[] = [
   {
     title: 'Plan a party',
     icon: BeatIconSvg,
-    route: 'PlanYourParty',
+    route: 'PartyOptions',
   },
 ];
 
