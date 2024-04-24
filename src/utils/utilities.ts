@@ -33,3 +33,28 @@ export const secondsToMinutesAndSeconds = (seconds: number) => {
   const remainingSeconds = Math.floor(seconds % 60); // Use modulo to get remaining seconds
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`; // Pad with zero if necessary
 };
+
+// Detect file type from file url
+export const fileType = (
+  file: string,
+): 'image' | 'song' | 'video' | 'unknown' => {
+  // Object mapping extensions to media types
+  const extensionToType: Record<string, 'image' | 'song' | 'video'> = {
+    '.png': 'image',
+    '.jpg': 'image',
+    '.jpeg': 'image',
+    '.mp3': 'song',
+    '.wav': 'song',
+    '.mp4': 'video',
+    '.mov': 'video',
+    '.avi': 'video',
+  };
+
+  // Extract the file extension from the file name
+  const extension = Object.keys(extensionToType).find(ext =>
+    file.endsWith(ext),
+  );
+
+  // Return the media type if the extension is found, otherwise return 'unknown'
+  return extension ? extensionToType[extension] : 'unknown';
+};
