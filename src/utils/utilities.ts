@@ -1,3 +1,6 @@
+import axios from 'axios';
+import {CLOUD_NAME} from '@env';
+
 export const truncateText = (text: string, maxLength: number = 40): string => {
   return (
     text.substring(0, maxLength) + `${text.length > maxLength ? '...' : ''} `
@@ -57,4 +60,55 @@ export const fileType = (
 
   // Return the media type if the extension is found, otherwise return 'unknown'
   return extension ? extensionToType[extension] : 'unknown';
+};
+
+export type FileUploadItem = {
+  name: string;
+  type: string;
+  uri: string;
+};
+
+// upload files to cloudinary
+export const uploadToCloudinary = async (item: FileUploadItem) => {
+  const data = new FormData();
+  data.append('file', {
+    uri: item.uri,
+    type: item.type,
+    name: item.name,
+  });
+  data.append('upload_preset', 'xk7fxbhv');
+  data.append('cloud_name', CLOUD_NAME);
+  try {
+    const response = await axios.post(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`,
+      data,
+    );
+    return {
+      name: response?.data?.original_filename,
+      file_url: response?.data?.secure_url,
+    };
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const handleMultipleUploads = async (files: FileUploadItem[]) => {
+  try {
+    // Start uploads for all files
+    const uploadPromises = files.map(file =>
+      uploadToCloudinary({
+        name: file.name,
+        type: file.type,
+        uri: file.uri,
+      }),
+    );
+
+    // Wait for all uploads to complete
+    const uploadResults = await Promise.all(uploadPromises);
+
+    // Here, uploadResults is an array of all the responses from uploadToCloudinary
+    return uploadResults;
+  } catch (error) {
+    console.error('Error in handling multiple uploads:', error);
+  }
 };
