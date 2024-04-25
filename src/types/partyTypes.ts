@@ -1,4 +1,4 @@
-type Songs = {
+export type Songs = {
   name: string;
   file_url: string;
 };
@@ -10,7 +10,7 @@ export type PollType = {
 export type Party = {
   partyName: string;
   partyDesc: string;
-  albumPicture: string | undefined;
+  albumPicture: string;
   songs: Songs[];
   date: string;
   visibility: 'public' | 'private';
