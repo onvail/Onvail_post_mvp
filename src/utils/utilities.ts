@@ -140,10 +140,8 @@ export const classifyUrl = (
   if (url?.includes('/image/upload/')) {
     return {url, type: 'Image'};
   } else if (url?.includes('/music/')) {
-    console.log('music', url);
     return {url, type: 'Music'};
   } else if (url?.includes('/video/upload/')) {
-    console.log('video', url);
     return {url, type: 'Video'};
   } else {
     return {url, type: 'Unknown type'};
