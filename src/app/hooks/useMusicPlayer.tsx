@@ -79,7 +79,6 @@ const useMusicPlayer = ({track}: Props) => {
   // Get TrackPlayerQueue
   const handleTrackPlayerQueue = async () => {
     return await TrackPlayer.getQueue().then(res => {
-      console.log('updating queue');
       setTrackPlayerQueue(res);
     });
   };
