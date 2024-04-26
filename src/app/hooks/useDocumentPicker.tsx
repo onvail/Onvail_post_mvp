@@ -1,15 +1,21 @@
 import DocumentPicker, {
   DocumentPickerOptions,
+  DocumentPickerResponse,
 } from 'react-native-document-picker';
 import {SupportedPlatforms} from 'react-native-document-picker/lib/typescript/fileTypes';
 
-const useDocumentPicker = () => {
+const useDocumentPicker = ({pickSingle = false} = {}) => {
   const options: DocumentPickerOptions<SupportedPlatforms> | undefined = {
     allowMultiSelection: true,
   };
-  const selectDocument = async () => {
+
+  const selectDocument = async (): Promise<
+    DocumentPickerResponse | DocumentPickerResponse[] | undefined
+  > => {
     try {
-      const response = await DocumentPicker.pick(options);
+      const response = pickSingle
+        ? DocumentPicker.pickSingle(options)
+        : DocumentPicker.pick(options);
       return response;
     } catch (error) {
       console.log(error);
