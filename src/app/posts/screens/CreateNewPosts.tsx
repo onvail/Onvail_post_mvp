@@ -18,11 +18,20 @@ import tw from 'src/lib/tailwind';
 import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import Icon from 'src/app/components/Icons/Icon';
 import {Colors} from 'src/app/styles/colors';
+import useDocumentPicker from 'src/app/hooks/useDocumentPicker';
+import {MediaType, launchImageLibrary} from 'react-native-image-picker';
+import {FileUploadItem, uploadToCloudinary} from 'src/utils/utilities';
+import api from 'src/api/api';
+import {DocumentPickerResponse} from 'react-native-document-picker';
+import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
 
 type PostOptions = 'Post' | 'Story';
 const postOptions: PostOptions[] = ['Post', 'Story'];
+type Props = NativeStackScreenProps<MainStackParamList, 'CreateNewPost'>;
 
-const CreateNewPosts: FunctionComponent = () => {
+const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
   const [selectedPostOptions, setSelectedPostOptions] =
     useState<PostOptions>('Post');
   const [selectedCamera, setSelectedCamera] = useState<CameraType>('back');
@@ -32,7 +41,14 @@ const CreateNewPosts: FunctionComponent = () => {
   const [lastImage, setLastImage] = useState<string | undefined>(undefined);
   const [displayLastTakenImage, setDisplayLastTakenImage] =
     useState<boolean>(false);
+  const [postText, setPostText] = useState<string>('');
+  const [multiMediaFiles, setMultiMediaFiles] = useState<string[]>([]);
+
   const camera = useRef<Camera>(null);
+  const {selectDocument} = useDocumentPicker({
+    pickSingle: true,
+  });
+  const queryClient = useQueryClient();
 
   const GallerSvg = generalIcon.Gallery;
   const VideoSvg = generalIcon.VideoIcon;
@@ -52,6 +68,23 @@ const CreateNewPosts: FunctionComponent = () => {
     setSelectedCamera(selectedCamera === 'back' ? 'front' : 'back');
   };
 
+  const handleSelectMediaFromGallery = async (mediaType: MediaType) => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: mediaType,
+      });
+      const file: FileUploadItem = {
+        name: result?.assets?.[0]?.fileName!,
+        type: result?.assets?.[0]?.fileName!,
+        uri: result?.assets?.[0]?.uri!,
+      };
+      const response = await uploadToCloudinary(file);
+      setMultiMediaFiles(prev => [...prev, response?.file_url]);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleCapture = async () => {
     try {
       const file = await camera?.current?.takePhoto({
@@ -68,6 +101,45 @@ const CreateNewPosts: FunctionComponent = () => {
     }
   };
 
+  const handleSongsSelection = async () => {
+    try {
+      const songresponse = await selectDocument();
+      const song = songresponse as DocumentPickerResponse;
+      const songFile: FileUploadItem = {
+        name: song?.name!,
+        type: 'audio/mp4',
+        uri: song?.uri,
+      };
+      const response = await uploadToCloudinary(songFile);
+
+      setMultiMediaFiles(prev => [...prev, response?.file_url]);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleFollowMutation = useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await api.post({
+          url: '/users/post',
+          data: {
+            text: postText,
+            mediaFiles: multiMediaFiles,
+          },
+          requiresToken: true,
+          authorization: true,
+        });
+        console.log(response);
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.refetchQueries({queryKey: ['posts']});
+    },
+  });
+
   useEffect(() => {
     handleCamera();
   }, [handleCamera]);
@@ -82,17 +154,26 @@ const CreateNewPosts: FunctionComponent = () => {
               placeholderTextColor={'white'}
               multiline
               textAlignVertical="top"
+              onChangeText={text => setPostText(text)}
               style={tw` h-9/12 text-sm rounded-lg mt-2 font-poppinsRegular text-white`}
             />
             <RowContainer style={tw`mt-2 items-end flex-1 justify-between`}>
               <RowContainer style={tw`w-2/5 justify-between`}>
-                <GallerSvg />
-                <VideoSvg />
-                <MusicSvg />
+                <Pressable
+                  onPress={() => handleSelectMediaFromGallery('photo')}>
+                  <GallerSvg />
+                </Pressable>
+                <Pressable
+                  onPress={() => handleSelectMediaFromGallery('video')}>
+                  <VideoSvg />
+                </Pressable>
+                <Pressable onPress={() => handleSongsSelection()}>
+                  <MusicSvg />
+                </Pressable>
               </RowContainer>
-              <View>
+              <Pressable onPress={() => handleFollowMutation.mutate()}>
                 <SendSvg />
-              </View>
+              </Pressable>
             </RowContainer>
           </View>
         )}
