@@ -92,7 +92,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
                   },
                 })
               }
-              data={posts.data}
+              data={parties.data}
             />
           )}
           {selectedTab === 'Feeds' && <Feeds data={posts.data} />}
