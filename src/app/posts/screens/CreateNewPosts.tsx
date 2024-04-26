@@ -2,6 +2,7 @@ import React, {
   FunctionComponent,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -20,12 +21,17 @@ import Icon from 'src/app/components/Icons/Icon';
 import {Colors} from 'src/app/styles/colors';
 import useDocumentPicker from 'src/app/hooks/useDocumentPicker';
 import {MediaType, launchImageLibrary} from 'react-native-image-picker';
-import {FileUploadItem, uploadToCloudinary} from 'src/utils/utilities';
+import {
+  FileUploadItem,
+  classifyUrl,
+  uploadToCloudinary,
+} from 'src/utils/utilities';
 import api from 'src/api/api';
 import {DocumentPickerResponse} from 'react-native-document-picker';
 import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {Badge} from 'react-native-paper';
 
 type PostOptions = 'Post' | 'Story';
 const postOptions: PostOptions[] = ['Post', 'Story'];
@@ -130,6 +136,9 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
           requiresToken: true,
           authorization: true,
         });
+        navigation.navigate('BottomNavigator', {
+          screen: 'Home',
+        });
         console.log(response);
       } catch (error) {
         console.log(error);
@@ -143,6 +152,19 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
   useEffect(() => {
     handleCamera();
   }, [handleCamera]);
+
+  const imageFilesLength = useMemo(() => {
+    return multiMediaFiles?.filter(item => classifyUrl(item).type === 'Image')
+      .length;
+  }, [multiMediaFiles]);
+  const videoFilesLength = useMemo(() => {
+    return multiMediaFiles?.filter(item => classifyUrl(item).type === 'Video')
+      .length;
+  }, [multiMediaFiles]);
+  const songFilesLength = useMemo(() => {
+    return multiMediaFiles?.filter(item => classifyUrl(item).type === 'Music')
+      .length;
+  }, [multiMediaFiles]);
 
   return (
     <ScreenContainer goBack>
@@ -159,17 +181,38 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
             />
             <RowContainer style={tw`mt-2 items-end flex-1 justify-between`}>
               <RowContainer style={tw`w-2/5 justify-between`}>
-                <Pressable
-                  onPress={() => handleSelectMediaFromGallery('photo')}>
-                  <GallerSvg />
-                </Pressable>
-                <Pressable
-                  onPress={() => handleSelectMediaFromGallery('video')}>
-                  <VideoSvg />
-                </Pressable>
-                <Pressable onPress={() => handleSongsSelection()}>
-                  <MusicSvg />
-                </Pressable>
+                <View>
+                  <Pressable
+                    onPress={() => handleSelectMediaFromGallery('photo')}>
+                    <GallerSvg />
+                  </Pressable>
+                  {imageFilesLength > 0 && (
+                    <View style={tw`absolute bottom-3 left-3`}>
+                      <Badge size={17}>{imageFilesLength}</Badge>
+                    </View>
+                  )}
+                </View>
+                <View>
+                  <Pressable
+                    onPress={() => handleSelectMediaFromGallery('video')}>
+                    <VideoSvg />
+                  </Pressable>
+                  {videoFilesLength > 0 && (
+                    <View style={tw`absolute bottom-3 left-3`}>
+                      <Badge size={17}>{videoFilesLength}</Badge>
+                    </View>
+                  )}
+                </View>
+                <View>
+                  <Pressable onPress={() => handleSongsSelection()}>
+                    <MusicSvg />
+                    {songFilesLength > 0 && (
+                      <View style={tw`absolute bottom-3 left-3`}>
+                        <Badge size={17}>{songFilesLength}</Badge>
+                      </View>
+                    )}
+                  </Pressable>
+                </View>
               </RowContainer>
               <Pressable onPress={() => handleFollowMutation.mutate()}>
                 <SendSvg />
