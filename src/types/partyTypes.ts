@@ -1,3 +1,5 @@
+import {UserType} from './authType';
+
 export type Songs = {
   name: string;
   file_url: string;
@@ -62,6 +64,20 @@ export type PartiesResponse = {
   visibility: string;
 };
 
+interface UserProfile {
+  country: string;
+  dateOfBirth: string; // Use 'Date' if you prefer to work with Date objects
+  desc: string;
+  image: string;
+  location: string;
+  isVerified: boolean;
+  _id: string;
+  name: string;
+  email: string;
+  userType: string;
+  __v: number;
+}
+
 export type FeedResponse = {
   __v: number;
   _id: string;
@@ -71,5 +87,11 @@ export type FeedResponse = {
   mediaFiles: string[];
   text: string;
   updatedAt: string;
-  user: string;
+  user: {
+    profile: UserProfile;
+    _id: string;
+    name: string;
+    email: string;
+    userType: UserType;
+  };
 };
