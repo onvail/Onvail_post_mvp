@@ -1,5 +1,5 @@
 import React, {FunctionComponent, useState} from 'react';
-import {Pressable, View, TouchableOpacity, Image} from 'react-native';
+import {Pressable, View, TouchableOpacity} from 'react-native';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
 import CustomText from 'src/app/components/Text/CustomText';
@@ -34,9 +34,6 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   const GalleryThumbnailSvg = generalIcon.GalleryThumbnail;
 
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
-  const [selectedImage, setSelectedImage] = useState<string | undefined>(
-    undefined,
-  );
   const {tryPickImageFromDevice} = useImageService();
 
   const defaultValues: Party = {
@@ -104,7 +101,6 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
       includeBase64: true,
       action: action,
     });
-    setSelectedImage(data?.file?.uri);
     return data;
   };
 
@@ -115,8 +111,6 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
 
   const uploadedSongs: Songs[] = watch('songs');
   const uploadedAlbumCover: string = watch('albumPicture');
-
-  console.log(uploadedAlbumCover);
 
   return (
     <ScreenContainer screenHeader="Plan your party" goBack>
