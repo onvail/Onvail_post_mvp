@@ -187,7 +187,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                     });
                     onChange(response?.file_url);
                   }}
-                  style={tw`border border-grey2 h-50  items-center justify-center rounded-md`}>
+                  style={tw`border border-grey2 h-70  items-center justify-center rounded-md`}>
                   {uploadedAlbumCover.length > 1 ? (
                     <CustomImage
                       resizeMode="contain"
