@@ -57,22 +57,17 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const songs: Song[] = party?.songs;
 
   const allTracks = useMemo(() => {
-    let tracks: Track[] = [];
-    for (let i = 0; i < songs.length; i++) {
-      const track = {
-        genre: '',
-        album: '',
-        artwork: party?.albumPicture,
-        duration: 30,
-        url: songs?.[i]?.file_url,
-        id: songs?.[i]?._id,
-        date: party?.date,
-        title: songs?.[i]?.name,
-        artist: party?.artist?.name,
-      };
-      tracks.push(track);
-    }
-    return tracks;
+    return songs.map(song => ({
+      genre: '',
+      album: '',
+      artwork: party?.albumPicture,
+      duration: 30,
+      url: song?.file_url,
+      id: song?._id,
+      date: party?.date,
+      title: song?.name,
+      artist: party?.artist?.name,
+    }));
   }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
 
   const {handlePauseAndPlayTrack, playerState, checkIfTrackQueueIsDifferent} =
