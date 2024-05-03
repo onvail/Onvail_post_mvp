@@ -6,7 +6,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {Pressable, StyleSheet, TextInput, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {Camera} from 'react-native-vision-camera';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
@@ -49,6 +55,9 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
     useState<boolean>(false);
   const [postText, setPostText] = useState<string>('');
   const [multiMediaFiles, setMultiMediaFiles] = useState<string[]>([]);
+  const [isImageUploading, setIsImageUploading] = useState<boolean>(false);
+  const [isVideoUploading, setIsVideoUploading] = useState<boolean>(false);
+  const [isMusicUploading, setIsMusicUploading] = useState<boolean>(false);
 
   const camera = useRef<Camera>(null);
   const {selectDocument} = useDocumentPicker({
@@ -84,10 +93,18 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
         type: result?.assets?.[0]?.fileName!,
         uri: result?.assets?.[0]?.uri!,
       };
+      if (mediaType === 'photo') {
+        setIsImageUploading(true);
+      } else {
+        setIsVideoUploading;
+      }
       const response = await uploadToCloudinary(file);
       setMultiMediaFiles(prev => [...prev, response?.file_url]);
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsImageUploading(false);
+      setIsVideoUploading(false);
     }
   };
 
@@ -116,11 +133,14 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
         type: 'audio/mp4',
         uri: song?.uri,
       };
+      setIsMusicUploading(true);
       const response = await uploadToCloudinary(songFile);
 
       setMultiMediaFiles(prev => [...prev, response?.file_url]);
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsMusicUploading(false);
     }
   };
 
@@ -153,36 +173,51 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
     handleCamera();
   }, [handleCamera]);
 
-  const imageFilesLength = useMemo(() => {
-    return multiMediaFiles?.filter(item => classifyUrl(item).type === 'Image')
-      .length;
+  // Image file in multimedia array
+  const imageFile = useMemo(() => {
+    return multiMediaFiles?.filter(item => classifyUrl(item).type === 'Image');
   }, [multiMediaFiles]);
-  const videoFilesLength = useMemo(() => {
-    return multiMediaFiles?.filter(item => classifyUrl(item).type === 'Video')
-      .length;
+
+  // Video file in multimedia array
+  const videoFile = useMemo(() => {
+    return multiMediaFiles?.filter(item => classifyUrl(item).type === 'Video');
   }, [multiMediaFiles]);
-  const songFilesLength = useMemo(() => {
-    return multiMediaFiles?.filter(item => classifyUrl(item).type === 'Music')
-      .length;
+
+  // Songsfile file in multimedia array
+  const songsFile = useMemo(() => {
+    return multiMediaFiles?.filter(item => classifyUrl(item).type === 'Music');
   }, [multiMediaFiles]);
+
+  const imageFilesLength = imageFile.length;
+  const videoFilesLength = videoFile.length;
+  const songFilesLength = songsFile.length;
 
   return (
     <ScreenContainer goBack>
       <View style={tw` flex-1 mt-4`}>
         {selectedPostOptions === 'Post' && (
-          <View style={tw`bg-purple min-h-[70%] mx-5 text-sm rounded-lg p-3 `}>
+          <View style={tw`bg-purple h-[80%] mx-5 text-sm rounded-lg p-3 `}>
             <TextInput
               placeholder="wanna say something?"
               placeholderTextColor={'white'}
               multiline
               textAlignVertical="top"
               onChangeText={text => setPostText(text)}
-              style={tw` h-9/12 text-sm rounded-lg mt-2 font-poppinsRegular text-white`}
+              style={tw`text-sm  rounded-lg mt-2 font-poppinsRegular text-white`}
             />
+            <View style={tw`justify-center mt-35 rounded-2xl items-center`}>
+              {imageFilesLength > 0 && (
+                <CustomImage
+                  uri={imageFile[0]}
+                  style={tw` h-80 w-80 rounded-2xl justify-end`}
+                />
+              )}
+            </View>
             <RowContainer style={tw`mt-2 items-end flex-1 justify-between`}>
-              <RowContainer style={tw`w-2/5 justify-between`}>
+              <RowContainer style={tw`w-2/10 justify-between mx-2`}>
                 <View>
                   <Pressable
+                    disabled={imageFilesLength === 1}
                     onPress={() => handleSelectMediaFromGallery('photo')}>
                     <GallerSvg />
                   </Pressable>
@@ -191,8 +226,16 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
                       <Badge size={17}>{imageFilesLength}</Badge>
                     </View>
                   )}
+                  {isImageUploading && (
+                    <ActivityIndicator
+                      color="white"
+                      size={1}
+                      style={tw`absolute bottom-8 left-0`}
+                    />
+                  )}
                 </View>
-                <View>
+                {/* Pause video implementation for now */}
+                {/* <View>
                   <Pressable
                     onPress={() => handleSelectMediaFromGallery('video')}>
                     <VideoSvg />
@@ -202,14 +245,23 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
                       <Badge size={17}>{videoFilesLength}</Badge>
                     </View>
                   )}
-                </View>
+                </View> */}
                 <View>
-                  <Pressable onPress={() => handleSongsSelection()}>
+                  <Pressable
+                    disabled={songFilesLength === 1}
+                    onPress={() => handleSongsSelection()}>
                     <MusicSvg />
                     {songFilesLength > 0 && (
                       <View style={tw`absolute bottom-3 left-3`}>
                         <Badge size={17}>{songFilesLength}</Badge>
                       </View>
+                    )}
+                    {isMusicUploading && (
+                      <ActivityIndicator
+                        color="white"
+                        size={1}
+                        style={tw`absolute bottom-8 left-0`}
+                      />
                     )}
                   </Pressable>
                 </View>
