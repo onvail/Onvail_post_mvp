@@ -54,7 +54,11 @@ const useMusicPlayer = ({track}: Props) => {
 
   // Play the current track
   const play = async () => {
-    await TrackPlayer.play();
+    try {
+      await TrackPlayer.play();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   // Pause the current track
