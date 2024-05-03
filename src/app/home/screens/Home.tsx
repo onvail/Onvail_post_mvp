@@ -84,14 +84,14 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           ) : null}
           {selectedTab === 'Parties' && (
             <PostCard
-              handleJoinPartyBtnPress={item =>
+              handleJoinPartyBtnPress={item => {
                 navigation.navigate('MainAppNavigator', {
                   screen: 'PartyScreen',
                   params: {
                     party: item,
                   },
-                })
-              }
+                });
+              }}
               data={parties.data}
             />
           )}
