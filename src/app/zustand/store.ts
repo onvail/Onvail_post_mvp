@@ -1,4 +1,4 @@
-import {Track} from 'react-native-track-player';
+import {State, Track} from 'react-native-track-player';
 import {create} from 'zustand';
 
 export interface MusicStoreState {
@@ -6,6 +6,8 @@ export interface MusicStoreState {
   addTracks: (newTrack: Track) => void;
   currentTrack: Track;
   setCurrentlyPlayingTrack: (newTrack: Track) => void;
+  currentPlayerState: State;
+  setPlayerState: (state: State) => void;
 }
 
 export const useMusicStore = create<MusicStoreState>(set => ({
@@ -19,4 +21,10 @@ export const useMusicStore = create<MusicStoreState>(set => ({
     set(() => ({
       currentTrack: newTrack,
     })),
+  currentPlayerState: State.None,
+  setPlayerState: (state: State) => {
+    set(() => ({
+      currentPlayerState: state,
+    }));
+  },
 }));

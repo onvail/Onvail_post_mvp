@@ -1,5 +1,5 @@
 import React, {FunctionComponent, useState} from 'react';
-import {TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import PostCard from 'src/app/components/Posts/PostCard';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
@@ -10,6 +10,9 @@ import tw from 'src/lib/tailwind';
 import CustomText from 'src/app/components/Text/CustomText';
 import Animated from 'react-native-reanimated';
 import {BottomTabParamList} from 'src/app/navigator/types/BottomTabParamList';
+import {useQuery} from '@tanstack/react-query';
+import {fetchParties, fetchPosts} from 'src/actions/parties';
+import Feeds from 'src/app/components/Feed/screens/Feeds';
 
 type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 
@@ -25,6 +28,16 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
   };
 
   const AnimatedButton = Animated.createAnimatedComponent(TouchableOpacity);
+
+  const parties = useQuery({
+    queryKey: ['parties'],
+    queryFn: fetchParties,
+  });
+
+  const posts = useQuery({
+    queryKey: ['posts'],
+    queryFn: fetchPosts,
+  });
 
   return (
     <ScreenContainer>
@@ -63,12 +76,26 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
             );
           })}
         </View>
-        <View style={tw`flex-1 mb-12`}>
-          <PostCard
-            handleJoinPartyBtnPress={() =>
-              navigation.navigate('MainAppNavigator', {screen: 'PartyScreen'})
-            }
-          />
+        <View style={tw`flex-1`}>
+          {parties.isPending || posts.isPending ? (
+            <View style={tw`flex-1 justify-center items-center`}>
+              <ActivityIndicator size={30} />
+            </View>
+          ) : null}
+          {selectedTab === 'Parties' && (
+            <PostCard
+              handleJoinPartyBtnPress={item => {
+                navigation.navigate('MainAppNavigator', {
+                  screen: 'PartyScreen',
+                  params: {
+                    party: item,
+                  },
+                });
+              }}
+              data={parties.data}
+            />
+          )}
+          {selectedTab === 'Feeds' && <Feeds data={posts.data} />}
         </View>
       </View>
     </ScreenContainer>

@@ -8,6 +8,7 @@ module.exports = {
         purple2: '#710867',
         purple3: '#572896',
         purple4: '#392655',
+        purple5: '#6006D63D',
         grey: '#FEFEFE',
         grey2: '#717171',
         grey3: '#333333',

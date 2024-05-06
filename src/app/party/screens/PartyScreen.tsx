@@ -2,6 +2,7 @@ import React, {
   FunctionComponent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -12,6 +13,7 @@ import {
   View,
   TextInput,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'src/app/components/Icons/Icon';
@@ -27,22 +29,36 @@ import CustomBottomSheet, {
 import CommentCards from 'src/app/components/Cards/CommentCards';
 import RowContainer from 'src/app/components/View/RowContainer';
 import {FlashList, ListRenderItem} from '@shopify/flash-list';
-import {SongsProps, sampleSongs} from 'src/utils/data';
 import MusicList from '../components/MusicList';
 import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {VolumeManager} from 'react-native-volume-manager';
-import {State, Track} from 'react-native-track-player';
+import {Track} from 'react-native-track-player';
+import CustomImage from 'src/app/components/Image/CustomImage';
+import {Song} from 'src/types/partyTypes';
+import {getColors} from 'react-native-image-colors';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
-const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
-  const StormzyCover = generalIcon.StormzyCover;
+type ColorScheme = {
+  background: string;
+  detail: string;
+  platform: string;
+  primary: string;
+  secondary: string;
+};
+
+const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
+  const {party} = route.params;
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
   const PauseIcon = generalIcon.PauseIcon;
   const PlayIcon = generalIcon.PlayIcon;
   const SendIcon = generalIcon.SendIcon;
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
+  const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
+  const [backgroundColor, setBackgroundColor] = useState<ColorScheme>(
+    {} as ColorScheme,
+  );
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
@@ -51,28 +67,26 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
     bottomSheetRef.current?.open();
   };
 
-  const allTracks = useMemo(() => {
-    let tracks: Track[] = [];
-    for (let i = 0; i < sampleSongs.length; i++) {
-      const track = {
-        url: sampleSongs[i]?.url,
-        title: sampleSongs[i]?.title,
-        artist: sampleSongs[i]?.artist,
-        album: 'while(1<2)',
-        genre: 'stormzy',
-        date: '2014-05-20T07:00:00+00:00',
-        artwork: 'http://example.com/cover.png',
-        duration: sampleSongs[i].duration,
-        id: i.toString(), // Ensure ID is a string if Track type expects it
-      };
-      tracks.push(track); // Correctly push each track into the tracks array
-    }
-    return tracks;
-  }, []);
+  const songs: Song[] = party?.songs;
 
-  const {handlePauseAndPlayTrack, currentTrack, playerState} = useMusicPlayer({
-    track: allTracks,
-  });
+  const allTracks = useMemo(() => {
+    return songs.map(song => ({
+      genre: '',
+      album: '',
+      artwork: party?.albumPicture,
+      duration: 30,
+      url: song?.file_url,
+      id: song?._id,
+      date: party?.date,
+      title: song?.name,
+      artist: party?.artist?.name,
+    }));
+  }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
+
+  const {handlePauseAndPlayTrack, playerState, checkIfTrackQueueIsDifferent} =
+    useMusicPlayer({
+      track: allTracks,
+    });
 
   const volumeHandler = useCallback(async () => {
     await VolumeManager.setVolume(volume);
@@ -82,7 +96,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
     volumeHandler();
   }, [volume, volumeHandler]);
 
-  const renderItem: ListRenderItem<SongsProps> = ({item, index}) => {
+  const renderItem: ListRenderItem<Track> = ({item, index}) => {
     const {artist, title, duration, url} = item;
     return (
       <MusicList
@@ -91,28 +105,64 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
         index={index}
         artist={artist}
         url={url}
-        currentTrackId={currentTrack?.id}
+        id={item?.id}
       />
     );
   };
 
-  const currentItem = useMemo(() => {
-    return currentTrack?.id === allTracks[0]?.id &&
-      playerState === State.Playing
-      ? true
-      : false;
-  }, [allTracks, currentTrack, playerState]);
+  const handleSameQueueItemState = useCallback(async () => {
+    const sameQueue = await checkIfTrackQueueIsDifferent();
+    setIsSameQueue(sameQueue);
+    return sameQueue;
+  }, [checkIfTrackQueueIsDifferent]);
+
+  useLayoutEffect(() => {
+    handleSameQueueItemState();
+  }, [handleSameQueueItemState]);
+
+  const backgroundColorPromise = useMemo(async () => {
+    try {
+      const colors = await getColors(party.albumPicture, {
+        fallback: '#228B22',
+        cache: true,
+        key: party.albumPicture,
+      });
+      return colors;
+    } catch (error) {}
+  }, [party.albumPicture]);
+
+  useEffect(() => {
+    const fetchBackgroundColor = async () => {
+      const colors = await backgroundColorPromise;
+      const itemBackgroundColor = colors as ColorScheme;
+      setBackgroundColor(itemBackgroundColor);
+    };
+
+    fetchBackgroundColor();
+  }, [backgroundColorPromise]);
 
   return (
-    <LinearGradient style={tw`h-full p-4`} colors={['#0E0E0E', '#087352']}>
+    <LinearGradient
+      style={tw`h-full p-4`}
+      colors={[
+        backgroundColor?.background ?? '#0E0E0E',
+        backgroundColor?.detail ?? '#087352',
+      ]}>
       <SafeAreaView style={tw`flex-1`}>
         <View style={tw`items-end`}>
           <Pressable onPress={() => navigation.goBack()}>
-            <Icon icon="close-circle-outline" color="white" size={35} />
+            <Icon
+              icon="close-circle-outline"
+              color={backgroundColor?.secondary ?? 'white'}
+              size={35}
+            />
           </Pressable>
         </View>
         <View style={tw`mt-8 mb-3 items-center`}>
-          <StormzyCover />
+          <CustomImage
+            uri={party.albumPicture}
+            style={tw`h-70 w-70  rounded-lg`}
+          />
           <View style={tw` mt-8 flex-row items-center justify-between`}>
             <HighLightLeft />
             <CustomText style={tw`font-poppinsBold w-10`}>LIVE</CustomText>
@@ -124,7 +174,13 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
             <Pressable
               onPress={handlePauseAndPlayTrack}
               style={tw`w-10 items-center `}>
-              {currentItem ? <PauseIcon /> : <PlayIcon />}
+              {isSameQueue && playerState === 'playing' ? (
+                <PauseIcon />
+              ) : isSameQueue && playerState === 'buffering' ? (
+                <ActivityIndicator />
+              ) : (
+                <PlayIcon />
+              )}
             </Pressable>
           </View>
           <View style={tw`flex-row w-[90%] mt-6 items-center`}>
@@ -142,9 +198,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation}) => {
           </View>
         </View>
         <FlashList
-          data={sampleSongs}
+          data={allTracks}
           renderItem={renderItem}
-          keyExtractor={(item, index) => item.title + index}
+          keyExtractor={item => item?.id}
           estimatedItemSize={20}
           estimatedListSize={{
             height: 200,

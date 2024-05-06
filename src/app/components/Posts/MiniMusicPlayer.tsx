@@ -14,12 +14,14 @@ interface Props {
   musicTitle: string;
   uri: string;
   artiste: string;
+  id: string;
 }
 
 const MiniMusicPlayer: FunctionComponent<Props> = ({
   musicTitle,
   uri,
   artiste,
+  id,
 }) => {
   // sample track
   const track = useMemo(
@@ -28,15 +30,15 @@ const MiniMusicPlayer: FunctionComponent<Props> = ({
         url: uri,
         title: musicTitle,
         artist: artiste,
-        album: 'while(1<2)',
-        genre: 'Progressive House, Electro House',
-        date: '2014-05-20T07:00:00+00:00',
+        album: '',
+        genre: '',
+        date: new Date().toDateString(),
         artwork: 'http://example.com/cover.png',
         duration: 402,
-        id: 'new-id',
+        id: id,
       },
     ],
-    [uri, musicTitle, artiste],
+    [uri, musicTitle, artiste, id],
   );
 
   const {
@@ -90,7 +92,7 @@ const MiniMusicPlayer: FunctionComponent<Props> = ({
           </View>
         </View>
 
-        <View style={tw`border-[0.5px] h-9 mx-3 border-grey2`} />
+        <View style={tw`border-[0.3px] h-4 mx-3 border-grey2`} />
         <TouchableOpacity style={tw`bg-white rounded-full  px-2 py-1`}>
           <CustomText style={tw`text-primary text-xs`}>Open</CustomText>
         </TouchableOpacity>

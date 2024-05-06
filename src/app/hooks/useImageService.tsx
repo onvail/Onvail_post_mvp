@@ -85,6 +85,7 @@ const selectImage = async ({
 
 interface File extends Blob {
   uri?: string;
+  name?: string;
 }
 
 export type ImageFromDevice = {

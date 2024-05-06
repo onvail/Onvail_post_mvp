@@ -138,7 +138,6 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  bottomBar: {},
   btnCircleUp: {
     width: 60,
     height: 60,

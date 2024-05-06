@@ -9,36 +9,38 @@ import tw from 'src/lib/tailwind';
 import FormSelector from '../components/FormSelector';
 import SwitchSelector from '../components/SwitchSelector';
 import CustomCalendar from 'src/app/components/Calendar/CustomCalendar';
-import {Party, PartyError} from 'src/types/partyTypes';
+import {Party, PartyError, Songs} from 'src/types/partyTypes';
 import {useForm, Controller} from 'react-hook-form';
 import useImageService from 'src/app/hooks/useImageService';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import useDocumentPicker from 'src/app/hooks/useDocumentPicker';
-import {DocumentPickerResponse} from 'react-native-document-picker';
-import {truncateText} from 'src/utils/utilities';
+import {
+  FileUploadItem,
+  handleMultipleUploads,
+  truncateText,
+  uploadToCloudinary,
+} from 'src/utils/utilities';
 import ErrorText from 'src/app/components/Text/ErrorText';
 import VotingPoll from '../components/VotingPoll';
 import {toast, Toasts, ToastPosition} from '@backpackapp-io/react-native-toast';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import api from 'src/api/api';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
 
-const PlanYourParty: FunctionComponent = () => {
-  const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
-
+type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
+const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
+  const {partyType} = route.params;
   const GalleryThumbnailSvg = generalIcon.GalleryThumbnail;
-  const [selectedImage, setSelectedImage] = useState<string | undefined>(
-    undefined,
-  );
-  const [selectedSongs, setSelectedSongs] = useState<
-    DocumentPickerResponse[] | undefined
-  >(undefined);
+
+  const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
   const {tryPickImageFromDevice} = useImageService();
 
   const defaultValues: Party = {
     partyName: '',
     partyDesc: '',
     songs: [],
-    albumPicture: undefined,
+    albumPicture: '',
     date: '',
     guests: [],
     visibility: 'public',
@@ -51,13 +53,14 @@ const PlanYourParty: FunctionComponent = () => {
     handleSubmit,
     formState: {errors},
     setValue,
+    watch,
   } = useForm({
     defaultValues: defaultValues,
     mode: 'all',
   });
   const onSubmit = async (data: Party) => {
     try {
-      const response = await api.post({
+      await api.post({
         url: '/parties/create-party',
         data,
         requiresToken: true,
@@ -72,7 +75,9 @@ const PlanYourParty: FunctionComponent = () => {
           text: tw`text-white font-poppinsBold`,
         },
       });
-      console.log(response);
+      navigation.navigate('BottomNavigator', {
+        screen: 'Home',
+      });
     } catch (error: unknown) {
       const createPartyError = error as PartyError;
       console.log(createPartyError.response?.data);
@@ -96,20 +101,21 @@ const PlanYourParty: FunctionComponent = () => {
       includeBase64: true,
       action: action,
     });
-    setSelectedImage(data?.file?.uri);
     return data;
   };
 
   const handleSelectMusicFile = async () => {
     const data = await selectDocument();
-    setSelectedSongs(data);
     return data;
   };
+
+  const uploadedSongs: Songs[] = watch('songs');
+  const uploadedAlbumCover: string = watch('albumPicture');
 
   return (
     <ScreenContainer screenHeader="Plan your party" goBack>
       <KeyboardAwareScrollView style={tw`flex-1`}>
-        <View style={tw`mx-4 flex-1 mt-12 mb-10`}>
+        <View style={tw`mx-4 flex-1 mt-4 mb-10`}>
           <View style={tw`  `}>
             <RowContainer style={tw`mb-2 justify-between`}>
               <CustomText>Title</CustomText>
@@ -174,13 +180,18 @@ const PlanYourParty: FunctionComponent = () => {
                 <Pressable
                   onPress={async () => {
                     const image = await handleSelectPhoto('openPicker');
-                    onChange(image?.file?.uri);
+                    const response = await uploadToCloudinary({
+                      uri: image?.file?.uri ?? '',
+                      type: image?.file?.type ?? '',
+                      name: image?.file?.name ?? '',
+                    });
+                    onChange(response?.file_url);
                   }}
-                  style={tw`border border-grey2 h-50  items-center justify-center rounded-md`}>
-                  {selectedImage ? (
+                  style={tw`border border-grey2 h-70  items-center justify-center rounded-md`}>
+                  {uploadedAlbumCover.length > 1 ? (
                     <CustomImage
                       resizeMode="contain"
-                      uri={selectedImage}
+                      uri={uploadedAlbumCover}
                       style={tw`h-50 w-90 rounded-md`}
                     />
                   ) : (
@@ -209,18 +220,23 @@ const PlanYourParty: FunctionComponent = () => {
                     icon="library-music"
                     onPress={async () => {
                       const data = await handleSelectMusicFile();
-                      const items = data?.map(item => ({
-                        name: item.name,
-                        file_url: item.uri,
-                      }));
-                      onChange(items);
+                      const itemsForCloudinaryUpload: FileUploadItem[] =
+                        data?.map(uploadItem => ({
+                          uri: uploadItem.uri ?? '',
+                          name: uploadItem.name ?? '',
+                          type: uploadItem.type ?? '',
+                        })) ?? [];
+                      const response = await handleMultipleUploads(
+                        itemsForCloudinaryUpload,
+                      );
+                      onChange(response);
                     }}
                   />
-                  {selectedSongs?.map((item, _) => {
+                  {uploadedSongs?.map((item, _) => {
                     return (
                       <CustomText
-                        style={tw`text-2xs mt-1 text-purple`}
-                        key={item.name + item?.uri}>
+                        style={tw`text-sm mt-1 text-purple`}
+                        key={item.name}>
                         {truncateText(item.name!)}
                       </CustomText>
                     );
@@ -255,6 +271,7 @@ const PlanYourParty: FunctionComponent = () => {
           <VotingPoll
             handlePollOptions={data => setValue('pollOptions', data)}
             handlePollQuestions={data => setValue('pollQuestion', data)}
+            partyType={partyType}
           />
 
           <View style={tw`mt-4`}>
@@ -291,7 +308,10 @@ const PlanYourParty: FunctionComponent = () => {
               <CustomCalendar
                 isCalendarVisible={isCalendarVisible}
                 onBackDropPress={() => setIsCalendarVisible(false)}
-                onDateSelected={date => onChange(date)}
+                onDateSelected={date => {
+                  onChange(date);
+                  setIsCalendarVisible(false);
+                }}
               />
             )}
             name="date"

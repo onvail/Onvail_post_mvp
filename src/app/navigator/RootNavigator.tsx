@@ -8,6 +8,7 @@ import BottomTabNavigator from './BottomNavigator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import localStorageKeys from 'src/api/config/local-storage-keys';
 import tw from 'src/lib/tailwind';
+import MainNavigator from './MainNavigator';
 
 const RootStack = createStackNavigator<RootStackParamList>();
 
@@ -54,6 +55,7 @@ const RootNavigator: FunctionComponent = () => {
         component={BottomTabNavigator}
       />
       <RootStack.Screen name="AuthNavigator" component={AuthNavigator} />
+      <RootStack.Screen name="MainStackNavigator" component={MainNavigator} />
     </RootStack.Navigator>
   );
 };

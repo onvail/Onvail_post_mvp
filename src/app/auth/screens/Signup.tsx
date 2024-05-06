@@ -21,14 +21,16 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 const Signup: FunctionComponent<Props> = ({navigation}) => {
   const BackgroundGradientSvg = generalIcon.BackgroundGradient;
-  const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
+  const [isPasswordHidden, setIsPasswordHidden] = useState<boolean>(true);
   const [apnToken, setApnToken] = useState<string>('');
   const [signUpError, setSignUpError] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const defaultValues: SignInProps = {
     name: '',
     email: '',
     password: '',
+    stageName: '',
     userType: '' as UserType,
   };
 
@@ -41,6 +43,7 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
     mode: 'all',
   });
   const onSubmit = async (data: SignInProps) => {
+    setIsLoading(true);
     setSignUpError(undefined);
     const formData = {
       ...data,
@@ -63,6 +66,7 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
       console.log(error.response?.data);
       setSignUpError(error?.response?.data?.message);
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -106,13 +110,32 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
               }}
               render={({field: {onChange, onBlur, value}}) => (
                 <CustomTextInput
-                  placeholder="stage name"
+                  placeholder="name"
                   onChangeText={onChange}
                   value={value}
                   onBlur={onBlur}
                 />
               )}
               name="name"
+            />
+          </View>
+          <View>
+            <ErrorText>{errors?.stageName?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'stage name is required',
+                maxLength: 30,
+              }}
+              render={({field: {onChange, onBlur, value}}) => (
+                <CustomTextInput
+                  placeholder="stage name"
+                  onChangeText={onChange}
+                  value={value}
+                  onBlur={onBlur}
+                />
+              )}
+              name="stageName"
             />
           </View>
           <View>
@@ -151,11 +174,11 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
                   onChangeText={onChange}
                   value={value}
                   onBlur={onBlur}
-                  secureTextEntry={isPasswordVisible}
+                  secureTextEntry={isPasswordHidden}
                   inputType="Password"
-                  passwordVisibility={isPasswordVisible}
+                  passwordVisibility={isPasswordHidden}
                   handlePasswordVisibility={() =>
-                    setIsPasswordVisible(prev => !prev)
+                    setIsPasswordHidden(prev => !prev)
                   }
                 />
               )}
@@ -189,7 +212,11 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
           </View>
         </View>
         <View style={tw`mt-16`}>
-          <ProceedBtn title="Submit" onPress={handleSubmit(onSubmit)} />
+          <ProceedBtn
+            title="Submit"
+            isLoading={isLoading}
+            onPress={handleSubmit(onSubmit)}
+          />
           <CustomText style={tw`mt-16 text-center`}>
             Already have an account?{' '}
             <CustomText
