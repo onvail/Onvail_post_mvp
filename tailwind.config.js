@@ -20,6 +20,7 @@ module.exports = {
         darkGreen: '#0B1E1A',
         red: '#CC1435',
         orange: '#BF5330',
+        orange2: '#FF6D6D',
       },
       fontFamily: {
         poppinsBlack: ['Poppins-Black'],
