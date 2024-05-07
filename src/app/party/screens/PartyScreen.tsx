@@ -110,6 +110,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     );
   };
 
+  const buffering = isSameQueue && playerState === 'buffering';
+
   const handleSameQueueItemState = useCallback(async () => {
     const sameQueue = await checkIfTrackQueueIsDifferent();
     setIsSameQueue(sameQueue);
@@ -176,7 +178,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
               style={tw`w-10 items-center `}>
               {isSameQueue && playerState === 'playing' ? (
                 <PauseIcon />
-              ) : isSameQueue && playerState === 'buffering' ? (
+              ) : buffering ? (
                 <ActivityIndicator />
               ) : (
                 <PlayIcon />
