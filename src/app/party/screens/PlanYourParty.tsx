@@ -1,6 +1,5 @@
 import React, {FunctionComponent, useState} from 'react';
 import {Pressable, View, TouchableOpacity} from 'react-native';
-import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
 import CustomText from 'src/app/components/Text/CustomText';
 import CustomTextInput from 'src/app/components/TextInput/CustomTextInput';
@@ -27,13 +26,15 @@ import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import api from 'src/api/api';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
+import DefaultImages from '../components/DefaultImages';
+import {DocumentPickerResponse} from 'react-native-document-picker';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
 const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   const {partyType} = route.params;
-  const GalleryThumbnailSvg = generalIcon.GalleryThumbnail;
 
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
+  const [selectedColor, setSelectedColor] = useState<ImageColors>('purple');
   const {tryPickImageFromDevice} = useImageService();
 
   const defaultValues: Party = {
@@ -94,6 +95,10 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   };
 
   const {selectDocument} = useDocumentPicker();
+
+  type ImageColors = 'purple' | 'orange';
+
+  const defaultImageColors: ImageColors[] = ['purple', 'orange'];
 
   const handleSelectPhoto = async (action: 'openCamera' | 'openPicker') => {
     const data = await tryPickImageFromDevice({
@@ -177,30 +182,51 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                 required: 'Album image is required',
               }}
               render={({field: {onChange}}) => (
-                <Pressable
-                  onPress={async () => {
-                    const image = await handleSelectPhoto('openPicker');
-                    const response = await uploadToCloudinary({
-                      uri: image?.file?.uri ?? '',
-                      type: image?.file?.type ?? '',
-                      name: image?.file?.name ?? '',
-                    });
-                    onChange(response?.file_url);
-                  }}
-                  style={tw`border border-grey2 h-70  items-center justify-center rounded-md`}>
-                  {uploadedAlbumCover.length > 1 ? (
-                    <CustomImage
-                      resizeMode="contain"
-                      uri={uploadedAlbumCover}
-                      style={tw`h-50 w-90 rounded-md`}
-                    />
-                  ) : (
+                <View>
+                  <Pressable
+                    style={tw`  items-center justify-center rounded-md`}>
+                    {uploadedAlbumCover.length > 1 ? (
+                      <CustomImage
+                        resizeMode="cover"
+                        uri={uploadedAlbumCover}
+                        style={tw`h-70 w-full rounded-md`}
+                      />
+                    ) : (
+                      <DefaultImages
+                        color={selectedColor}
+                        artist="Stovia"
+                        imageUrl="https://i.pinimg.com/originals/0a/88/e0/0a88e01b53093c2c46efb76b6d5887e1.jpg"
+                      />
+                    )}
+                  </Pressable>
+                  <RowContainer style={tw`mt-2 justify-between`}>
+                    <Pressable
+                      onPress={async () => {
+                        const image = await handleSelectPhoto('openPicker');
+                        const response = await uploadToCloudinary({
+                          uri: image?.file?.uri ?? '',
+                          type: image?.file?.type ?? '',
+                          name: image?.file?.name ?? '',
+                        });
+                        onChange(response?.file_url);
+                      }}>
+                      <CustomText style={tw``}>Upload image</CustomText>
+                    </Pressable>
                     <RowContainer>
-                      <GalleryThumbnailSvg />
-                      <CustomText style={tw`ml-3`}>Add an image</CustomText>
+                      {defaultImageColors.map((item, _) => (
+                        <Pressable
+                          key={item}
+                          onPress={() => {
+                            setSelectedColor(item);
+                          }}
+                          style={tw`h-5  ${
+                            selectedColor === item ? 'border border-white' : ''
+                          } w-5 ml-2 rounded-full bg-${item}`}
+                        />
+                      ))}
                     </RowContainer>
-                  )}
-                </Pressable>
+                  </RowContainer>
+                </View>
               )}
               name="albumPicture"
             />
@@ -220,8 +246,9 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                     icon="library-music"
                     onPress={async () => {
                       const data = await handleSelectMusicFile();
+                      const file = data as DocumentPickerResponse[];
                       const itemsForCloudinaryUpload: FileUploadItem[] =
-                        data?.map(uploadItem => ({
+                        file?.map(uploadItem => ({
                           uri: uploadItem.uri ?? '',
                           name: uploadItem.name ?? '',
                           type: uploadItem.type ?? '',
@@ -237,7 +264,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                       <CustomText
                         style={tw`text-sm mt-1 text-purple`}
                         key={item.name}>
-                        {truncateText(item.name!)}
+                        {truncateText(item.name)}
                       </CustomText>
                     );
                   })}

@@ -72,6 +72,7 @@
     "react-native-track-player": "^4.0.1",
     "react-native-uuid": "^2.0.2",
     "react-native-vector-icons": "^10.0.3",
+    "react-native-view-shot": "^3.8.0",
     "react-native-vision-camera": "^3.9.1",
     "react-native-volume-manager": "^1.10.0",
     "twrnc": "^4.1.0",

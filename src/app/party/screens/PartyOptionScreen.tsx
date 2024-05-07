@@ -52,7 +52,7 @@ const Clickable: FunctionComponent<ClickableProps> = ({
   const ClickableIcon = icon;
   return (
     <TouchableOpacity
-      style={tw`border my-4 border-grey2 rounded-lg`}
+      style={tw`border my-4 border-purple rounded-lg`}
       onPress={onPress}>
       <RowContainer style={tw` justify-between  h-38`}>
         <View style={tw`p-4 `}>
@@ -66,7 +66,7 @@ const Clickable: FunctionComponent<ClickableProps> = ({
           <CustomText style={tw`text-grey2 w-60 text-sm`}>{details}</CustomText>
         </View>
         <View
-          style={tw`bg-grey7 h-full w-12 rounded-r-md  items-center justify-center`}>
+          style={tw`bg-purple h-full w-12 rounded-r-md  items-center justify-center`}>
           <Icon icon={'chevron-right'} color="white" size={30} />
         </View>
       </RowContainer>
