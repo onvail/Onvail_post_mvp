@@ -28,6 +28,8 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
 import DefaultImages from '../components/DefaultImages';
 import {DocumentPickerResponse} from 'react-native-document-picker';
+import CustomTimePicker from 'src/app/components/Calendar/CustomTimePicker';
+import Modal from 'react-native-modal/dist/modal';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
 const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
@@ -35,6 +37,17 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
 
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
   const [selectedColor, setSelectedColor] = useState<ImageColors>('purple');
+  const [isTimePickerVisible, setIsTimePickerVisible] =
+    useState<boolean>(false);
+  const [
+    isApplicationaClosingDatePickerVisible,
+    setIsApplicationClosingDatePickerVisible,
+  ] = useState<boolean>(false);
+  const [
+    isApplicationaClosingTimePickerVisible,
+    setIsApplicationClosingTimePickerVisible,
+  ] = useState<boolean>(false);
+
   const {tryPickImageFromDevice} = useImageService();
 
   const defaultValues: Party = {
@@ -42,11 +55,14 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
     partyDesc: '',
     songs: [],
     albumPicture: '',
-    date: '',
+    date: new Date().toLocaleDateString(),
     guests: [],
     visibility: 'public',
     pollOptions: [],
     pollQuestion: '',
+    time: new Date().toLocaleTimeString(),
+    partyApplicationClosingDate: new Date().toLocaleDateString(),
+    partyApplicationClosingTime: new Date().toLocaleTimeString(),
   };
 
   const {
@@ -116,6 +132,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
 
   const uploadedSongs: Songs[] = watch('songs');
   const uploadedAlbumCover: string = watch('albumPicture');
+  // const partyDate: string = watch('date')
 
   return (
     <ScreenContainer screenHeader="Plan your party" goBack>
@@ -295,6 +312,28 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
             />
           </View>
 
+          <View style={tw``}>
+            <ErrorText>{errors?.time?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'Time is required',
+              }}
+              render={({field: {value}}) => (
+                <FormSelector
+                  description="Pick a time"
+                  instruction={'Pick a time'}
+                  icon="schedule"
+                  onPress={() => {
+                    setIsTimePickerVisible(true);
+                  }}
+                  value={value}
+                />
+              )}
+              name="time"
+            />
+          </View>
+
           <VotingPoll
             handlePollOptions={data => setValue('pollOptions', data)}
             handlePollQuestions={data => setValue('pollQuestion', data)}
@@ -304,9 +343,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
           <View style={tw`mt-4`}>
             <Controller
               control={control}
-              rules={{
-                required: 'Date is required',
-              }}
+              rules={{}}
               render={({field: {onChange}}) => (
                 <SwitchSelector
                   description="Public"
@@ -317,6 +354,52 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                 />
               )}
               name="visibility"
+            />
+          </View>
+          <View style={tw``}>
+            <ErrorText>
+              {errors?.partyApplicationClosingDate?.message}
+            </ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'Application closing date required',
+              }}
+              render={({field: {value}}) => (
+                <FormSelector
+                  description="Application closes by (Date)"
+                  instruction="Today"
+                  icon="calendar-month"
+                  onPress={() => {
+                    setIsApplicationClosingDatePickerVisible(true);
+                  }}
+                  value={value}
+                />
+              )}
+              name="partyApplicationClosingDate"
+            />
+          </View>
+          <View style={tw``}>
+            <ErrorText>
+              {errors?.partyApplicationClosingTime?.message}
+            </ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'Application closing date required',
+              }}
+              render={({field: {value}}) => (
+                <FormSelector
+                  description="Application closes by (Time)"
+                  instruction="Today"
+                  icon="schedule"
+                  onPress={() => {
+                    setIsApplicationClosingTimePickerVisible(true);
+                  }}
+                  value={value}
+                />
+              )}
+              name="partyApplicationClosingTime"
             />
           </View>
           <View style={tw`mt-8`}>
@@ -342,6 +425,65 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
               />
             )}
             name="date"
+          />
+          <Modal
+            isVisible={isTimePickerVisible}
+            onBackdropPress={() => setIsTimePickerVisible(false)}>
+            <Controller
+              control={control}
+              rules={{
+                required: 'Time is required',
+              }}
+              render={({field: {onChange}}) => (
+                <View style={tw` bg-white  rounded-lg`}>
+                  <CustomTimePicker
+                    showTimePicker={isTimePickerVisible}
+                    onChangeTime={time => onChange(time)}
+                  />
+                </View>
+              )}
+              name="time"
+            />
+          </Modal>
+          <Modal
+            isVisible={isApplicationaClosingTimePickerVisible}
+            onBackdropPress={() =>
+              setIsApplicationClosingTimePickerVisible(false)
+            }>
+            <Controller
+              control={control}
+              rules={{
+                required: 'Time is required',
+              }}
+              render={({field: {onChange}}) => (
+                <View style={tw` bg-white  rounded-lg`}>
+                  <CustomTimePicker
+                    showTimePicker={isApplicationaClosingTimePickerVisible}
+                    onChangeTime={time => onChange(time)}
+                  />
+                </View>
+              )}
+              name="partyApplicationClosingTime"
+            />
+          </Modal>
+          <Controller
+            control={control}
+            rules={{
+              required: 'Application closing Date is required',
+            }}
+            render={({field: {onChange}}) => (
+              <CustomCalendar
+                isCalendarVisible={isApplicationaClosingDatePickerVisible}
+                onBackDropPress={() =>
+                  setIsApplicationClosingDatePickerVisible(false)
+                }
+                onDateSelected={date => {
+                  onChange(date);
+                  setIsApplicationClosingDatePickerVisible(false);
+                }}
+              />
+            )}
+            name="partyApplicationClosingDate"
           />
         </View>
       </KeyboardAwareScrollView>

@@ -19,6 +19,9 @@ export type Party = {
   guests: [];
   pollQuestion: string;
   pollOptions: PollType[];
+  time: string;
+  partyApplicationClosingDate: string;
+  partyApplicationClosingTime: string;
 };
 
 export type PartyError = {
