@@ -15,9 +15,9 @@ const CustomTimePicker: React.FC<Props> = ({showTimePicker, onChangeTime}) => {
         <DateTimePicker
           testID="dateTimePicker"
           value={date}
-          mode={'time'}
+          mode={'datetime'}
           onChange={(_, selectedDate) => {
-            onChangeTime(selectedDate?.toLocaleTimeString());
+            onChangeTime(selectedDate?.toISOString());
             setDate(selectedDate);
           }}
           display="spinner"
