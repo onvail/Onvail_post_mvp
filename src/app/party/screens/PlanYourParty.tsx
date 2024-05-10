@@ -1,5 +1,5 @@
-import React, {FunctionComponent, useState} from 'react';
-import {Pressable, View, TouchableOpacity} from 'react-native';
+import React, {FunctionComponent, useCallback, useRef, useState} from 'react';
+import {Pressable, View} from 'react-native';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
 import CustomText from 'src/app/components/Text/CustomText';
 import CustomTextInput from 'src/app/components/TextInput/CustomTextInput';
@@ -8,9 +8,9 @@ import tw from 'src/lib/tailwind';
 import FormSelector from '../components/FormSelector';
 import SwitchSelector from '../components/SwitchSelector';
 import CustomCalendar from 'src/app/components/Calendar/CustomCalendar';
-import {Party, PartyError, Songs} from 'src/types/partyTypes';
+import {Party, PartyError} from 'src/types/partyTypes';
 import {useForm, Controller} from 'react-hook-form';
-import useImageService from 'src/app/hooks/useImageService';
+import useImageService, {ImageFromDevice} from 'src/app/hooks/useImageService';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import useDocumentPicker from 'src/app/hooks/useDocumentPicker';
 import {
@@ -28,6 +28,8 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
 import DefaultImages from '../components/DefaultImages';
 import {DocumentPickerResponse} from 'react-native-document-picker';
+import ViewShot, {captureRef} from 'react-native-view-shot';
+import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
 import CustomTimePicker from 'src/app/components/Calendar/CustomTimePicker';
 import Modal from 'react-native-modal/dist/modal';
 
@@ -37,17 +39,20 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
 
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
   const [selectedColor, setSelectedColor] = useState<ImageColors>('purple');
-  const [isTimePickerVisible, setIsTimePickerVisible] =
-    useState<boolean>(false);
+
   const [
     isApplicationaClosingDatePickerVisible,
     setIsApplicationClosingDatePickerVisible,
   ] = useState<boolean>(false);
-  const [
-    isApplicationaClosingTimePickerVisible,
-    setIsApplicationClosingTimePickerVisible,
-  ] = useState<boolean>(false);
 
+  const [selectedImageOption, setSelectedImageOption] = useState<
+    'uploadedImage' | 'default-purple' | 'default-orange'
+  >('default-purple');
+  const [selectedImage, setSelectedImage] = useState<ImageFromDevice | null>(
+    null,
+  );
+  const [musicFiles, setMusicFiles] = useState<DocumentPickerResponse[]>([]);
+  const [isCreatingParty, setIsCreatingParty] = useState<boolean>(false);
   const {tryPickImageFromDevice} = useImageService();
 
   const defaultValues: Party = {
@@ -55,14 +60,12 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
     partyDesc: '',
     songs: [],
     albumPicture: '',
-    date: new Date().toLocaleDateString(),
-    guests: [],
+    date: new Date().toISOString(),
     visibility: 'public',
+    guests: [],
     pollOptions: [],
     pollQuestion: '',
-    time: new Date().toLocaleTimeString(),
     partyApplicationClosingDate: new Date().toLocaleDateString(),
-    partyApplicationClosingTime: new Date().toLocaleTimeString(),
   };
 
   const {
@@ -70,16 +73,32 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
     handleSubmit,
     formState: {errors},
     setValue,
-    watch,
   } = useForm({
     defaultValues: defaultValues,
     mode: 'all',
   });
   const onSubmit = async (data: Party) => {
+    setIsCreatingParty(true);
+    const imageUri = await getImageUrl();
+    const musicUrl = await getMusicUrl();
+    console.log(musicUrl);
+    const formData = {
+      partyType,
+      ...data,
+      songs: musicUrl,
+      albumPicture: imageUri,
+    };
+    if (partyType === 'cozy_jam_session') {
+      delete formData.guests; // Explicitly delete guests if the array is empty
+      delete formData.pollQuestion;
+      delete formData.partyApplicationClosingDate;
+    }
+    console.log(formData);
+
     try {
       await api.post({
         url: '/parties/create-party',
-        data,
+        data: formData,
         requiresToken: true,
         authorization: true,
       });
@@ -92,9 +111,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
           text: tw`text-white font-poppinsBold`,
         },
       });
-      navigation.navigate('BottomNavigator', {
-        screen: 'Home',
-      });
+      navigation.navigate('PartySuccessScreen');
     } catch (error: unknown) {
       const createPartyError = error as PartyError;
       console.log(createPartyError.response?.data);
@@ -107,6 +124,8 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
           text: tw`text-white font-poppinsBold`,
         },
       });
+    } finally {
+      setIsCreatingParty(false);
     }
   };
 
@@ -130,13 +149,60 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
     return data;
   };
 
-  const uploadedSongs: Songs[] = watch('songs');
-  const uploadedAlbumCover: string = watch('albumPicture');
-  // const partyDate: string = watch('date')
+  const ref = useRef<any>();
+  const captureDefaultImage = async () => {
+    const response = await captureRef(ref, {
+      format: 'jpg',
+      quality: 0.8,
+    });
+    return response;
+  };
+
+  const getImageUrl = async () => {
+    let fileUri;
+    if (selectedImageOption === 'uploadedImage') {
+      fileUri = selectedImage?.file.uri;
+    } else {
+      fileUri = await captureDefaultImage();
+    }
+    const response = await uploadToCloudinary({
+      uri: fileUri ?? '',
+      type: 'jpeg',
+      name: 'album-image',
+    });
+    return response?.file_url;
+  };
+
+  const getMusicUrl = async () => {
+    const itemsForCloudinaryUpload: FileUploadItem[] =
+      musicFiles?.map(uploadItem => ({
+        uri: uploadItem.uri ?? '',
+        name: uploadItem.name ?? '',
+        type: uploadItem.type ?? '',
+      })) ?? [];
+    console.log('itemsForClousdinaryUpload', itemsForCloudinaryUpload);
+    try {
+      console.log('trying');
+      const response = await handleMultipleUploads(itemsForCloudinaryUpload);
+      if (response?.[0] !== undefined) {
+        return response.map(item => ({
+          name: item?.name,
+          file_url: item?.file_url,
+        }));
+      }
+      console.log('response', response);
+    } catch (error) {
+      console.log('error', error);
+    }
+  };
+
+  const onCapture = useCallback((uri: string) => {
+    console.log('do something with ', uri);
+  }, []);
 
   return (
     <ScreenContainer screenHeader="Plan your party" goBack>
-      <KeyboardAwareScrollView style={tw`flex-1`}>
+      <KeyboardAwareScrollView style={tw``}>
         <View style={tw`mx-4 flex-1 mt-4 mb-10`}>
           <View style={tw`  `}>
             <RowContainer style={tw`mb-2 justify-between`}>
@@ -195,49 +261,81 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
             <ErrorText>{errors?.albumPicture?.message}</ErrorText>
             <Controller
               control={control}
-              rules={{
-                required: 'Album image is required',
-              }}
-              render={({field: {onChange}}) => (
+              render={({field: {}}) => (
                 <View>
                   <Pressable
                     style={tw`  items-center justify-center rounded-md`}>
-                    {uploadedAlbumCover.length > 1 ? (
-                      <CustomImage
-                        resizeMode="cover"
-                        uri={uploadedAlbumCover}
-                        style={tw`h-70 w-full rounded-md`}
-                      />
-                    ) : (
-                      <DefaultImages
-                        color={selectedColor}
-                        artist="Stovia"
-                        imageUrl="https://i.pinimg.com/originals/0a/88/e0/0a88e01b53093c2c46efb76b6d5887e1.jpg"
-                      />
+                    {selectedImageOption === 'uploadedImage' &&
+                      selectedImage && (
+                        <CustomImage
+                          resizeMode="cover"
+                          uri={selectedImage?.file.uri!}
+                          style={tw`h-70 w-full rounded-md`}
+                        />
+                      )}
+                    {(selectedImageOption === 'default-orange' ||
+                      selectedImageOption === 'default-purple') && (
+                      <ViewShot
+                        // eslint-disable-next-line react-native/no-inline-styles
+                        style={{height: 290, width: 360}}
+                        onCapture={onCapture}
+                        ref={ref}
+                        options={{format: 'jpg', quality: 0.9}}>
+                        <View style={tw`h-[100%] w-[100%]`}>
+                          <DefaultImages
+                            color={selectedColor}
+                            artist="Stovia"
+                            imageUrl="https://i.pinimg.com/originals/0a/88/e0/0a88e01b53093c2c46efb76b6d5887e1.jpg"
+                          />
+                        </View>
+                      </ViewShot>
                     )}
                   </Pressable>
                   <RowContainer style={tw`mt-2 justify-between`}>
-                    <Pressable
-                      onPress={async () => {
-                        const image = await handleSelectPhoto('openPicker');
-                        const response = await uploadToCloudinary({
-                          uri: image?.file?.uri ?? '',
-                          type: image?.file?.type ?? '',
-                          name: image?.file?.name ?? '',
-                        });
-                        onChange(response?.file_url);
-                      }}>
-                      <CustomText style={tw``}>Upload image</CustomText>
-                    </Pressable>
+                    <RowContainer>
+                      <Pressable
+                        onPress={async () => {
+                          try {
+                            const image = await handleSelectPhoto('openPicker');
+                            setSelectedImage(image);
+                            setSelectedImageOption('uploadedImage');
+                          } catch (error) {}
+                        }}>
+                        <CustomText style={tw``}>Upload image</CustomText>
+                      </Pressable>
+                      {selectedImage && (
+                        <Pressable
+                          onPress={() =>
+                            setSelectedImageOption('uploadedImage')
+                          }>
+                          <CustomImage
+                            resizeMode="cover"
+                            uri={selectedImage?.file?.uri!}
+                            style={tw`h-6 w-6 rounded-full ml-2 ${
+                              selectedImageOption === 'uploadedImage'
+                                ? 'border border-white'
+                                : ''
+                            }`}
+                          />
+                        </Pressable>
+                      )}
+                    </RowContainer>
                     <RowContainer>
                       {defaultImageColors.map((item, _) => (
                         <Pressable
                           key={item}
                           onPress={() => {
                             setSelectedColor(item);
+                            setSelectedImageOption(
+                              item === 'orange'
+                                ? 'default-orange'
+                                : 'default-purple',
+                            );
                           }}
                           style={tw`h-5  ${
-                            selectedColor === item ? 'border border-white' : ''
+                            selectedImageOption.includes(item)
+                              ? 'border border-white'
+                              : ''
                           } w-5 ml-2 rounded-full bg-${item}`}
                         />
                       ))}
@@ -248,7 +346,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
               name="albumPicture"
             />
           </View>
-          <View style={tw`mt-3`}>
+          <View style={tw``}>
             <ErrorText>{errors?.songs?.message}</ErrorText>
             <Controller
               control={control}
@@ -264,24 +362,17 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                     onPress={async () => {
                       const data = await handleSelectMusicFile();
                       const file = data as DocumentPickerResponse[];
-                      const itemsForCloudinaryUpload: FileUploadItem[] =
-                        file?.map(uploadItem => ({
-                          uri: uploadItem.uri ?? '',
-                          name: uploadItem.name ?? '',
-                          type: uploadItem.type ?? '',
-                        })) ?? [];
-                      const response = await handleMultipleUploads(
-                        itemsForCloudinaryUpload,
-                      );
-                      onChange(response);
+                      setMusicFiles(file);
+                      onChange(file);
                     }}
                   />
-                  {uploadedSongs?.map((item, _) => {
+
+                  {musicFiles?.map((item, _) => {
                     return (
                       <CustomText
                         style={tw`text-sm mt-1 text-purple`}
                         key={item.name}>
-                        {truncateText(item.name)}
+                        {item.name ? truncateText(item?.name) : ''}
                       </CustomText>
                     );
                   })}
@@ -305,32 +396,10 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                   onPress={() => {
                     setIsCalendarVisible(true);
                   }}
-                  value={value}
+                  value={new Date(value).toLocaleString()}
                 />
               )}
               name="date"
-            />
-          </View>
-
-          <View style={tw``}>
-            <ErrorText>{errors?.time?.message}</ErrorText>
-            <Controller
-              control={control}
-              rules={{
-                required: 'Time is required',
-              }}
-              render={({field: {value}}) => (
-                <FormSelector
-                  description="Pick a time"
-                  instruction={'Pick a time'}
-                  icon="schedule"
-                  onPress={() => {
-                    setIsTimePickerVisible(true);
-                  }}
-                  value={value}
-                />
-              )}
-              name="time"
             />
           </View>
 
@@ -356,58 +425,38 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
               name="visibility"
             />
           </View>
-          <View style={tw``}>
-            <ErrorText>
-              {errors?.partyApplicationClosingDate?.message}
-            </ErrorText>
-            <Controller
-              control={control}
-              rules={{
-                required: 'Application closing date required',
-              }}
-              render={({field: {value}}) => (
-                <FormSelector
-                  description="Application closes by (Date)"
-                  instruction="Today"
-                  icon="calendar-month"
-                  onPress={() => {
-                    setIsApplicationClosingDatePickerVisible(true);
-                  }}
-                  value={value}
-                />
-              )}
-              name="partyApplicationClosingDate"
-            />
-          </View>
-          <View style={tw``}>
-            <ErrorText>
-              {errors?.partyApplicationClosingTime?.message}
-            </ErrorText>
-            <Controller
-              control={control}
-              rules={{
-                required: 'Application closing date required',
-              }}
-              render={({field: {value}}) => (
-                <FormSelector
-                  description="Application closes by (Time)"
-                  instruction="Today"
-                  icon="schedule"
-                  onPress={() => {
-                    setIsApplicationClosingTimePickerVisible(true);
-                  }}
-                  value={value}
-                />
-              )}
-              name="partyApplicationClosingTime"
-            />
-          </View>
+          {partyType === 'artist_show_down' && (
+            <View style={tw``}>
+              <ErrorText>
+                {errors?.partyApplicationClosingDate?.message}
+              </ErrorText>
+              <Controller
+                control={control}
+                rules={{
+                  required: 'Application closing date required',
+                }}
+                render={({field: {value}}) => (
+                  <FormSelector
+                    description="Application closes by (Date)"
+                    instruction="Today"
+                    icon="calendar-month"
+                    onPress={() => {
+                      setIsApplicationClosingDatePickerVisible(true);
+                    }}
+                    value={value}
+                  />
+                )}
+                name="partyApplicationClosingDate"
+              />
+            </View>
+          )}
           <View style={tw`mt-8`}>
-            <TouchableOpacity
+            <ProceedBtn
               onPress={handleSubmit(onSubmit)}
-              style={tw`bg-purple h-13 items-center justify-center rounded-full`}>
-              <CustomText style={tw`text-base`}>Save</CustomText>
-            </TouchableOpacity>
+              title="Save"
+              isLoading={isCreatingParty}
+              containerStyle={tw`bg-purple h-13 items-center justify-center rounded-full`}
+            />
           </View>
           <Controller
             control={control}
@@ -415,57 +464,22 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
               required: 'Date is required',
             }}
             render={({field: {onChange}}) => (
-              <CustomCalendar
-                isCalendarVisible={isCalendarVisible}
-                onBackDropPress={() => setIsCalendarVisible(false)}
-                onDateSelected={date => {
-                  onChange(date);
-                  setIsCalendarVisible(false);
-                }}
-              />
+              <Modal
+                isVisible={isCalendarVisible}
+                onBackdropPress={() => setIsCalendarVisible(false)}>
+                <View style={tw`bg-white rounded-md`}>
+                  <CustomTimePicker
+                    showTimePicker={isCalendarVisible}
+                    onChangeTime={date => {
+                      onChange(date), console.log(date);
+                    }}
+                  />
+                </View>
+              </Modal>
             )}
             name="date"
           />
-          <Modal
-            isVisible={isTimePickerVisible}
-            onBackdropPress={() => setIsTimePickerVisible(false)}>
-            <Controller
-              control={control}
-              rules={{
-                required: 'Time is required',
-              }}
-              render={({field: {onChange}}) => (
-                <View style={tw` bg-white  rounded-lg`}>
-                  <CustomTimePicker
-                    showTimePicker={isTimePickerVisible}
-                    onChangeTime={time => onChange(time)}
-                  />
-                </View>
-              )}
-              name="time"
-            />
-          </Modal>
-          <Modal
-            isVisible={isApplicationaClosingTimePickerVisible}
-            onBackdropPress={() =>
-              setIsApplicationClosingTimePickerVisible(false)
-            }>
-            <Controller
-              control={control}
-              rules={{
-                required: 'Time is required',
-              }}
-              render={({field: {onChange}}) => (
-                <View style={tw` bg-white  rounded-lg`}>
-                  <CustomTimePicker
-                    showTimePicker={isApplicationaClosingTimePickerVisible}
-                    onChangeTime={time => onChange(time)}
-                  />
-                </View>
-              )}
-              name="partyApplicationClosingTime"
-            />
-          </Modal>
+
           <Controller
             control={control}
             rules={{
