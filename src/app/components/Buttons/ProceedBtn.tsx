@@ -23,12 +23,12 @@ const ProceedBtn: FunctionComponent<Props> = ({
   textStyle,
   isLoading,
 }) => {
-  const proceedBtnStyle = tw`bg-transparent border py-3 rounded-md justify-center items-center border-white`;
+  const proceedBtnStyle =
+    containerStyle ??
+    tw`bg-transparent border py-3 rounded-md justify-center items-center border-white`;
   const proceedBtnTextStyle = tw`text-white font-poppinsRegular`;
   return (
-    <TouchableOpacity
-      style={[proceedBtnStyle, containerStyle]}
-      onPress={onPress}>
+    <TouchableOpacity style={[proceedBtnStyle]} onPress={onPress}>
       {isLoading ? (
         <ActivityIndicator color="white" />
       ) : (
