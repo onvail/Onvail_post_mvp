@@ -21,7 +21,7 @@ interface ClickableItem {
   icon: FC<SvgProps>;
   title: string;
   details: string;
-  route: 'jam-session' | 'artist-showdown';
+  route: 'cozy_jam_session' | 'artist_show_down';
 }
 
 const PartyClickablePlaceHolderIcon = generalIcon.PartyClickablePlaceHolder;
@@ -32,13 +32,13 @@ const clickableIcons: ClickableItem[] = [
   {
     title: 'Plan a Cozy Jam Session',
     details: 'Ideal for private events and intimate listener groups.',
-    route: 'jam-session',
+    route: 'cozy_jam_session',
     icon: PartyClickablePlaceHolderIcon,
   },
   {
     title: 'Set Up an Artist Showdown',
     details: 'Set Up an Artist Showdown',
-    route: 'artist-showdown',
+    route: 'artist_show_down',
     icon: PartyClickablePlaceHolderIcon,
   },
 ];

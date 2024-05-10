@@ -1,8 +1,7 @@
-import React, {FunctionComponent, useCallback, useEffect, useRef} from 'react';
+import React, {FunctionComponent} from 'react';
 import {View} from 'react-native';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import CustomText from 'src/app/components/Text/CustomText';
-import ViewShot from 'react-native-view-shot';
 import tw from 'src/lib/tailwind';
 
 interface Props {
@@ -12,25 +11,9 @@ interface Props {
 }
 
 const DefaultImages: FunctionComponent<Props> = ({color, artist, imageUrl}) => {
-  const ref = useRef<any>();
-
-  useEffect(() => {
-    ref?.current?.capture().then((uri: string) => {
-      console.log('do something with ', uri);
-    });
-  }, [color]);
-
-  const onCapture = useCallback((uri: string) => {
-    console.log('do something with ', uri);
-  }, []);
-
-  if (color === 'purple') {
-    return (
-      <ViewShot
-        style={tw`flex-1 w-full`}
-        captureMode="mount"
-        onCapture={onCapture}
-        options={{format: 'jpg', quality: 0.9}}>
+  return (
+    <View style={tw`h-70 flex-1`}>
+      {color === 'purple' ? (
         <View style={tw`flex-1 bg-purple6 h-70  w-full rounded-lg`}>
           <View
             style={tw`bg-purple7 h-full w-4/5 rounded-full self-center items-center justify-center`}>
@@ -56,11 +39,7 @@ const DefaultImages: FunctionComponent<Props> = ({color, artist, imageUrl}) => {
             </View>
           </View>
         </View>
-      </ViewShot>
-    );
-  } else {
-    return (
-      <ViewShot style={tw`flex-1 w-full`}>
+      ) : (
         <View style={tw`flex-1 bg-orange3 h-70  w-full rounded-lg`}>
           <View
             style={tw`bg-orange4 h-full w-4/5 rounded-full self-center items-center justify-center`}>
@@ -86,9 +65,9 @@ const DefaultImages: FunctionComponent<Props> = ({color, artist, imageUrl}) => {
             </View>
           </View>
         </View>
-      </ViewShot>
-    );
-  }
+      )}
+    </View>
+  );
 };
 
 export default DefaultImages;

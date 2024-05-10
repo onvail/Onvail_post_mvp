@@ -26,7 +26,7 @@ type PollData = {
 type Props = {
   handlePollOptions: (data: {option: string}[]) => void;
   handlePollQuestions: (pollQuestions: string) => void;
-  partyType: 'jam-session' | 'artist-showdown';
+  partyType: 'cozy_jam_session' | 'artist_show_down';
 };
 
 const VotingPoll: FunctionComponent<Props> = ({
@@ -119,7 +119,7 @@ const VotingPoll: FunctionComponent<Props> = ({
           thumbColor={'white'}
         />
       </RowContainer>
-      {checked && partyType === 'artist-showdown' && (
+      {checked && partyType === 'artist_show_down' && (
         <View style={tw`mt-4`}>
           <CustomTextInput
             placeholder={"What's your pool about"}
