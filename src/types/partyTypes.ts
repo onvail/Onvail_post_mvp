@@ -16,12 +16,10 @@ export type Party = {
   songs: Songs[];
   date: string;
   visibility: 'public' | 'private';
-  guests: [];
-  pollQuestion: string;
+  guests?: string[];
+  pollQuestion?: string;
   pollOptions: PollType[];
-  time: string;
-  partyApplicationClosingDate: string;
-  partyApplicationClosingTime: string;
+  partyApplicationClosingDate?: string;
 };
 
 export type PartyError = {
