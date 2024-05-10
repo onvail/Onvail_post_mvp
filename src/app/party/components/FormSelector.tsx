@@ -21,7 +21,7 @@ const FormSelector: FunctionComponent<Props> = ({
   onPress,
   value,
 }) => {
-  description = value && value?.length > 0 ? value : description;
+  instruction = value && value?.length > 0 ? value : instruction;
   return (
     <Pressable
       onPress={onPress}

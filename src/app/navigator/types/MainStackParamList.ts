@@ -6,11 +6,12 @@ export type MainStackParamList = {
   Notifications: undefined;
   CreateNewPost: undefined;
   PlanYourParty: {
-    partyType: 'jam-session' | 'artist-showdown';
+    partyType: 'cozy_jam_session' | 'artist_show_down';
   };
   PartyScreen: {
     party: PartiesResponse;
   };
   PartyOptions: undefined;
+  PartySuccessScreen: undefined;
   BottomNavigator: NavigatorScreenParams<BottomTabParamList>;
 };

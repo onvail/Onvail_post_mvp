@@ -28,6 +28,7 @@ import PauseIcon from 'src/assets/svg/pauseIcon.svg';
 import PlayIcon from 'src/assets/svg/playIcon.svg';
 import ProfileImage from 'src/assets/svg/profileImage.svg';
 import VoiceSquare from 'src/assets/svg/voice-square.svg';
+import UploadIcon from 'src/assets/svg/upload.svg';
 import PartyClickablePlaceHolder from 'src/assets/svg/partyPlaceholderIcon.svg';
 
 type GeneralType =
@@ -60,6 +61,7 @@ type GeneralType =
   | 'ProfileImage'
   | 'VoiceSquare'
   | 'PartyClickablePlaceHolder'
+  | 'UploadIcon'
   | 'Comment';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -93,4 +95,5 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['ProfileImage']: ProfileImage,
   ['VoiceSquare']: VoiceSquare,
   ['PartyClickablePlaceHolder']: PartyClickablePlaceHolder,
+  ['UploadIcon']: UploadIcon,
 };

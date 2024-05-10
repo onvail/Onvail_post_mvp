@@ -5,6 +5,7 @@ import PlanYourParty from 'src/app/party/screens/PlanYourParty';
 import PartyScreen from 'src/app/party/screens/PartyScreen';
 import BottomNavigator from '../BottomNavigator';
 import PartyOptionScreen from 'src/app/party/screens/PartyOptionScreen';
+import PartySuccessScreen from 'src/app/party/screens/PartySuccessScreen';
 
 interface ScreenDef {
   name: keyof MainStackParamList;
@@ -31,6 +32,10 @@ export const mainNavigatorScreens: ScreenDef[] = [
   {
     name: 'PartyOptions',
     screen: PartyOptionScreen,
+  },
+  {
+    name: 'PartySuccessScreen',
+    screen: PartySuccessScreen,
   },
   {
     name: 'BottomNavigator',
