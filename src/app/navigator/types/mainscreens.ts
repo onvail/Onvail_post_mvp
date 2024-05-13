@@ -35,6 +35,10 @@ export const mainNavigatorScreens: ScreenDef[] = [
     screen: PartyOptionScreen,
   },
   {
+    name: 'PartySuccessScreen',
+    screen: PartySuccessScreen,
+  },
+  {
     name: 'BottomNavigator',
     screen: BottomNavigator,
   },
