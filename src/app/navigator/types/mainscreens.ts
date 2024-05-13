@@ -6,6 +6,7 @@ import PartyScreen from 'src/app/party/screens/PartyScreen';
 import BottomNavigator from '../BottomNavigator';
 import PartyOptionScreen from 'src/app/party/screens/PartyOptionScreen';
 import Settings from 'src/app/settings/screens/Settings';
+import AuthNavigator from '../AuthNavigator';
 
 interface ScreenDef {
   name: keyof MainStackParamList;
@@ -40,5 +41,9 @@ export const mainNavigatorScreens: ScreenDef[] = [
   {
     name: 'Settings',
     screen: Settings,
+  },
+  {
+    name: 'AuthNavigator',
+    screen: AuthNavigator,
   },
 ];
