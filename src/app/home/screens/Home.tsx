@@ -21,6 +21,7 @@ import Feeds from 'src/app/components/Feed/screens/Feeds';
 import {Avatar} from 'react-native-paper';
 import {Colors} from 'src/app/styles/colors';
 import useUser from 'src/app/hooks/useUserInfo';
+import CustomImage from 'src/app/components/Image/CustomImage';
 
 type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 
@@ -63,22 +64,27 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
                 }
                 style={tw`ml-5 mr-3`}
               />
-              {user?.name && (
-                <Pressable
-                  onPress={() =>
-                    navigation.navigate('MainAppNavigator', {
-                      screen: 'Settings',
-                    })
-                  }>
+              <Pressable
+                onPress={() =>
+                  navigation.navigate('MainAppNavigator', {
+                    screen: 'Settings',
+                  })
+                }>
+                {user?.image && user?.image?.length > 0 ? (
+                  <CustomImage
+                    uri={user?.image}
+                    style={tw`h-7 w-7 rounded-full`}
+                  />
+                ) : (
                   <Avatar.Text
-                    label={user?.name.substring(0, 1)}
+                    label={user?.name?.substring(0, 1) ?? ''}
                     size={27}
                     style={tw`bg-purple `}
                     labelStyle={tw`font-poppinsBold text-base`}
                     color={Colors.white}
                   />
-                </Pressable>
-              )}
+                )}
+              </Pressable>
             </RowContainer>
           </RowContainer>
           <Status />
