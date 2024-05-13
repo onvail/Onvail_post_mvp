@@ -7,6 +7,7 @@ import BottomNavigator from '../BottomNavigator';
 import PartyOptionScreen from 'src/app/party/screens/PartyOptionScreen';
 import Settings from 'src/app/settings/screens/Settings';
 import AuthNavigator from '../AuthNavigator';
+import PartySuccessScreen from 'src/app/party/screens/PartySuccessScreen';
 
 interface ScreenDef {
   name: keyof MainStackParamList;
