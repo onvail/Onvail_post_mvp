@@ -11,6 +11,7 @@ export type MainStackParamList = {
   PartyScreen: {
     party: PartiesResponse;
   };
+  Settings: undefined;
   PartyOptions: undefined;
   BottomNavigator: NavigatorScreenParams<BottomTabParamList>;
 };
