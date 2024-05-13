@@ -3,7 +3,7 @@ import {ActivityIndicator, Pressable, View} from 'react-native';
 import {Avatar, Divider} from 'react-native-paper';
 import Icon from 'src/app/components/Icons/Icon';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
-import useUser, {User} from 'src/app/hooks/useUserInfo';
+import useUser from 'src/app/hooks/useUserInfo';
 import tw from 'src/lib/tailwind';
 import Links from '../components/Links';
 import RoundedBtn from 'src/app/components/Buttons/RoundedBtn';
@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import localStorageKeys from 'src/api/config/local-storage-keys';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
+import {Colors} from 'src/app/styles/colors';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Settings'>;
 
@@ -79,7 +80,7 @@ const Settings: FunctionComponent<Props> = ({navigation}) => {
             {profileImage || user?.image ? (
               <CustomImage
                 uri={user?.image ?? profileImage}
-                style={tw`h-37 w-37 rounded-full`}
+                style={tw`h-40 w-40 rounded-full`}
               />
             ) : (
               <Avatar.Text
@@ -91,13 +92,13 @@ const Settings: FunctionComponent<Props> = ({navigation}) => {
             )}
             {isImageUploading && (
               <ActivityIndicator
-                color={'white'}
-                style={tw`absolute top-[50%] left-[12%]`}
+                color={Colors.purple}
+                style={tw`absolute top-[50%] left-[18%]`}
               />
             )}
             <Pressable
               onPress={() => handleSelectPhoto('openPicker')}
-              style={tw`absolute right-4 bottom-1`}>
+              style={tw`absolute right-4 bottom-2`}>
               <Icon icon={'plus-circle'} color="white" size={27} />
             </Pressable>
           </View>
