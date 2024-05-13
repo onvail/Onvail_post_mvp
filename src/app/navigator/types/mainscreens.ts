@@ -5,6 +5,8 @@ import PlanYourParty from 'src/app/party/screens/PlanYourParty';
 import PartyScreen from 'src/app/party/screens/PartyScreen';
 import BottomNavigator from '../BottomNavigator';
 import PartyOptionScreen from 'src/app/party/screens/PartyOptionScreen';
+import Settings from 'src/app/settings/screens/Settings';
+import AuthNavigator from '../AuthNavigator';
 import PartySuccessScreen from 'src/app/party/screens/PartySuccessScreen';
 
 interface ScreenDef {
@@ -40,5 +42,13 @@ export const mainNavigatorScreens: ScreenDef[] = [
   {
     name: 'BottomNavigator',
     screen: BottomNavigator,
+  },
+  {
+    name: 'Settings',
+    screen: Settings,
+  },
+  {
+    name: 'AuthNavigator',
+    screen: AuthNavigator,
   },
 ];

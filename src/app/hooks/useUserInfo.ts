@@ -1,10 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useEffect, useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
+import {useState} from 'react';
 import localStorageKeys from 'src/api/config/local-storage-keys';
 
 export type User = {
-  accessToken: string;
-  _id: string;
+  country: string;
+  dateOfBirth: string;
+  desc: string;
+  image: string;
+  location: string;
   name: string;
   FCMToken: string;
   email: string;
@@ -16,29 +20,44 @@ export type User = {
 };
 
 const useUser = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User>({} as User);
 
   const fetchUser = async () => {
     try {
       const userString = await AsyncStorage.getItem(localStorageKeys.userInfo);
       if (userString) {
         const userData = JSON.parse(userString);
-        setUser(userData?.user);
+        setUser(userData.user);
       } else {
         console.log('No user data found.');
-        setUser(null);
+        setUser({} as User);
       }
     } catch (error) {
       console.error('Failed to fetch user:', error);
-      setUser(null);
+      setUser({} as User);
     }
   };
 
-  useEffect(() => {
-    fetchUser();
-  }, []);
+  const updateUser = async (response: any) => {
+    setUser(response?.data?.user); // Update state
+    console.log(response.data);
+    console.log(response.token);
+    try {
+      // Persist updated user data to AsyncStorage
+      AsyncStorage.multiSet([
+        [localStorageKeys.userInfo, JSON.stringify(response?.data)],
+      ]);
+      console.log('User data updated successfully in AsyncStorage.');
+    } catch (error) {
+      console.error('Failed to update user data in AsyncStorage:', error);
+    }
+  };
 
-  return {user};
+  useFocusEffect(() => {
+    fetchUser();
+  });
+
+  return {user, updateUser};
 };
 
 export default useUser;

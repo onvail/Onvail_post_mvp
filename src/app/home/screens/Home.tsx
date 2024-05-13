@@ -1,5 +1,10 @@
 import React, {FunctionComponent, useState} from 'react';
-import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import PostCard from 'src/app/components/Posts/PostCard';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
@@ -13,6 +18,10 @@ import {BottomTabParamList} from 'src/app/navigator/types/BottomTabParamList';
 import {useQuery} from '@tanstack/react-query';
 import {fetchParties, fetchPosts} from 'src/actions/parties';
 import Feeds from 'src/app/components/Feed/screens/Feeds';
+import {Avatar} from 'react-native-paper';
+import {Colors} from 'src/app/styles/colors';
+import useUser from 'src/app/hooks/useUserInfo';
+import CustomImage from 'src/app/components/Image/CustomImage';
 
 type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 
@@ -22,6 +31,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
   type Tabs = 'Parties' | 'Feeds';
   const tabs: Tabs[] = ['Parties', 'Feeds'];
   const [selectedTab, setSelectedTab] = useState<Tabs>('Parties');
+  const {user} = useUser();
 
   const handleTabSwitch = (item: Tabs) => {
     setSelectedTab(item);
@@ -45,14 +55,37 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
         <View style={tw`mx-3`}>
           <RowContainer style={tw`justify-between`}>
             <LogoSvg />
-            <NotificationBellSvg
-              onPress={() =>
-                navigation.navigate('MainAppNavigator', {
-                  screen: 'Notifications',
-                })
-              }
-              style={tw`ml-5 mr-3`}
-            />
+            <RowContainer>
+              <NotificationBellSvg
+                onPress={() =>
+                  navigation.navigate('MainAppNavigator', {
+                    screen: 'Notifications',
+                  })
+                }
+                style={tw`ml-5 mr-3`}
+              />
+              <Pressable
+                onPress={() =>
+                  navigation.navigate('MainAppNavigator', {
+                    screen: 'Settings',
+                  })
+                }>
+                {user?.image && user?.image?.length > 0 ? (
+                  <CustomImage
+                    uri={user?.image}
+                    style={tw`h-7 w-7 rounded-full`}
+                  />
+                ) : (
+                  <Avatar.Text
+                    label={user?.name?.substring(0, 1) ?? ''}
+                    size={27}
+                    style={tw`bg-purple `}
+                    labelStyle={tw`font-poppinsBold text-base`}
+                    color={Colors.white}
+                  />
+                )}
+              </Pressable>
+            </RowContainer>
           </RowContainer>
           <Status />
         </View>
