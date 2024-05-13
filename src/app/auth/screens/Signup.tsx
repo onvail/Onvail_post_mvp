@@ -58,7 +58,7 @@ const Signup: FunctionComponent<Props> = ({navigation}) => {
         [localStorageKeys.accessToken, response?.data?.accessToken],
         [localStorageKeys.userInfo, JSON.stringify(response?.data)],
       ]);
-      navigation.navigate('BottomTabNavigator', {
+      navigation.replace('BottomTabNavigator', {
         screen: 'Home',
       });
     } catch (err: unknown) {
