@@ -3,8 +3,10 @@ import localStorageKeys from 'src/api/config/local-storage-keys';
 
 const requestInteceptor = async (config: any) => {
   if (config.headers.authorization) {
-    const userInfo = await AsyncStorage.getItem(localStorageKeys.userInfo);
-    const token = userInfo ? JSON.parse(userInfo).accessToken : null;
+    const accessToken = await AsyncStorage.getItem(
+      localStorageKeys.accessToken,
+    );
+    const token = accessToken ?? null;
     const deviceName = await AsyncStorage.getItem(localStorageKeys.deviceName);
     config.headers.Authorization = `Token ${token}`;
     config.headers['Device-Name'] = deviceName;

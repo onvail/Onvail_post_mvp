@@ -1,6 +1,7 @@
 import {NavigatorScreenParams} from '@react-navigation/native';
 import {BottomTabParamList} from './BottomTabParamList';
 import {PartiesResponse} from 'src/types/partyTypes';
+import {AuthStackParamList} from './AuthStackParamList';
 
 export type MainStackParamList = {
   Notifications: undefined;
@@ -13,7 +14,9 @@ export type MainStackParamList = {
   PartyScreen: {
     party: PartiesResponse;
   };
+  Settings: undefined;
   PartyOptions: undefined;
   PartySuccessScreen: undefined;
   BottomNavigator: NavigatorScreenParams<BottomTabParamList>;
+  AuthNavigator: NavigatorScreenParams<AuthStackParamList>;
 };

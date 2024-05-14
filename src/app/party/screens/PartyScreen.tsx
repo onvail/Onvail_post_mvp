@@ -143,6 +143,16 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     fetchBackgroundColor();
   }, [backgroundColorPromise]);
 
+  let IconComponent;
+
+  if (isSameQueue && playerState === 'playing') {
+    IconComponent = <PauseIcon />;
+  } else if (buffering) {
+    IconComponent = <ActivityIndicator />;
+  } else {
+    IconComponent = <PlayIcon />;
+  }
+
   return (
     <LinearGradient
       style={tw`h-full p-4`}
@@ -176,13 +186,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
             <Pressable
               onPress={handlePauseAndPlayTrack}
               style={tw`w-10 items-center `}>
-              {isSameQueue && playerState === 'playing' ? (
-                <PauseIcon />
-              ) : buffering ? (
-                <ActivityIndicator />
-              ) : (
-                <PlayIcon />
-              )}
+              {IconComponent}
             </Pressable>
           </View>
           <View style={tw`flex-row w-[90%] mt-6 items-center`}>
