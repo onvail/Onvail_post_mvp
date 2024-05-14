@@ -28,12 +28,20 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   handleJoinPartyBtnPress,
   party,
 }) => {
+  const {user} = useUser();
+  const partyActionText = () => {
+    if (party?.artist?._id === user?._id) {
+      return 'Start Party';
+    } else {
+      return 'Join the party';
+    }
+  };
   return (
     <TouchableOpacity
       onPress={() => handleJoinPartyBtnPress(party)}
       style={tw`bg-white py-1.7 px-3 rounded-full`}>
       <CustomText style={tw`text-primary text-xs font-poppinsMedium`}>
-        Join the party
+        {partyActionText()}
       </CustomText>
     </TouchableOpacity>
   );
