@@ -17,6 +17,8 @@ export type User = {
   followers: string[]; // Assuming followers are an array of user IDs
   following: string[]; // Assuming following are an array of user IDs
   __v: number;
+  _id: string;
+  stageName: string;
 };
 
 const useUser = () => {
@@ -44,9 +46,10 @@ const useUser = () => {
     console.log(response.token);
     try {
       // Persist updated user data to AsyncStorage
-      AsyncStorage.multiSet([
-        [localStorageKeys.userInfo, JSON.stringify(response?.data)],
-      ]);
+      AsyncStorage.setItem(
+        localStorageKeys.userInfo,
+        JSON.stringify(response?.data),
+      );
       console.log('User data updated successfully in AsyncStorage.');
     } catch (error) {
       console.error('Failed to update user data in AsyncStorage:', error);
