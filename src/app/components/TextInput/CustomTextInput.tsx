@@ -20,6 +20,7 @@ interface Props extends TextInputProps {
   height?: number;
   containerStyle?: ViewStyle;
   placeHolderTextColor?: string;
+  textColor?: string;
 }
 
 const CustomTextInput: FunctionComponent<Props> = ({
@@ -32,6 +33,7 @@ const CustomTextInput: FunctionComponent<Props> = ({
   height = 48,
   containerStyle,
   placeHolderTextColor = Colors.grey2,
+  textColor = 'text-primary',
   ...props
 }) => {
   return (
@@ -48,7 +50,7 @@ const CustomTextInput: FunctionComponent<Props> = ({
       ]}>
       <TextInput
         placeholderTextColor={placeHolderTextColor}
-        style={tw`font-poppinsRegular text-sm w-10/11 text-primary`}
+        style={tw`font-poppinsRegular text-sm w-10/11 ${textColor}`}
         {...props}
       />
       {/* if @inputType is Password display eye icon */}

@@ -12,6 +12,7 @@ import Spotify from 'src/assets/svg/Spotify.svg';
 import X from 'src/assets/svg/X.svg';
 import Stripe from 'src/assets/svg/Stripe.svg';
 import AddSquare from 'src/assets/svg/add-square.svg';
+import AddIcon from 'src/assets/svg/add-icon.svg';
 import Gallery from 'src/assets/svg/gallery.svg';
 import MusicSquareIcon from 'src/assets/svg/music-square-add.svg';
 import SendIcon from 'src/assets/svg/send.svg';
@@ -29,10 +30,19 @@ import PlayIcon from 'src/assets/svg/playIcon.svg';
 import ProfileImage from 'src/assets/svg/profileImage.svg';
 import VoiceSquare from 'src/assets/svg/voice-square.svg';
 import UploadIcon from 'src/assets/svg/upload.svg';
+import MenuIcon from 'src/assets/svg/horizontalmenu.svg';
 import PartyClickablePlaceHolder from 'src/assets/svg/partyPlaceholderIcon.svg';
+import PartyJoinersIcon from 'src/assets/svg/partyjoinersicon.svg';
+import Send2 from 'src/assets/svg/send2.svg';
+import PlayIcon2 from 'src/assets/svg/playIcon2.svg';
+import PauseIcon2 from 'src/assets/svg/pauseIcon2.svg';
+import Tick from 'src/assets/svg/tick.svg';
 
 type GeneralType =
   | 'Home'
+  | 'AddIcon'
+  | 'MenuIcon'
+  | 'PartyJoinersIcon'
   | 'Profile'
   | 'Logo'
   | 'NotificationBell'
@@ -58,14 +68,20 @@ type GeneralType =
   | 'HighLightRight'
   | 'PauseIcon'
   | 'PlayIcon'
+  | 'PlayIcon2'
   | 'ProfileImage'
   | 'VoiceSquare'
   | 'PartyClickablePlaceHolder'
   | 'UploadIcon'
-  | 'Comment';
+  | 'Comment'
+  | 'PauseIcon2'
+  | 'Tick'
+  | 'Send2';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['Home']: HomeSvg,
+  ['AddIcon']: AddIcon,
+  ['MenuIcon']: MenuIcon,
   ['Profile']: ProfileSvg,
   ['Logo']: LogoSvg,
   ['NotificationBell']: NotificationBell,
@@ -91,9 +107,14 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['HighLightRight']: HighLightRight,
   ['HighLightLeft']: HighLightLeft,
   ['PlayIcon']: PlayIcon,
+  ['PlayIcon2']: PlayIcon2,
   ['PauseIcon']: PauseIcon,
   ['ProfileImage']: ProfileImage,
   ['VoiceSquare']: VoiceSquare,
   ['PartyClickablePlaceHolder']: PartyClickablePlaceHolder,
   ['UploadIcon']: UploadIcon,
+  ['PartyJoinersIcon']: PartyJoinersIcon,
+  ['Send2']: Send2,
+  ['PauseIcon2']: PauseIcon2,
+  ['Tick']: Tick,
 };

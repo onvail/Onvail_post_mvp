@@ -13,6 +13,7 @@ import ErrorText from 'src/app/components/Text/ErrorText';
 import api from 'src/api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import localStorageKeys from 'src/api/config/local-storage-keys';
+import {BASE_URL} from '@env';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 

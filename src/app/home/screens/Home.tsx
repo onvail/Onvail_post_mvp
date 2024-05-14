@@ -1,5 +1,5 @@
 import React, {FunctionComponent, useState} from 'react';
-import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Text, TouchableOpacity, View} from 'react-native';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import PostCard from 'src/app/components/Posts/PostCard';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
@@ -44,17 +44,50 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
       <View style={tw`flex-1`}>
         <View style={tw`mx-3`}>
           <RowContainer style={tw`justify-between`}>
-            <LogoSvg />
-            <NotificationBellSvg
-              onPress={() =>
-                navigation.navigate('MainAppNavigator', {
-                  screen: 'Notifications',
-                })
-              }
-              style={tw`ml-5 mr-3`}
-            />
+            <RowContainer style={tw`flex-row items-center`}>
+              <LogoSvg />
+              <View
+                style={tw`w-1/4 h-[18px] rounded-[9px] bg-[#313131] justify-center items-center`}>
+                <CustomText style={tw`text-white text-[8px] font-normal`}>
+                  Free plan
+                </CustomText>
+              </View>
+            </RowContainer>
+            <RowContainer style={tw`flex-row items-center`}>
+              <NotificationBellSvg
+                onPress={() =>
+                  navigation.navigate('MainAppNavigator', {
+                    screen: 'Notifications',
+                  })
+                }
+                style={tw`ml-5 mr-3`}
+              />
+              <View
+                style={tw`w-[31px] h-[31px] ml-2 rounded-full bg-[#7C1AFC] items-center justify-center`}>
+                <CustomText style={tw`text-white text-base font-bold`}>
+                  M
+                </CustomText>
+              </View>
+            </RowContainer>
           </RowContainer>
-          <Status />
+          <RowContainer style={tw`flex-row items-center`}>
+            {/* <AnimatedButton
+              activeOpacity={0.9}
+              onPress={handleAddStory}
+              style={tw`items-center`}>
+              <View
+                style={tw`mr-3 items-center justify-center rounded-[17px] h-20 w-20 border-4 border-grey5`}>
+                <View
+                  style={tw`items-center justify-center rounded-[17px] bg-[#7C1AFC] h-19 w-19 border-2`}>
+                  <AddIcon />
+                </View>
+              </View>
+              <Text style={tw`text-white mt-2 font-poppinsMedium text-xs`}>
+                Your Story
+              </Text>
+            </AnimatedButton> */}
+            <Status />
+          </RowContainer>
         </View>
         <View
           style={tw`items-center flex-row w-2/3 p-2 self-center h-12 rounded-full justify-center my-8 bg-grey6`}>
