@@ -15,6 +15,7 @@ import UsernameInput from '../auth/screens/UsernameInput';
 import RoleInput from '../auth/screens/RoleInput';
 import TermsOfUse from '../auth/screens/TermsOfUse';
 import AccountCreated from '../auth/screens/AccountCreated';
+import AuthLanding from '../auth/screens/AuthLanding';
 
 const Stack = createStackNavigator<AuthStackParamList>();
 
@@ -27,6 +28,10 @@ const screens: ScreenDef[] = [
   {
     name: 'AuthLandingScreen',
     screen: AuthLandingScreen,
+  },
+  {
+    name: 'AuthLanding',
+    screen: AuthLanding,
   },
   {
     name: 'EmailInput',
@@ -85,7 +90,7 @@ const screens: ScreenDef[] = [
 const AuthNavigator: FunctionComponent = () => {
   return (
     <Stack.Navigator
-      initialRouteName="AuthLandingScreen"
+      initialRouteName="AuthLanding"
       screenOptions={{headerShown: false}}>
       {screens.map(({name, screen}) => (
         <Stack.Screen key={name} name={name} component={screen} />

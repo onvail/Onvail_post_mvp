@@ -16,5 +16,6 @@ export type AuthStackParamList = {
   AccountCreated: undefined;
   Login: undefined;
   AuthLandingScreen: undefined;
+  AuthLanding: undefined;
   BottomTabNavigator: NavigatorScreenParams<BottomTabParamList>;
 };
