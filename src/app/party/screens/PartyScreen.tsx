@@ -162,7 +162,12 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       ]}>
       <SafeAreaView style={tw`flex-1`}>
         <View style={tw`items-end`}>
-          <Pressable onPress={() => navigation.goBack()}>
+          <Pressable
+            onPress={() =>
+              navigation.navigate('BottomNavigator', {
+                screen: 'Home',
+              })
+            }>
             <Icon
               icon="close-circle-outline"
               color={backgroundColor?.secondary ?? 'white'}
