@@ -71,7 +71,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
                     screen: 'Notifications',
                   })
                 }
-                style={tw`ml-5 mr-3`}
+                style={tw`ml-5 mr-4`}
               />
               <Pressable
                 onPress={() =>
