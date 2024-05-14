@@ -218,6 +218,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       <CustomBottomSheet
         ref={bottomSheetRef}
         customSnapPoints={[30, 300, 500, 700]}
+        backgroundColor={backgroundColor?.background}
         visibilityHandler={() => {}}>
         <View style={tw`flex-1 py-3  pb-7`}>
           <ScrollView style={tw`flex-1 mb-4`}>
