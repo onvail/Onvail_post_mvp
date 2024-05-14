@@ -22,7 +22,8 @@ const RootNavigator: FunctionComponent = () => {
     try {
       const token = await AsyncStorage.getItem(localStorageKeys.accessToken);
       if (token) {
-        setInitialRouteName('BottomTabNavigator');
+        setInitialRouteName('AuthNavigator');
+        // setInitialRouteName('BottomTabNavigator');
       } else {
         setInitialRouteName('AuthNavigator');
       }

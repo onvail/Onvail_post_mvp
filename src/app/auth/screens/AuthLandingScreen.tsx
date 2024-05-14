@@ -47,7 +47,7 @@ const AuthLandingScreen: FunctionComponent<Props> = ({navigation}) => {
           />
           <RoundedBtn
             title="Signup"
-            onPress={() => navigation.navigate('Signup')}
+            onPress={() => navigation.navigate('EmailInput')}
             borderColor="purple"
           />
         </RowContainer>

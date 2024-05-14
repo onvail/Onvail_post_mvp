@@ -1,12 +1,9 @@
-import React, {FunctionComponent, useState} from 'react';
+import React, {FunctionComponent} from 'react';
 import {TouchableOpacity, View} from 'react-native';
 import ScreenContainer from 'components/Screens/ScreenContainer';
 import tw from 'src/lib/tailwind';
 import CustomText from 'src/app/components/Text/CustomText';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
-import CustomImage from 'src/app/components/Image/CustomImage';
-import RowContainer from 'src/app/components/View/RowContainer';
-import LinearGradient from 'react-native-linear-gradient';
 
 const SongReviewSuccess: FunctionComponent = ({navigation}) => {
   const TickIconSvg = generalIcon.Tick;

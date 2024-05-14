@@ -37,6 +37,8 @@ import Send2 from 'src/assets/svg/send2.svg';
 import PlayIcon2 from 'src/assets/svg/playIcon2.svg';
 import PauseIcon2 from 'src/assets/svg/pauseIcon2.svg';
 import Tick from 'src/assets/svg/tick.svg';
+import Ticksm from 'src/assets/svg/ticksm.svg';
+import EmailBackgroundGradient from 'src/assets/svg/EmailBackgroundGradient.svg';
 
 type GeneralType =
   | 'Home'
@@ -48,6 +50,7 @@ type GeneralType =
   | 'NotificationBell'
   | 'Heart'
   | 'BackgroundGradient'
+  | 'EmailBackgroundGradient'
   | 'Deezer'
   | 'Google'
   | 'Spotify'
@@ -76,7 +79,8 @@ type GeneralType =
   | 'Comment'
   | 'PauseIcon2'
   | 'Tick'
-  | 'Send2';
+  | 'Send2'
+  | 'Ticksm';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['Home']: HomeSvg,
@@ -88,6 +92,7 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['Heart']: Heart,
   ['Comment']: Comment,
   ['BackgroundGradient']: BackgroundGradient,
+  ['EmailBackgroundGradient']: EmailBackgroundGradient,
   ['Deezer']: Deezer,
   ['Google']: Google,
   ['Spotify']: Spotify,
@@ -117,4 +122,5 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['Send2']: Send2,
   ['PauseIcon2']: PauseIcon2,
   ['Tick']: Tick,
+  ['Ticksm']: Ticksm,
 };
