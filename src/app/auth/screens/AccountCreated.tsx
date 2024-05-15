@@ -1,16 +1,14 @@
-import React, {FunctionComponent, useEffect, useState} from 'react';
+import React, {FunctionComponent} from 'react';
 import {
   ImageBackground,
   ScrollView,
   TouchableOpacity,
   View,
 } from 'react-native';
-import {useForm} from 'react-hook-form';
 import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
 import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import RowContainer from 'src/app/components/View/RowContainer';
 import Icon from 'src/app/components/Icons/Icon';
 
