@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useFocusEffect} from '@react-navigation/native';
+import React from 'react';
 import {useState} from 'react';
 import localStorageKeys from 'src/api/config/local-storage-keys';
 
@@ -56,9 +57,12 @@ const useUser = () => {
     }
   };
 
-  useFocusEffect(() => {
-    fetchUser();
-  });
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUser();
+      return () => {};
+    }, []),
+  );
 
   return {user, updateUser};
 };
