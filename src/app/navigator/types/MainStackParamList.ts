@@ -5,6 +5,8 @@ import {AuthStackParamList} from './AuthStackParamList';
 
 export type MainStackParamList = {
   Notifications: undefined;
+  SongReview: undefined;
+  SongReviewSuccess: undefined;
   CreateNewPost: undefined;
   PlanYourParty: {
     partyType: 'cozy_jam_session' | 'artist_show_down';

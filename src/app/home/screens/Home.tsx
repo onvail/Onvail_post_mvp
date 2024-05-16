@@ -1,4 +1,5 @@
 import React, {FunctionComponent, useState} from 'react';
+// import {ActivityIndicator, Pressable, Text, TouchableOpacity, View} from 'react-native';
 import {
   ActivityIndicator,
   Pressable,
@@ -53,16 +54,24 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
     <ScreenContainer>
       <View style={tw`flex-1`}>
         <View style={tw`mx-3`}>
-          <RowContainer style={tw`justify-between`}>
-            <LogoSvg />
-            <RowContainer>
+          <RowContainer style={tw`justify-between mb-4`}>
+            <RowContainer style={tw`flex-row items-center`}>
+              <LogoSvg />
+              <View
+                style={tw`w-1/4 h-[18px] rounded-[9px] bg-[#313131] justify-center items-center`}>
+                <CustomText style={tw`text-white text-[8px] font-normal`}>
+                  Free plan
+                </CustomText>
+              </View>
+            </RowContainer>
+            <RowContainer style={tw`flex-row items-center`}>
               <NotificationBellSvg
                 onPress={() =>
                   navigation.navigate('MainAppNavigator', {
                     screen: 'Notifications',
                   })
                 }
-                style={tw`ml-5 mr-3`}
+                style={tw`ml-5 mr-4`}
               />
               <Pressable
                 onPress={() =>
@@ -87,7 +96,9 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
               </Pressable>
             </RowContainer>
           </RowContainer>
-          <Status />
+          <RowContainer style={tw`flex-row items-center`}>
+            <Status />
+          </RowContainer>
         </View>
         <View
           style={tw`items-center flex-row w-2/3 p-2 self-center h-12 rounded-full justify-center my-8 bg-grey6`}>

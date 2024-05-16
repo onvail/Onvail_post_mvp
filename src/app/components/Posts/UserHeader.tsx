@@ -6,6 +6,7 @@ import CustomText from 'components/Text/CustomText';
 import RowContainer from '../View/RowContainer';
 import Icon from '../Icons/Icon';
 import {Colors} from 'src/app/styles/colors';
+import { generalIcon } from '../Icons/generalIcons';
 
 interface User {
   name?: string;
@@ -22,6 +23,7 @@ const UserHeader: FunctionComponent<User> = ({
   isFollowing,
   canFollow,
 }) => {
+  const MenuIcon = generalIcon.MenuIcon;
   return (
     <RowContainer style={tw`px-4 justify-between`}>
       <RowContainer>
@@ -36,7 +38,10 @@ const UserHeader: FunctionComponent<User> = ({
         )}
         {name && <CustomText style={tw`ml-3 text-[13px]`}>{name}</CustomText>}
       </RowContainer>
-      {canFollow && (
+      <TouchableOpacity activeOpacity={0.9}>
+        <MenuIcon />
+      </TouchableOpacity>
+      {/* {canFollow && (
         <TouchableOpacity
           onPress={() => handleFollowBtnPress()}
           style={tw`border bg-${
@@ -49,7 +54,7 @@ const UserHeader: FunctionComponent<User> = ({
             </CustomText>
           }
         </TouchableOpacity>
-      )}
+      )} */}
     </RowContainer>
   );
 };

@@ -31,9 +31,9 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   return (
     <TouchableOpacity
       onPress={() => handleJoinPartyBtnPress(party)}
-      style={tw`bg-white py-1.7 px-3 rounded-full`}>
+      style={tw`bg-white py-3.2 px-6 rounded-full`}>
       <CustomText style={tw`text-primary text-xs font-poppinsMedium`}>
-        Join the party
+        Join
       </CustomText>
     </TouchableOpacity>
   );
@@ -50,6 +50,7 @@ const PostItem: FunctionComponent<{
   handleJoinPartyBtnPress: (item: PartiesResponse) => void;
 }> = ({item, handleJoinPartyBtnPress, userId}) => {
   const CommentSvg = generalIcon.Comment;
+  const PartyJoinersIcon = generalIcon.PartyJoinersIcon;
   const queryClient = useQueryClient();
 
   const handleFollowMutation = useMutation({
@@ -102,12 +103,52 @@ const PostItem: FunctionComponent<{
         canFollow={canFollowUser}
         isFollowing={isFollowing}
       />
-      <CustomImage
-        uri={item?.albumPicture ?? ''}
-        style={tw`h-100 w-100 mt-4`}
-        resizeMode="cover"
-      />
-      <CustomText style={tw`mt-2 mx-2 text-xs`}>{item?.partyDesc}</CustomText>
+      <View style={tw`self-center relative rounded-4 mt-2 bg-white w-100`}>
+        <RowContainer
+          style={tw`flex-row justify-between items-center absolute w-100 px-3 top-2 left-0 z-20`}>
+          <View
+            style={tw`bg-[#D92A2A] rounded-20 h-12 w-22 items-center justify-center`}>
+            <CustomText style={tw`text-xs`}>Live</CustomText>
+          </View>
+          <RowContainer
+            style={tw`bg-[#000000A3] rounded-20 h-12 w-22 justify-center`}>
+            <PartyJoinersIcon />
+            <CustomText style={tw`text-xs text-white ml-1`}>21k</CustomText>
+          </RowContainer>
+        </RowContainer>
+        <CustomImage
+          uri={item?.albumPicture ?? ''}
+          style={tw`h-100 w-[100%] rounded-4`}
+          resizeMode="cover"
+        />
+        <RowContainer
+          style={tw`bg-[#00000080] rounded-b-4 flex-row justify-between items-center absolute w-100 h-19 px-3 bottom-0 left-0 z-20`}>
+          <View>
+            <CustomText style={tw`text-sm text-white font-medium`}>
+              LIVE . 15:00-17:00
+            </CustomText>
+            <CustomText style={tw`text-lg text-white font-medium`}>
+              Stovia’s EP Release{' '}
+            </CustomText>
+          </View>
+          <JoinPartyButton
+            party={item}
+            handleJoinPartyBtnPress={() => handleJoinPartyBtnPress(item)}
+          />
+          {/* <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => handleJoinParty(item?._id)}
+            style={tw`bg-white rounded-20 h-12 w-22 items-center justify-center`}>
+            <CustomText style={tw`text-sm text-black font-semibold`}>
+              Join
+            </CustomText>
+          </TouchableOpacity> */}
+        </RowContainer>
+      </View>
+
+      <CustomText style={tw`mt-2 w-[90%] mx-auto text-xs`}>
+        {item?.partyDesc}
+      </CustomText>
 
       <RowContainer style={tw`mx-5 mt-4 justify-between`}>
         <RowContainer>
@@ -138,10 +179,10 @@ const PostItem: FunctionComponent<{
         ) : (
           <JoinPartyButton handleJoinPartyBtnPress={handleJoinPartyBtnPress} />
         )} */}
-        <JoinPartyButton
+        {/* <JoinPartyButton
           party={item}
           handleJoinPartyBtnPress={() => handleJoinPartyBtnPress(item)}
-        />
+        /> */}
       </RowContainer>
     </View>
   );

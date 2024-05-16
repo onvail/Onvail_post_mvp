@@ -1,5 +1,5 @@
 import React, {FunctionComponent} from 'react';
-import {View} from 'react-native';
+import {TouchableOpacity, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import CustomText from 'src/app/components/Text/CustomText';
@@ -11,6 +11,7 @@ export interface NotificationProps {
   subject: string;
   message: string;
   timeStamp: string;
+  viewNotification: any;
 }
 
 const NotificationCard: FunctionComponent<NotificationProps> = ({
@@ -18,9 +19,10 @@ const NotificationCard: FunctionComponent<NotificationProps> = ({
   subject,
   message,
   timeStamp,
+  viewNotification,
 }) => {
   return (
-    <View style={tw` border-b-[0.3px] border-grey2 `}>
+    <View style={tw` border-b-[0.3px] border-grey2 pt-3`}>
       <RowContainer style={tw`justify-between px-3 pb-3`}>
         <RowContainer>
           <LinearGradient
@@ -40,6 +42,12 @@ const NotificationCard: FunctionComponent<NotificationProps> = ({
         <View style={tw``}>
           <CustomText>{timeStamp}</CustomText>
         </View>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={viewNotification}
+          style={tw`bg-[#7C1AFC] px-5 py-1.8 rounded-12`}>
+          <CustomText>View</CustomText>
+        </TouchableOpacity>
       </RowContainer>
     </View>
   );

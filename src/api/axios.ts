@@ -5,6 +5,7 @@ import errorInteceptor from './interceptor/errorInterceptor';
 import {BASE_URL} from '@env';
 
 // Create instance called instance
+// console.log(BASE_URL+' is here');
 let axiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 30000,
