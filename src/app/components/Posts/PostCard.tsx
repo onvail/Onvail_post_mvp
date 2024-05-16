@@ -1,5 +1,5 @@
-import React, {FunctionComponent} from 'react';
-import {TouchableOpacity, View} from 'react-native';
+import React, {FunctionComponent, useState} from 'react';
+import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
 import UserHeader from './UserHeader';
 import CustomImage from 'components/Image/CustomImage';
 import tw from 'src/lib/tailwind';
@@ -29,21 +29,64 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   party,
 }) => {
   const {user} = useUser();
+  const isHost = party?.artist?._id === user?._id;
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const partyActionText = () => {
-    if (party?.artist?._id === user?._id) {
+    if (isHost) {
       return 'Start Party';
     } else {
       return 'Join the party';
     }
   };
+
+  const startParty = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.patch({
+        url: `parties/start-party/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+      });
+      console.log(response);
+      handleJoinPartyBtnPress(party);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const joinParty = async () => {
+    setIsLoading(true);
+    console.log(party?._id);
+    try {
+      const response = await api.post({
+        url: `parties/join-party/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+      });
+      console.log(response);
+      handleJoinPartyBtnPress(party);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <TouchableOpacity
-      onPress={() => handleJoinPartyBtnPress(party)}
-      style={tw`bg-white py-1.7 px-3 rounded-full`}>
-      <CustomText style={tw`text-primary text-xs font-poppinsMedium`}>
-        {partyActionText()}
-      </CustomText>
-    </TouchableOpacity>
+    <View style={tw`bg-white w-30 py-1.7 px-3 rounded-full`}>
+      {isLoading ? (
+        <ActivityIndicator color={'black'} />
+      ) : (
+        <TouchableOpacity onPress={() => (isHost ? startParty() : joinParty())}>
+          <CustomText style={tw`text-primary text-xs font-poppinsMedium`}>
+            {partyActionText()}
+          </CustomText>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 };
 
