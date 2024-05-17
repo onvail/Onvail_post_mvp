@@ -105,11 +105,13 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   };
 
   return (
-    <View style={tw`bg-white w-30 py-1.7 px-3 rounded-full`}>
+    <View style={tw`bg-white w-28 py-1.7 px-3 rounded-full`}>
       {isLoading ? (
         <ActivityIndicator color={'black'} />
       ) : (
-        <TouchableOpacity onPress={() => (isHost ? startParty() : joinParty())}>
+        <TouchableOpacity
+          style={tw`items-center justify-center`}
+          onPress={() => (isHost ? startParty() : joinParty())}>
           <CustomText style={tw`text-primary text-xs font-poppinsMedium`}>
             {partyActionText()}
           </CustomText>
