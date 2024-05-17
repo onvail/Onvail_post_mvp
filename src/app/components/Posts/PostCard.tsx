@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useState} from 'react';
+import React, {FunctionComponent, useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
 import UserHeader from './UserHeader';
 import CustomImage from 'components/Image/CustomImage';
@@ -13,9 +13,14 @@ import Icon from '../Icons/Icon';
 import api from 'src/api/api';
 import useUser from 'src/app/hooks/useUserInfo';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {getColors} from 'react-native-image-colors';
+import {ColorScheme} from 'src/app/navigator/types/MainStackParamList';
 
 interface JoinPartyProps {
-  handleJoinPartyBtnPress: (party: PartiesResponse) => void;
+  handleJoinPartyBtnPress: (
+    party: PartiesResponse,
+    albumBackgroundColor: ColorScheme,
+  ) => void;
   party: PartiesResponse;
 }
 
@@ -31,6 +36,32 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const {user} = useUser();
   const isHost = party?.artist?._id === user?._id;
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [albumBackgroundColor, setAlbumBackgroundColor] = useState<ColorScheme>(
+    {} as ColorScheme,
+  );
+
+  const fetchAlbumBackgroundColor = useMemo(async () => {
+    try {
+      const colors = await getColors(party.albumPicture, {
+        fallback: '#228B22',
+        cache: true,
+        key: party.albumPicture,
+      });
+      return colors;
+    } catch (error) {
+      console.log(error);
+    }
+  }, [party?.albumPicture]);
+
+  useEffect(() => {
+    const fetchBackgroundColor = async () => {
+      const colors = await fetchAlbumBackgroundColor;
+      const itemBackgroundColor = colors as ColorScheme;
+      setAlbumBackgroundColor(itemBackgroundColor);
+    };
+
+    fetchBackgroundColor();
+  }, [fetchAlbumBackgroundColor]);
 
   const partyActionText = () => {
     if (isHost) {
@@ -43,13 +74,12 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const startParty = async () => {
     setIsLoading(true);
     try {
-      const response = await api.patch({
+      await api.patch({
         url: `parties/start-party/${party?._id}`,
         requiresToken: true,
         authorization: true,
       });
-      console.log(response);
-      handleJoinPartyBtnPress(party);
+      handleJoinPartyBtnPress(party, albumBackgroundColor);
     } catch (error) {
       console.log(error);
     } finally {
@@ -61,13 +91,12 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
     setIsLoading(true);
     console.log(party?._id);
     try {
-      const response = await api.post({
+      await api.post({
         url: `parties/join-party/${party?._id}`,
         requiresToken: true,
         authorization: true,
       });
-      console.log(response);
-      handleJoinPartyBtnPress(party);
+      handleJoinPartyBtnPress(party, albumBackgroundColor);
     } catch (error) {
       console.log(error);
     } finally {
@@ -98,7 +127,10 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
 const PostItem: FunctionComponent<{
   item: PartiesResponse;
   userId: string;
-  handleJoinPartyBtnPress: (item: PartiesResponse) => void;
+  handleJoinPartyBtnPress: (
+    item: PartiesResponse,
+    albumBackgroundColor: ColorScheme,
+  ) => void;
 }> = ({item, handleJoinPartyBtnPress, userId}) => {
   const CommentSvg = generalIcon.Comment;
   const queryClient = useQueryClient();
@@ -191,7 +223,9 @@ const PostItem: FunctionComponent<{
         )} */}
         <JoinPartyButton
           party={item}
-          handleJoinPartyBtnPress={() => handleJoinPartyBtnPress(item)}
+          handleJoinPartyBtnPress={(item, albumBackgroundColor) =>
+            handleJoinPartyBtnPress(item, albumBackgroundColor)
+          }
         />
       </RowContainer>
     </View>
@@ -205,7 +239,10 @@ const PostItem: FunctionComponent<{
  */
 
 interface PostCardProps {
-  handleJoinPartyBtnPress: (item: PartiesResponse) => void;
+  handleJoinPartyBtnPress: (
+    item: PartiesResponse,
+    albumBackgroundColor: ColorScheme,
+  ) => void;
   data: PartiesResponse[];
 }
 const PostCard: FunctionComponent<PostCardProps> = ({
@@ -217,7 +254,9 @@ const PostCard: FunctionComponent<PostCardProps> = ({
   const renderItem: ListRenderItem<PartiesResponse> = ({item}) => (
     <PostItem
       item={item}
-      handleJoinPartyBtnPress={handleJoinPartyBtnPress}
+      handleJoinPartyBtnPress={(partyItem, albumBackgroundColor) =>
+        handleJoinPartyBtnPress(partyItem, albumBackgroundColor)
+      }
       userId={user?._id ?? ''}
     />
   );

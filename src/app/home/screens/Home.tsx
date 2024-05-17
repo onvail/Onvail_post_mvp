@@ -117,11 +117,12 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           ) : null}
           {selectedTab === 'Parties' && (
             <PostCard
-              handleJoinPartyBtnPress={item => {
+              handleJoinPartyBtnPress={(item, partyBackgroundColor) => {
                 navigation.navigate('MainAppNavigator', {
                   screen: 'PartyScreen',
                   params: {
                     party: item,
+                    partyBackgroundColor: partyBackgroundColor,
                   },
                 });
               }}

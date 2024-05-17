@@ -3,6 +3,14 @@ import {BottomTabParamList} from './BottomTabParamList';
 import {PartiesResponse} from 'src/types/partyTypes';
 import {AuthStackParamList} from './AuthStackParamList';
 
+export type ColorScheme = {
+  background: string;
+  detail: string;
+  platform: string;
+  primary: string;
+  secondary: string;
+};
+
 export type MainStackParamList = {
   Notifications: undefined;
   CreateNewPost: undefined;
@@ -11,6 +19,7 @@ export type MainStackParamList = {
   };
   PartyScreen: {
     party: PartiesResponse;
+    partyBackgroundColor: ColorScheme;
   };
   Settings: undefined;
   PartyOptions: undefined;

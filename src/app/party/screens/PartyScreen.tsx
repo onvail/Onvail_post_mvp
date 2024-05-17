@@ -35,20 +35,11 @@ import {VolumeManager} from 'react-native-volume-manager';
 import {Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
-import {getColors} from 'react-native-image-colors';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
-type ColorScheme = {
-  background: string;
-  detail: string;
-  platform: string;
-  primary: string;
-  secondary: string;
-};
-
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
-  const {party} = route.params;
+  const {party, partyBackgroundColor} = route.params;
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
   const PauseIcon = generalIcon.PauseIcon;
@@ -56,9 +47,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const SendIcon = generalIcon.SendIcon;
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
   const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
-  const [backgroundColor, setBackgroundColor] = useState<ColorScheme>(
-    {} as ColorScheme,
-  );
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
@@ -122,27 +110,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     handleSameQueueItemState();
   }, [handleSameQueueItemState]);
 
-  const backgroundColorPromise = useMemo(async () => {
-    try {
-      const colors = await getColors(party.albumPicture, {
-        fallback: '#228B22',
-        cache: true,
-        key: party.albumPicture,
-      });
-      return colors;
-    } catch (error) {}
-  }, [party.albumPicture]);
-
-  useEffect(() => {
-    const fetchBackgroundColor = async () => {
-      const colors = await backgroundColorPromise;
-      const itemBackgroundColor = colors as ColorScheme;
-      setBackgroundColor(itemBackgroundColor);
-    };
-
-    fetchBackgroundColor();
-  }, [backgroundColorPromise]);
-
   let IconComponent;
 
   if (isSameQueue && playerState === 'playing') {
@@ -157,8 +124,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     <LinearGradient
       style={tw`h-full p-4`}
       colors={[
-        backgroundColor?.background ?? '#0E0E0E',
-        backgroundColor?.detail ?? '#087352',
+        partyBackgroundColor?.background ?? '#0E0E0E',
+        partyBackgroundColor?.detail ?? '#087352',
       ]}>
       <SafeAreaView style={tw`flex-1`}>
         <View style={tw`items-end`}>
@@ -170,7 +137,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
             }>
             <Icon
               icon="close-circle-outline"
-              color={backgroundColor?.secondary ?? 'white'}
+              color={partyBackgroundColor?.secondary ?? 'white'}
               size={35}
             />
           </Pressable>
@@ -223,7 +190,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       <CustomBottomSheet
         ref={bottomSheetRef}
         customSnapPoints={[30, 300, 500, 700]}
-        backgroundColor={backgroundColor?.background}
+        backgroundColor={partyBackgroundColor?.background}
         visibilityHandler={() => {}}>
         <View style={tw`flex-1 py-3  pb-7`}>
           <ScrollView style={tw`flex-1 mb-4`}>
