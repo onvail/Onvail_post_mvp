@@ -145,7 +145,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         <View style={tw`mt-8 mb-3 items-center`}>
           <CustomImage
             uri={party.albumPicture}
-            style={tw`h-75 w-75 rounded-lg`}
+            resizeMode="cover"
+            style={tw`h-60 w-60 rounded-lg`}
           />
           <View style={tw` mt-8 flex-row items-center justify-between`}>
             <HighLightLeft />
