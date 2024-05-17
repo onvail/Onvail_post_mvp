@@ -1,9 +1,10 @@
 import {FlashList, ListRenderItem} from '@shopify/flash-list';
 import React, {FunctionComponent, memo} from 'react';
-import {View, ImageSourcePropType, Text, TouchableOpacity} from 'react-native';
+import {View, ImageSourcePropType, Text, TouchableOpacity, ScrollView} from 'react-native';
 import tw from 'src/lib/tailwind';
 import {sampleStatus} from 'src/utils/data';
 import CustomImage from 'components/Image/CustomImage';
+import {generalIcon} from '../Icons/generalIcons';
 
 type StatusItem = {
   name: string;
@@ -35,13 +36,11 @@ const Status: FunctionComponent = () => {
   const renderItem: ListRenderItem<StatusItem> = ({item}) => (
     <StatusItemComponent item={item} />
   );
+  const AddIcon = generalIcon.AddIcon;
 
   return (
     <View style={tw`flex-row`}>
-      {/* <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={handleAddStory}
-        style={tw`items-center`}>
+      <TouchableOpacity activeOpacity={0.9} style={tw`items-center`}>
         <View
           style={tw`mr-3 items-center justify-center rounded-[17px] h-20 w-20 border-4 border-grey5`}>
           <View
@@ -52,15 +51,17 @@ const Status: FunctionComponent = () => {
         <Text style={tw`text-white mt-2 font-poppinsMedium text-xs`}>
           Your Story
         </Text>
-      </TouchableOpacity> */}
-      <FlashList
-        data={sampleStatus}
-        renderItem={renderItem}
-        estimatedItemSize={10}
-        horizontal
-        keyExtractor={item => item.name}
-        showsHorizontalScrollIndicator={false}
-      />
+      </TouchableOpacity>
+      <ScrollView horizontal style={tw`flex-row`}>
+        <FlashList
+          data={sampleStatus}
+          renderItem={renderItem}
+          estimatedItemSize={10}
+          horizontal
+          keyExtractor={item => item.name}
+          showsHorizontalScrollIndicator={false}
+        />
+      </ScrollView>
     </View>
   );
 };
