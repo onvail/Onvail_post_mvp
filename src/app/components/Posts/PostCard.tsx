@@ -15,7 +15,7 @@ import useUser from 'src/app/hooks/useUserInfo';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {getColors} from 'react-native-image-colors';
 import {ColorScheme} from 'src/app/navigator/types/MainStackParamList';
-
+import socket from 'src/utils/socket';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -88,9 +88,13 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   };
 
   const joinParty = async () => {
+    leaveParty();
     setIsLoading(true);
-    console.log(party?._id);
     try {
+      socket.emit('join_party', {
+        party: party._id,
+        user,
+      });
       await api.post({
         url: `parties/join-party/${party?._id}`,
         requiresToken: true,
@@ -101,6 +105,18 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
       console.log(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const leaveParty = async () => {
+    try {
+      await api.post({
+        url: `parties/leave/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+      });
+    } catch (error) {
+      console.log(error);
     }
   };
 
