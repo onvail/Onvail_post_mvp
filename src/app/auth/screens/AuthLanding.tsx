@@ -10,9 +10,6 @@ import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
 import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {generalIcon} from 'src/app/components/Icons/generalIcons';
-import RowContainer from 'src/app/components/View/RowContainer';
-import Icon from 'src/app/components/Icons/Icon';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
@@ -38,11 +35,25 @@ const AuthLanding: FunctionComponent<Props> = ({navigation}) => {
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => navigation.navigate('EmailInput')}
-          style={tw`w-1/4 rounded-12 bg-[#7C1AFC] self-center mt-18 py-4.5`}>
+          style={tw`w-11/12 rounded-12 bg-[#7C1AFC] self-center mt-18 mb-9 py-4.5`}>
           <CustomText style={tw`text-white text-center font-bold text-lg`}>
-            Start
+            Sign Up
           </CustomText>
         </TouchableOpacity>
+        <View style={tw`w-11/12 self-center`}>
+          <CustomText
+            style={tw`text-white text-left font-bold text-sm ml-4 mb-2`}>
+            Already have an account?
+          </CustomText>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('NewLogin')}
+            style={tw`w-full rounded-12 border border-[#ffffff] self-center py-4.5`}>
+            <CustomText style={tw`text-white text-center font-bold text-lg`}>
+              Sign in
+            </CustomText>
+          </TouchableOpacity>
+        </View>
       </View>
     </ImageBackground>
   );
