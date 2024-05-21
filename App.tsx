@@ -16,7 +16,7 @@ const App: FunctionComponent = () => {
   return (
     <GestureHandlerRootView style={tw`flex-1`}>
       <QueryClientProvider client={queryClient}>
-        <AlertNotificationRoot>
+        <AlertNotificationRoot theme="dark">
           <View style={tw`flex-1`}>
             <Main />
           </View>
