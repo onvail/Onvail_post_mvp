@@ -88,7 +88,6 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   };
 
   const joinParty = async () => {
-    leaveParty();
     setIsLoading(true);
     try {
       socket.emit('join_party', {
@@ -105,18 +104,6 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
       console.log(error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const leaveParty = async () => {
-    try {
-      await api.post({
-        url: `parties/leave/${party?._id}`,
-        requiresToken: true,
-        authorization: true,
-      });
-    } catch (error) {
-      console.log(error);
     }
   };
 
