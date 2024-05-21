@@ -50,6 +50,7 @@ export type PartiesResponse = {
     followers: string[];
     following: string[];
     name: string;
+    image: string;
     userType: string;
     profile?: any;
     stageName: string;
