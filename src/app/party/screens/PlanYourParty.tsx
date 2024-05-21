@@ -32,6 +32,7 @@ import ViewShot, {captureRef} from 'react-native-view-shot';
 import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
 import CustomTimePicker from 'src/app/components/Calendar/CustomTimePicker';
 import Modal from 'react-native-modal/dist/modal';
+import useUser from 'src/app/hooks/useUserInfo';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
 const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
@@ -62,7 +63,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
     albumPicture: '',
     date: new Date().toISOString(),
     visibility: 'public',
-    guests: [],
+    guests: ['example@gmail.com'],
     pollOptions: [],
     pollQuestion: '',
     partyApplicationClosingDate: new Date().toLocaleDateString(),
@@ -93,7 +94,6 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
       delete formData.pollQuestion;
       delete formData.partyApplicationClosingDate;
     }
-    console.log(formData);
 
     try {
       await api.post({
@@ -200,6 +200,8 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
     console.log('do something with ', uri);
   }, []);
 
+  const {user} = useUser();
+
   return (
     <ScreenContainer screenHeader="Plan your party" goBack>
       <KeyboardAwareScrollView style={tw``}>
@@ -284,8 +286,11 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                         <View style={tw`h-[100%] w-[100%]`}>
                           <DefaultImages
                             color={selectedColor}
-                            artist="Stovia"
-                            imageUrl="https://i.pinimg.com/originals/0a/88/e0/0a88e01b53093c2c46efb76b6d5887e1.jpg"
+                            artist={user.name}
+                            imageUrl={
+                              user?.image ??
+                              'https://img.icons8.com/nolan/64/user-default.png'
+                            }
                           />
                         </View>
                       </ViewShot>

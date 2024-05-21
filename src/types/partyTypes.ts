@@ -52,6 +52,7 @@ export type PartiesResponse = {
     name: string;
     userType: string;
     profile?: any;
+    stageName: string;
   };
   comments: any[]; // Define further if the structure of comments is known
   date: string;
