@@ -64,15 +64,15 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   );
   const screenColors = {
     background:
-      partyBackgroundColor.platform === 'android'
+      partyBackgroundColor?.platform === 'android'
         ? partyBackgroundColor?.average
-        : partyBackgroundColor.background,
+        : partyBackgroundColor?.background,
     detail:
-      partyBackgroundColor.platform === 'android'
+      partyBackgroundColor?.platform === 'android'
         ? partyBackgroundColor?.darkVibrant
-        : partyBackgroundColor.detail,
+        : partyBackgroundColor?.detail,
     accent:
-      partyBackgroundColor.platform === 'android'
+      partyBackgroundColor?.platform === 'android'
         ? partyBackgroundColor?.darkMuted
         : partyBackgroundColor?.quality,
   };

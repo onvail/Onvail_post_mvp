@@ -8,6 +8,8 @@ import PartyOptionScreen from 'src/app/party/screens/PartyOptionScreen';
 import Settings from 'src/app/settings/screens/Settings';
 import AuthNavigator from '../AuthNavigator';
 import PartySuccessScreen from 'src/app/party/screens/PartySuccessScreen';
+import SongReview from 'src/app/songreview/screens/SongReview';
+import SongReviewSuccess from 'src/app/songreview/screens/SongReviewSuccess';
 
 interface ScreenDef {
   name: keyof MainStackParamList;
@@ -18,6 +20,14 @@ export const mainNavigatorScreens: ScreenDef[] = [
   {
     name: 'Notifications',
     screen: Notification,
+  },
+  {
+    name: 'SongReviewSuccess',
+    screen: SongReviewSuccess,
+  },
+  {
+    name: 'SongReview',
+    screen: SongReview,
   },
   {
     name: 'CreateNewPost',
