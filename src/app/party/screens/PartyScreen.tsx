@@ -14,6 +14,8 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Platform,
+  TouchableOpacity,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'src/app/components/Icons/Icon';
@@ -32,23 +34,21 @@ import {FlashList, ListRenderItem} from '@shopify/flash-list';
 import MusicList from '../components/MusicList';
 import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {VolumeManager} from 'react-native-volume-manager';
-import {Track} from 'react-native-track-player';
+import TrackPlayer, {State, Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
-import {getColors} from 'react-native-image-colors';
+import api from 'src/api/api';
+import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
+import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
+import useUser from 'src/app/hooks/useUserInfo';
+import socket from 'src/utils/socket';
+import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
-type ColorScheme = {
-  background: string;
-  detail: string;
-  platform: string;
-  primary: string;
-  secondary: string;
-};
-
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
-  const {party} = route.params;
+  const {party, partyBackgroundColor} = route.params;
+  const {user} = useUser();
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
   const PauseIcon = generalIcon.PauseIcon;
@@ -56,18 +56,33 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const SendIcon = generalIcon.SendIcon;
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
   const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
-  const [backgroundColor, setBackgroundColor] = useState<ColorScheme>(
-    {} as ColorScheme,
-  );
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
+  const [trackDurations, setTrackDurations] = useState<Record<string, number>>(
+    {},
+  );
+  const screenColors = {
+    background:
+      partyBackgroundColor?.platform === 'android'
+        ? partyBackgroundColor?.average
+        : partyBackgroundColor?.background,
+    detail:
+      partyBackgroundColor?.platform === 'android'
+        ? partyBackgroundColor?.darkVibrant
+        : partyBackgroundColor?.detail,
+    accent:
+      partyBackgroundColor?.platform === 'android'
+        ? partyBackgroundColor?.darkMuted
+        : partyBackgroundColor?.quality,
+  };
 
   const openBottomSheet = () => {
     bottomSheetRef.current?.open();
   };
 
   const songs: Song[] = party?.songs;
+  const isHost = party?.artist?._id === user?._id;
 
   const allTracks = useMemo(() => {
     return songs.map(song => ({
@@ -83,10 +98,120 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }));
   }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
 
-  const {handlePauseAndPlayTrack, playerState, checkIfTrackQueueIsDifferent} =
-    useMusicPlayer({
-      track: allTracks,
+  const fetchDuration = useCallback(async (uri: string) => {
+    const sound = new Audio.Sound();
+
+    try {
+      const response = await sound.loadAsync({
+        uri,
+      });
+      const trackDetails: AVPlaybackStatusSuccess =
+        response as AVPlaybackStatusSuccess;
+      const duration = trackDetails?.durationMillis ?? 0;
+      return duration;
+    } catch (error) {
+      return 0;
+    } finally {
+      await sound.unloadAsync();
+    }
+  }, []);
+
+  const leavePartyHandler = () => {
+    Dialog.show({
+      type: ALERT_TYPE.WARNING,
+      title: 'Leave party',
+      textBody: 'Are you sure you want to leave this party?',
+      button: 'continue',
+      onPressButton: async () => {
+        await leaveParty();
+        await TrackPlayer.stop();
+        await TrackPlayer.reset();
+        Dialog.hide();
+      },
     });
+  };
+
+  const endPartyHandler = () => {
+    Dialog.show({
+      type: ALERT_TYPE.WARNING,
+      title: 'End party',
+      textBody: 'Are you sure you want to end this party?',
+      button: 'continue',
+      onPressButton: async () => {
+        endParty();
+        await TrackPlayer.stop();
+        await TrackPlayer.reset();
+        Dialog.hide();
+      },
+    });
+  };
+
+  const leaveParty = async () => {
+    try {
+      await api.post({
+        url: `parties/leave/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+      });
+      navigation.navigate('BottomNavigator', {
+        screen: 'Home',
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const endParty = async () => {
+    try {
+      await api.post({
+        url: `parties/leave/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+      });
+      navigation.navigate('BottomNavigator', {
+        screen: 'Home',
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchAllDurations = async () => {
+      const durations: Record<string, number> = {};
+
+      try {
+        await Promise.all(
+          allTracks.map(async track => {
+            try {
+              const duration = await fetchDuration(track.url);
+              durations[track.id] = duration;
+            } catch (error) {
+              console.error(error);
+            }
+          }),
+        );
+        setTrackDurations(durations);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    if (allTracks.length > 0) {
+      fetchAllDurations();
+    }
+  }, [allTracks, fetchDuration]);
+
+  const {
+    handlePauseAndPlayTrack,
+    playerState,
+    checkIfTrackQueueIsDifferent,
+    skipToNext,
+    skipToPrevious,
+    stop,
+  } = useMusicPlayer({
+    track: allTracks,
+  });
 
   const volumeHandler = useCallback(async () => {
     await VolumeManager.setVolume(volume);
@@ -96,11 +221,35 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     volumeHandler();
   }, [volume, volumeHandler]);
 
+  const handlePlay = async () => {
+    await handlePauseAndPlayTrack().then(() => {
+      socket.emit('play', {
+        party: party?._id,
+      });
+    });
+  };
+
+  const handlePrevious = async () => {
+    await skipToPrevious().then(() => {
+      socket.emit('previous', {
+        party: party?._id,
+      });
+    });
+  };
+
+  const handleNext = async () => {
+    await skipToNext().then(() => {
+      socket.emit('forward', {
+        party: party?._id,
+      });
+    });
+  };
   const renderItem: ListRenderItem<Track> = ({item, index}) => {
-    const {artist, title, duration, url} = item;
+    const {artist, title, url, id} = item;
+    const trackDuration = trackDurations[id] ?? 0;
     return (
       <MusicList
-        duration={duration}
+        duration={trackDuration}
         title={title}
         index={index}
         artist={artist}
@@ -122,27 +271,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     handleSameQueueItemState();
   }, [handleSameQueueItemState]);
 
-  const backgroundColorPromise = useMemo(async () => {
-    try {
-      const colors = await getColors(party.albumPicture, {
-        fallback: '#228B22',
-        cache: true,
-        key: party.albumPicture,
-      });
-      return colors;
-    } catch (error) {}
-  }, [party.albumPicture]);
-
-  useEffect(() => {
-    const fetchBackgroundColor = async () => {
-      const colors = await backgroundColorPromise;
-      const itemBackgroundColor = colors as ColorScheme;
-      setBackgroundColor(itemBackgroundColor);
-    };
-
-    fetchBackgroundColor();
-  }, [backgroundColorPromise]);
-
   let IconComponent;
 
   if (isSameQueue && playerState === 'playing') {
@@ -153,27 +281,79 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     IconComponent = <PlayIcon />;
   }
 
+  const mountTrackForGuests = useCallback(async () => {
+    if (!isHost) {
+      TrackPlayer.add(allTracks);
+    }
+  }, [allTracks, isHost]);
+
+  useEffect(() => {
+    mountTrackForGuests();
+    const handleSocketEvents = async (data: string) => {
+      const playBackState = await getPlaybackState();
+      console.log(data);
+      if (isHost) {
+        return;
+      }
+      if (data === 'play') {
+        if (playBackState.state === State.Playing) {
+          await TrackPlayer.pause();
+        } else {
+          await TrackPlayer.play();
+        }
+      }
+      if (data === 'stop') {
+        await TrackPlayer.stop();
+      }
+      if (data === 'prev') {
+        await TrackPlayer.skipToPrevious();
+      }
+      if (data === 'fwd') {
+        await TrackPlayer.skipToNext();
+      }
+    };
+
+    socket.on('receive', handleSocketEvents);
+
+    return () => {
+      socket.off('receive', handleSocketEvents);
+    };
+  }, [
+    isHost,
+    handlePauseAndPlayTrack,
+    skipToNext,
+    skipToPrevious,
+    stop,
+    mountTrackForGuests,
+  ]);
+
   return (
     <LinearGradient
-      style={tw`h-full p-4`}
+      style={tw`h-full  flex-1 p-4`}
       colors={[
-        backgroundColor?.background ?? '#0E0E0E',
-        backgroundColor?.detail ?? '#087352',
+        screenColors?.background ?? '#0E0E0E',
+        screenColors?.detail ?? '#087352',
       ]}>
       <SafeAreaView style={tw`flex-1`}>
-        <View style={tw`items-end`}>
-          <Pressable onPress={() => navigation.goBack()}>
-            <Icon
-              icon="close-circle-outline"
-              color={backgroundColor?.secondary ?? 'white'}
-              size={35}
-            />
-          </Pressable>
-        </View>
+        <TouchableOpacity
+          style={tw` ${
+            Platform.OS === 'android' ? 'mt-6' : 'mt-0'
+          } h-10 w-20 items-center  justify-center self-end`}
+          onPress={() => (isHost ? endPartyHandler() : leavePartyHandler())}>
+          <CustomText
+            // eslint-disable-next-line react-native/no-inline-styles
+            style={{
+              color: screenColors?.accent,
+              fontWeight: 'bold',
+            }}>
+            {isHost ? 'End' : 'Leave'}
+          </CustomText>
+        </TouchableOpacity>
         <View style={tw`mt-8 mb-3 items-center`}>
           <CustomImage
             uri={party.albumPicture}
-            style={tw`h-70 w-70  rounded-lg`}
+            resizeMode="cover"
+            style={tw`h-60 w-60 rounded-lg`}
           />
           <View style={tw` mt-8 flex-row items-center justify-between`}>
             <HighLightLeft />
@@ -182,13 +362,22 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
               <HighLightRight />
             </Pressable>
           </View>
-          <View style={tw`mt-6 w-[90%]  justify-center  items-center`}>
-            <Pressable
-              onPress={handlePauseAndPlayTrack}
-              style={tw`w-10 items-center `}>
-              {IconComponent}
-            </Pressable>
-          </View>
+          {isHost && (
+            <RowContainer
+              style={tw`mt-6 w-[60%]  justify-around  items-center`}>
+              <Pressable onPress={handlePrevious}>
+                <Icon icon="rewind" color="white" size={25} />
+              </Pressable>
+              <Pressable
+                onPress={() => handlePlay()}
+                style={tw`w-10 items-center `}>
+                {IconComponent}
+              </Pressable>
+              <Pressable onPress={handleNext}>
+                <Icon icon="fast-forward" color="white" size={25} />
+              </Pressable>
+            </RowContainer>
+          )}
           <View style={tw`flex-row w-[90%] mt-6 items-center`}>
             <Icon icon={'volume-low'} color="white" />
             <Slider
@@ -206,6 +395,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         <FlashList
           data={allTracks}
           renderItem={renderItem}
+          extraData={trackDurations}
           keyExtractor={item => item?.id}
           estimatedItemSize={20}
           estimatedListSize={{
@@ -218,6 +408,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       <CustomBottomSheet
         ref={bottomSheetRef}
         customSnapPoints={[30, 300, 500, 700]}
+        backgroundColor={screenColors?.background}
         visibilityHandler={() => {}}>
         <View style={tw`flex-1 py-3  pb-7`}>
           <ScrollView style={tw`flex-1 mb-4`}>

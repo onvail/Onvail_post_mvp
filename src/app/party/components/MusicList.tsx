@@ -1,4 +1,4 @@
-import React, {FunctionComponent} from 'react';
+import React, {FunctionComponent, useMemo} from 'react';
 import {Pressable} from 'react-native';
 import {State, Track, useProgress} from 'react-native-track-player';
 import CustomText from 'src/app/components/Text/CustomText';
@@ -7,11 +7,15 @@ import {Colors} from 'src/app/styles/colors';
 import tw from 'src/lib/tailwind';
 import LottieView from 'lottie-react-native';
 import {MusicStoreState, useMusicStore} from 'src/app/zustand/store';
-import {secondsToMinutesAndSeconds, truncateText} from 'src/utils/utilities';
+import {
+  convertMillisecondsToMinSec,
+  secondsToMinutesAndSeconds,
+  truncateText,
+} from 'src/utils/utilities';
 
 interface Props extends Track {}
 
-const MusicList: FunctionComponent<Props> = ({title, index, id}) => {
+const MusicList: FunctionComponent<Props> = ({title, index, id, duration}) => {
   const bgColor = index && (index + 1) % 2 === 0 ? 'transparent' : 'green';
   const currentlyPlayingTrack = useMusicStore(
     (state: MusicStoreState) => state.currentTrack,
@@ -21,10 +25,15 @@ const MusicList: FunctionComponent<Props> = ({title, index, id}) => {
   );
 
   const {position} = useProgress();
-  const currentItemPosition =
-    currentlyPlayingTrack?.id === id
-      ? secondsToMinutesAndSeconds(position)
-      : '-- : --';
+  const currentItemPosition = useMemo(() => {
+    if (currentlyPlayingTrack?.id === id) {
+      return secondsToMinutesAndSeconds(position);
+    } else if (duration !== undefined) {
+      return convertMillisecondsToMinSec(duration);
+    } else {
+      return '--:--';
+    }
+  }, [currentlyPlayingTrack?.id, id, position, duration]);
 
   return (
     <Pressable>
