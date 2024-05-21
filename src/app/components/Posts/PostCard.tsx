@@ -186,20 +186,20 @@ const PostItem: FunctionComponent<{
     <View style={tw`mb-4 border-b-[0.2px] border-grey2 pb-7`}>
       <UserHeader
         name={item?.artist?.name}
-        uri={item?.artist?.profile?.image}
+        uri={item?.artist?.image}
         handleFollowBtnPress={() => handleFollowMutation.mutate()}
         canFollow={canFollowUser}
         isFollowing={isFollowing}
       />
-      <View style={tw`self-center relative rounded-4 mt-2 bg-white w-100`}>
+      <View style={tw`self-center relative rounded-lg mx-8 mt-2 w-[95%]`}>
         <RowContainer
-          style={tw`flex-row justify-between items-center absolute w-100 px-3 top-2 left-0 z-20`}>
+          style={tw`flex-row justify-between items-center w-full absolute  px-3 top-2 left-0 z-20`}>
           <View
             style={tw`bg-[#D92A2A] rounded-20 h-12 w-22 items-center justify-center`}>
             <CustomText style={tw`text-xs`}>Live</CustomText>
           </View>
           <RowContainer
-            style={tw`bg-[#000000A3] rounded-20 h-12 w-22 justify-center`}>
+            style={tw`bg-primary opacity-70 rounded-20 h-12 w-22 justify-center`}>
             <PartyJoinersIcon />
             <CustomText style={tw`text-xs text-white ml-1`}>21k</CustomText>
           </RowContainer>
@@ -210,18 +210,20 @@ const PostItem: FunctionComponent<{
           resizeMode="cover"
         />
         <RowContainer
-          style={tw`bg-[#00000080] rounded-b-4 flex-row justify-between items-center absolute w-100 h-19 px-3 bottom-0 left-0 z-20`}>
+          style={tw`bg-[#00000080] rounded-b-4 flex-row justify-between items-center absolute w-full h-19 px-3 bottom-0 left-0 z-20`}>
           <View>
             <CustomText style={tw`text-sm text-white font-medium`}>
               LIVE . 15:00-17:00
             </CustomText>
             <CustomText style={tw`text-lg text-white font-medium`}>
-              Stovia’s EP Release{' '}
+              {item?.partyDesc}
             </CustomText>
           </View>
           <JoinPartyButton
             party={item}
-            handleJoinPartyBtnPress={() => handleJoinPartyBtnPress(item)}
+            handleJoinPartyBtnPress={(party, albumBackgroundColor) =>
+              handleJoinPartyBtnPress(party, albumBackgroundColor)
+            }
           />
           {/* <TouchableOpacity
             activeOpacity={0.8}
