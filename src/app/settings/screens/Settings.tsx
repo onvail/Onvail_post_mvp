@@ -85,7 +85,7 @@ const Settings: FunctionComponent<Props> = ({navigation}) => {
             ) : (
               <Avatar.Text
                 style={tw`bg-purple items-center justify-center  rounded-full`}
-                size={120}
+                size={160}
                 label={user?.name?.substring(0, 1)!}
                 labelStyle={tw`text-primary  font-poppinsRegular`}
               />
