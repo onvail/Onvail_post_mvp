@@ -3,7 +3,5 @@ import {io} from 'socket.io-client';
 
 const socket = io.connect(BASE_URL);
 
-socket.on('connect', () => {
-  console.log('socket id', socket.id);
-});
+socket.on('connect', () => {});
 export default socket;
