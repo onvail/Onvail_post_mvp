@@ -8,8 +8,10 @@ import PartyOptionScreen from 'src/app/party/screens/PartyOptionScreen';
 import Settings from 'src/app/settings/screens/Settings';
 import AuthNavigator from '../AuthNavigator';
 import PartySuccessScreen from 'src/app/party/screens/PartySuccessScreen';
+import StartPartyListing from 'src/app/party/screens/StartPartyListing';
 import SongReview from 'src/app/songreview/screens/SongReview';
 import SongReviewSuccess from 'src/app/songreview/screens/SongReviewSuccess';
+import PartyWait from 'src/app/party/screens/PartyWait';
 
 interface ScreenDef {
   name: keyof MainStackParamList;
@@ -48,6 +50,14 @@ export const mainNavigatorScreens: ScreenDef[] = [
   {
     name: 'PartySuccessScreen',
     screen: PartySuccessScreen,
+  },
+  {
+    name: 'StartPartyListing',
+    screen: StartPartyListing,
+  },
+  {
+    name: 'PartyWait',
+    screen: PartyWait,
   },
   {
     name: 'BottomNavigator',

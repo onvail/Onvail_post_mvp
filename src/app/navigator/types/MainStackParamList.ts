@@ -21,9 +21,11 @@ export type MainStackParamList = {
     party: PartiesResponse;
     partyBackgroundColor: ColorScheme;
   };
+  StartPartyListing: undefined;
   Settings: undefined;
   PartyOptions: undefined;
   PartySuccessScreen: undefined;
+  PartyWait: undefined;
   BottomNavigator: NavigatorScreenParams<BottomTabParamList>;
   AuthNavigator: NavigatorScreenParams<AuthStackParamList>;
 };

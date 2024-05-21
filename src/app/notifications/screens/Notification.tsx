@@ -35,6 +35,12 @@ const Notification: FunctionComponent = ({navigation}) => {
       subject={item.subject}
       timeStamp={item.timeStamp}
       message={item.message}
+      startParty={item.startParty}
+      startPartClick={() =>
+        navigation.navigate('MainAppNavigator', {
+          screen: 'StartPartyListing',
+        })
+      }
     />
   );
 
