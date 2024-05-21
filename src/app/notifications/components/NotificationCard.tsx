@@ -12,6 +12,8 @@ export interface NotificationProps {
   message: string;
   timeStamp: string;
   viewNotification: any;
+  startParty: boolean;
+  startPartClick: any;
 }
 
 const NotificationCard: FunctionComponent<NotificationProps> = ({
@@ -20,6 +22,8 @@ const NotificationCard: FunctionComponent<NotificationProps> = ({
   message,
   timeStamp,
   viewNotification,
+  startParty,
+  startPartClick,
 }) => {
   return (
     <View style={tw` border-b-[0.3px] border-grey2 pt-3`}>
@@ -42,12 +46,22 @@ const NotificationCard: FunctionComponent<NotificationProps> = ({
         <View style={tw``}>
           <CustomText>{timeStamp}</CustomText>
         </View>
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={viewNotification}
-          style={tw`bg-[#7C1AFC] px-5 py-1.8 rounded-12`}>
-          <CustomText>View</CustomText>
-        </TouchableOpacity>
+        {startParty && (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={startPartClick}
+            style={tw`bg-[#7C1AFC] px-5 py-1.8 rounded-12`}>
+            <CustomText>Start</CustomText>
+          </TouchableOpacity>
+        )}
+        {/* {viewNotification && (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={viewNotification}
+            style={tw`bg-[#7C1AFC] px-5 py-1.8 rounded-12`}>
+            <CustomText>View</CustomText>
+          </TouchableOpacity>
+        )} */}
       </RowContainer>
     </View>
   );

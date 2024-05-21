@@ -39,6 +39,9 @@ import PauseIcon2 from 'src/assets/svg/pauseIcon2.svg';
 import Tick from 'src/assets/svg/tick.svg';
 import Ticksm from 'src/assets/svg/ticksm.svg';
 import EmailBackgroundGradient from 'src/assets/svg/EmailBackgroundGradient.svg';
+import ShareIcon from 'src/assets/svg/ShareIcon.svg';
+import PartyWaitIcon from 'src/assets/svg/partywait.svg';
+import EarpieceIcon from 'src/assets/svg/earpiece.svg';
 
 type GeneralType =
   | 'Home'
@@ -80,13 +83,17 @@ type GeneralType =
   | 'PauseIcon2'
   | 'Tick'
   | 'Send2'
-  | 'Ticksm';
+  | 'Ticksm'
+  | 'ShareIcon'
+  | 'PartyWaitIcon'
+  | 'EarpieceIcon';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['Home']: HomeSvg,
   ['AddIcon']: AddIcon,
   ['MenuIcon']: MenuIcon,
   ['Profile']: ProfileSvg,
+  ['ShareIcon']: ShareIcon,
   ['Logo']: LogoSvg,
   ['NotificationBell']: NotificationBell,
   ['Heart']: Heart,
@@ -123,4 +130,6 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['PauseIcon2']: PauseIcon2,
   ['Tick']: Tick,
   ['Ticksm']: Ticksm,
+  ['PartyWaitIcon']: PartyWaitIcon,
+  ['EarpieceIcon']: EarpieceIcon,
 };
