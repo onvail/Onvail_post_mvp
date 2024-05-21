@@ -14,6 +14,8 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Platform,
+  TouchableOpacity,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'src/app/components/Icons/Icon';
@@ -32,16 +34,21 @@ import {FlashList, ListRenderItem} from '@shopify/flash-list';
 import MusicList from '../components/MusicList';
 import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {VolumeManager} from 'react-native-volume-manager';
-import {Track} from 'react-native-track-player';
+import TrackPlayer, {State, Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
-import {Audio} from 'expo-av';
-import {AVPlaybackStatusSuccess} from 'expo-av';
+import api from 'src/api/api';
+import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
+import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
+import useUser from 'src/app/hooks/useUserInfo';
+import socket from 'src/utils/socket';
+import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
+  const {user} = useUser();
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
   const PauseIcon = generalIcon.PauseIcon;
@@ -55,12 +62,27 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const [trackDurations, setTrackDurations] = useState<Record<string, number>>(
     {},
   );
+  const screenColors = {
+    background:
+      partyBackgroundColor.platform === 'android'
+        ? partyBackgroundColor?.average
+        : partyBackgroundColor.background,
+    detail:
+      partyBackgroundColor.platform === 'android'
+        ? partyBackgroundColor?.darkVibrant
+        : partyBackgroundColor.detail,
+    accent:
+      partyBackgroundColor.platform === 'android'
+        ? partyBackgroundColor?.darkMuted
+        : partyBackgroundColor?.quality,
+  };
 
   const openBottomSheet = () => {
     bottomSheetRef.current?.open();
   };
 
   const songs: Song[] = party?.songs;
+  const isHost = party?.artist?._id === user?._id;
 
   const allTracks = useMemo(() => {
     return songs.map(song => ({
@@ -94,6 +116,66 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, []);
 
+  const leavePartyHandler = () => {
+    Dialog.show({
+      type: ALERT_TYPE.WARNING,
+      title: 'Leave party',
+      textBody: 'Are you sure you want to leave this party?',
+      button: 'continue',
+      onPressButton: async () => {
+        await leaveParty();
+        await TrackPlayer.stop();
+        await TrackPlayer.reset();
+        Dialog.hide();
+      },
+    });
+  };
+
+  const endPartyHandler = () => {
+    Dialog.show({
+      type: ALERT_TYPE.WARNING,
+      title: 'End party',
+      textBody: 'Are you sure you want to end this party?',
+      button: 'continue',
+      onPressButton: async () => {
+        endParty();
+        await TrackPlayer.stop();
+        await TrackPlayer.reset();
+        Dialog.hide();
+      },
+    });
+  };
+
+  const leaveParty = async () => {
+    try {
+      await api.post({
+        url: `parties/leave/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+      });
+      navigation.navigate('BottomNavigator', {
+        screen: 'Home',
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const endParty = async () => {
+    try {
+      await api.post({
+        url: `parties/leave/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+      });
+      navigation.navigate('BottomNavigator', {
+        screen: 'Home',
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     const fetchAllDurations = async () => {
       const durations: Record<string, number> = {};
@@ -110,7 +192,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           }),
         );
         setTrackDurations(durations);
-      } catch (error) {}
+      } catch (error) {
+        console.error(error);
+      }
     };
 
     if (allTracks.length > 0) {
@@ -118,10 +202,16 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [allTracks, fetchDuration]);
 
-  const {handlePauseAndPlayTrack, playerState, checkIfTrackQueueIsDifferent} =
-    useMusicPlayer({
-      track: allTracks,
-    });
+  const {
+    handlePauseAndPlayTrack,
+    playerState,
+    checkIfTrackQueueIsDifferent,
+    skipToNext,
+    skipToPrevious,
+    stop,
+  } = useMusicPlayer({
+    track: allTracks,
+  });
 
   const volumeHandler = useCallback(async () => {
     await VolumeManager.setVolume(volume);
@@ -131,6 +221,29 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     volumeHandler();
   }, [volume, volumeHandler]);
 
+  const handlePlay = async () => {
+    await handlePauseAndPlayTrack().then(() => {
+      socket.emit('play', {
+        party: party?._id,
+      });
+    });
+  };
+
+  const handlePrevious = async () => {
+    await skipToPrevious().then(() => {
+      socket.emit('previous', {
+        party: party?._id,
+      });
+    });
+  };
+
+  const handleNext = async () => {
+    await skipToNext().then(() => {
+      socket.emit('forward', {
+        party: party?._id,
+      });
+    });
+  };
   const renderItem: ListRenderItem<Track> = ({item, index}) => {
     const {artist, title, url, id} = item;
     const trackDuration = trackDurations[id] ?? 0;
@@ -168,28 +281,74 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     IconComponent = <PlayIcon />;
   }
 
+  const mountTrackForGuests = useCallback(async () => {
+    if (!isHost) {
+      TrackPlayer.add(allTracks);
+    }
+  }, [allTracks, isHost]);
+
+  useEffect(() => {
+    mountTrackForGuests();
+    const handleSocketEvents = async (data: string) => {
+      const playBackState = await getPlaybackState();
+      console.log(data);
+      if (isHost) {
+        return;
+      }
+      if (data === 'play') {
+        if (playBackState.state === State.Playing) {
+          await TrackPlayer.pause();
+        } else {
+          await TrackPlayer.play();
+        }
+      }
+      if (data === 'stop') {
+        await TrackPlayer.stop();
+      }
+      if (data === 'prev') {
+        await TrackPlayer.skipToPrevious();
+      }
+      if (data === 'fwd') {
+        await TrackPlayer.skipToNext();
+      }
+    };
+
+    socket.on('receive', handleSocketEvents);
+
+    return () => {
+      socket.off('receive', handleSocketEvents);
+    };
+  }, [
+    isHost,
+    handlePauseAndPlayTrack,
+    skipToNext,
+    skipToPrevious,
+    stop,
+    mountTrackForGuests,
+  ]);
+
   return (
     <LinearGradient
-      style={tw`h-full p-4`}
+      style={tw`h-full  flex-1 p-4`}
       colors={[
-        partyBackgroundColor?.background ?? '#0E0E0E',
-        partyBackgroundColor?.detail ?? '#087352',
+        screenColors?.background ?? '#0E0E0E',
+        screenColors?.detail ?? '#087352',
       ]}>
       <SafeAreaView style={tw`flex-1`}>
-        <View style={tw`items-end`}>
-          <Pressable
-            onPress={() =>
-              navigation.navigate('BottomNavigator', {
-                screen: 'Home',
-              })
-            }>
-            <Icon
-              icon="close-circle-outline"
-              color={partyBackgroundColor?.secondary ?? 'white'}
-              size={35}
-            />
-          </Pressable>
-        </View>
+        <TouchableOpacity
+          style={tw` ${
+            Platform.OS === 'android' ? 'mt-6' : 'mt-0'
+          } h-10 w-20 items-center  justify-center self-end`}
+          onPress={() => (isHost ? endPartyHandler() : leavePartyHandler())}>
+          <CustomText
+            // eslint-disable-next-line react-native/no-inline-styles
+            style={{
+              color: screenColors?.accent,
+              fontWeight: 'bold',
+            }}>
+            {isHost ? 'End' : 'Leave'}
+          </CustomText>
+        </TouchableOpacity>
         <View style={tw`mt-8 mb-3 items-center`}>
           <CustomImage
             uri={party.albumPicture}
@@ -203,13 +362,22 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
               <HighLightRight />
             </Pressable>
           </View>
-          <View style={tw`mt-6 w-[90%]  justify-center  items-center`}>
-            <Pressable
-              onPress={handlePauseAndPlayTrack}
-              style={tw`w-10 items-center `}>
-              {IconComponent}
-            </Pressable>
-          </View>
+          {isHost && (
+            <RowContainer
+              style={tw`mt-6 w-[60%]  justify-around  items-center`}>
+              <Pressable onPress={handlePrevious}>
+                <Icon icon="rewind" color="white" size={25} />
+              </Pressable>
+              <Pressable
+                onPress={() => handlePlay()}
+                style={tw`w-10 items-center `}>
+                {IconComponent}
+              </Pressable>
+              <Pressable onPress={handleNext}>
+                <Icon icon="fast-forward" color="white" size={25} />
+              </Pressable>
+            </RowContainer>
+          )}
           <View style={tw`flex-row w-[90%] mt-6 items-center`}>
             <Icon icon={'volume-low'} color="white" />
             <Slider
@@ -240,7 +408,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       <CustomBottomSheet
         ref={bottomSheetRef}
         customSnapPoints={[30, 300, 500, 700]}
-        backgroundColor={partyBackgroundColor?.background}
+        backgroundColor={screenColors?.background}
         visibilityHandler={() => {}}>
         <View style={tw`flex-1 py-3  pb-7`}>
           <ScrollView style={tw`flex-1 mb-4`}>
