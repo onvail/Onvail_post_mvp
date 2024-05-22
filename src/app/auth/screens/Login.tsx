@@ -2,6 +2,7 @@ import React, {FunctionComponent, useState} from 'react';
 import {
   ActivityIndicator,
   ImageBackground,
+  Pressable,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -17,12 +18,12 @@ import api from 'src/api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import localStorageKeys from 'src/api/config/local-storage-keys';
 import RowContainer from 'src/app/components/View/RowContainer';
+import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 const Login: FunctionComponent<Props> = ({navigation}) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
-  const [loginError, setLoginError] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const defaultValues: LoginProps = {
@@ -39,7 +40,6 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
     mode: 'all',
   });
   const onSubmit = async (data: LoginProps) => {
-    setLoginError(undefined);
     setIsLoading(true);
     try {
       const response = await api.post({
@@ -55,7 +55,13 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
       });
     } catch (err: unknown) {
       const error = err as AuthError;
-      setLoginError(error?.response?.data?.message);
+      Toast.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Login error',
+        textBody: error?.response?.data?.message,
+        titleStyle: tw`font-poppinsRegular text-xs`,
+        textBodyStyle: tw`font-poppinsRegular text-xs`,
+      });
     }
     setIsLoading(false);
   };
@@ -142,6 +148,16 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
           </CustomText>
         )}
       </TouchableOpacity>
+      <Pressable
+        onPress={() => navigation.navigate('EmailInput')}
+        style={tw`mx-4 items-center mt-8`}>
+        <CustomText style={tw`text-white font-bold text-xs`}>
+          Don't have an account?{' '}
+          <CustomText style={tw`text-purple7 font-bold text-xs`}>
+            Signup instead
+          </CustomText>
+        </CustomText>
+      </Pressable>
     </ImageBackground>
   );
 };
