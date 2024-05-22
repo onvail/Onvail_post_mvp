@@ -32,7 +32,6 @@ const useUser = () => {
         const userData = JSON.parse(userString);
         setUser(userData.user);
       } else {
-        console.log('No user data found.');
         setUser({} as User);
       }
     } catch (error) {
