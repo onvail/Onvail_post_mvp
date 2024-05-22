@@ -31,7 +31,7 @@ export const roles: Roles[] = [
     value: UserType.Music_Content_Creator,
   },
   {
-    key: 'Other',
-    value: UserType.Other,
+    key: 'Fan',
+    value: UserType.Fan,
   },
 ];
