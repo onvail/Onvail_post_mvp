@@ -20,7 +20,7 @@ const RoleInput: FunctionComponent<Props> = ({navigation}) => {
   const defaultValues: {
     userType: UserType;
   } = {
-    userType: UserType.Other,
+    userType: UserType.Fan,
   };
 
   const {
