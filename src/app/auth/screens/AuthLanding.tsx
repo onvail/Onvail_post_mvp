@@ -1,11 +1,5 @@
-import React, {FunctionComponent, useEffect, useState} from 'react';
-import {
-  ImageBackground,
-  ScrollView,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import {useForm} from 'react-hook-form';
+import React, {FunctionComponent} from 'react';
+import {ImageBackground, TouchableOpacity, View} from 'react-native';
 import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
 import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
