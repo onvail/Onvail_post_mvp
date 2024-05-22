@@ -10,11 +10,16 @@ import ErrorText from 'src/app/components/Text/ErrorText';
 import messaging from '@react-native-firebase/messaging';
 import RowContainer from 'src/app/components/View/RowContainer';
 import Icon from 'src/app/components/Icons/Icon';
+import {SignUpStoreState, useSignUpStore} from 'src/app/zustand/store';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 const EmailInput: FunctionComponent<Props> = ({navigation}) => {
   const [apnToken, setApnToken] = useState<string>('');
+  const updateUserSignUpStore = useSignUpStore(
+    (state: SignUpStoreState) => state.updateUserSignUpStore,
+  );
+  const storeUser = useSignUpStore((state: SignUpStoreState) => state.user);
 
   const defaultValues: {email: string} = {
     email: '',
@@ -28,7 +33,11 @@ const EmailInput: FunctionComponent<Props> = ({navigation}) => {
     defaultValues: defaultValues,
     mode: 'all',
   });
-  const onSubmit = async () => {
+  const onSubmit = async ({email}: {email: string}) => {
+    updateUserSignUpStore({
+      ...storeUser,
+      email,
+    });
     navigation.navigate('PasswordInput');
   };
 
@@ -98,7 +107,7 @@ const EmailInput: FunctionComponent<Props> = ({navigation}) => {
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={handleSubmit(onSubmit)}
-        style={tw`w-1/4 rounded-12 bg-[#7C1AFC] self-center mt-5 py-4.5`}>
+        style={tw`w-1/4 rounded-12 bg-purple self-center mt-5 py-4.5`}>
         <CustomText style={tw`text-white text-center font-bold text-lg`}>
           Next
         </CustomText>
