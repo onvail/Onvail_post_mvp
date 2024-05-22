@@ -15,7 +15,6 @@ export type AuthStackParamList = {
   TermsOfUse: undefined;
   AccountCreated: undefined;
   Login: undefined;
-  NewLogin: undefined;
   ForgotPassword: undefined;
   OtpInput: undefined;
   ResetPassword: undefined;
