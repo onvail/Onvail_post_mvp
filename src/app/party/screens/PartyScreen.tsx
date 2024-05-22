@@ -179,7 +179,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   useEffect(() => {
     const fetchAllDurations = async () => {
       const durations: Record<string, number> = {};
-
       try {
         await Promise.all(
           allTracks.map(async track => {
@@ -208,7 +207,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     checkIfTrackQueueIsDifferent,
     skipToNext,
     skipToPrevious,
-    stop,
   } = useMusicPlayer({
     track: allTracks,
   });
@@ -287,45 +285,43 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [allTracks, isHost]);
 
-  useEffect(() => {
-    mountTrackForGuests();
-    const handleSocketEvents = async (data: string) => {
+  const handleSocketEvents = useCallback(
+    async (data: string) => {
       const playBackState = await getPlaybackState();
       console.log(data);
       if (isHost) {
         return;
       }
-      if (data === 'play') {
-        if (playBackState.state === State.Playing) {
-          await TrackPlayer.pause();
-        } else {
-          await TrackPlayer.play();
-        }
+      switch (data) {
+        case 'play':
+          playBackState.state === State.Playing
+            ? await TrackPlayer.pause()
+            : await TrackPlayer.play();
+          break;
+        case 'stop':
+          await TrackPlayer.stop();
+          break;
+        case 'prev':
+          await TrackPlayer.skipToPrevious();
+          break;
+        case 'fwd':
+          await TrackPlayer.skipToNext();
+          break;
+        default:
+          break;
       }
-      if (data === 'stop') {
-        await TrackPlayer.stop();
-      }
-      if (data === 'prev') {
-        await TrackPlayer.skipToPrevious();
-      }
-      if (data === 'fwd') {
-        await TrackPlayer.skipToNext();
-      }
-    };
+    },
+    [isHost],
+  );
 
+  useEffect(() => {
+    mountTrackForGuests();
     socket.on('receive', handleSocketEvents);
 
     return () => {
       socket.off('receive', handleSocketEvents);
     };
-  }, [
-    isHost,
-    handlePauseAndPlayTrack,
-    skipToNext,
-    skipToPrevious,
-    stop,
-    mountTrackForGuests,
-  ]);
+  }, [isHost, mountTrackForGuests, handleSocketEvents]);
 
   return (
     <LinearGradient
