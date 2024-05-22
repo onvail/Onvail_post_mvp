@@ -20,8 +20,6 @@ const PasswordInput: FunctionComponent<Props> = ({navigation}) => {
   );
   const storeUser = useSignUpStore((state: SignUpStoreState) => state.user);
 
-  console.log(storeUser);
-
   const defaultValues: {password: string} = {
     password: '',
   };
