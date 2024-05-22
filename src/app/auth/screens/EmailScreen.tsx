@@ -1,5 +1,5 @@
 import React, {FunctionComponent, useEffect, useState} from 'react';
-import {ImageBackground, TouchableOpacity, View} from 'react-native';
+import {TouchableOpacity, View} from 'react-native';
 import {useForm, Controller} from 'react-hook-form';
 import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
@@ -11,6 +11,7 @@ import messaging from '@react-native-firebase/messaging';
 import RowContainer from 'src/app/components/View/RowContainer';
 import Icon from 'src/app/components/Icons/Icon';
 import {SignUpStoreState, useSignUpStore} from 'src/app/zustand/store';
+import AuthScreenContainer from 'src/app/components/Screens/AuthScreenContainer';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
@@ -61,10 +62,7 @@ const EmailInput: FunctionComponent<Props> = ({navigation}) => {
   };
 
   return (
-    <ImageBackground
-      source={require('../../../assets/emailbg.png')}
-      resizeMode="cover"
-      style={tw`w-full h-full`}>
+    <AuthScreenContainer>
       <View style={tw`mt-12 px-3`}>
         <RowContainer style={tw`mb-12 mt-3 items-center`}>
           <Icon
@@ -100,8 +98,8 @@ const EmailInput: FunctionComponent<Props> = ({navigation}) => {
             name="email"
           />
         </View>
-        <CustomText style={tw`text-white text-sm relative font-medium -top-2`}>
-          You’ll beed to confirm this email later
+        <CustomText style={tw`text-white text-xs relative font-medium -top-2`}>
+          You’ll need to confirm this email later
         </CustomText>
       </View>
       <TouchableOpacity
@@ -112,7 +110,7 @@ const EmailInput: FunctionComponent<Props> = ({navigation}) => {
           Next
         </CustomText>
       </TouchableOpacity>
-    </ImageBackground>
+    </AuthScreenContainer>
   );
 };
 

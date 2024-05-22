@@ -1,22 +1,18 @@
 import React, {FunctionComponent} from 'react';
-import {ImageBackground, TouchableOpacity, View} from 'react-native';
+import {TouchableOpacity, View} from 'react-native';
 import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
-
 import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-
 import RowContainer from 'src/app/components/View/RowContainer';
 import Icon from 'src/app/components/Icons/Icon';
+import AuthScreenContainer from 'src/app/components/Screens/AuthScreenContainer';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 const AlmostThere: FunctionComponent<Props> = ({navigation}) => {
   return (
-    <ImageBackground
-      source={require('../../../assets/passwordbg.png')}
-      resizeMode="cover"
-      style={tw`w-full h-full`}>
+    <AuthScreenContainer>
       <View style={tw`mt-12 px-3`}>
         <RowContainer style={tw`mb-4 mt-3 items-center`}>
           <Icon
@@ -42,7 +38,7 @@ const AlmostThere: FunctionComponent<Props> = ({navigation}) => {
           </TouchableOpacity>
         </View>
       </View>
-    </ImageBackground>
+    </AuthScreenContainer>
   );
 };
 

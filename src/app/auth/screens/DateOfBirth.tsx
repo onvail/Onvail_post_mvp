@@ -1,5 +1,5 @@
 import React, {FunctionComponent, useState} from 'react';
-import {ImageBackground, TouchableOpacity, View} from 'react-native';
+import {TouchableOpacity, View} from 'react-native';
 import {useForm, Controller} from 'react-hook-form';
 import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
@@ -11,12 +11,13 @@ import RowContainer from 'src/app/components/View/RowContainer';
 import Icon from 'src/app/components/Icons/Icon';
 import FormSelector from 'src/app/party/components/FormSelector';
 import {SignUpStoreState, useSignUpStore} from 'src/app/zustand/store';
+import AuthScreenContainer from 'src/app/components/Screens/AuthScreenContainer';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 const DateOfBirth: FunctionComponent<Props> = ({navigation}) => {
   const [
-    isApplicationaClosingDatePickerVisible,
+    isApplicationClosingDatePickerVisible,
     setIsApplicationClosingDatePickerVisible,
   ] = useState<boolean>(false);
 
@@ -47,10 +48,7 @@ const DateOfBirth: FunctionComponent<Props> = ({navigation}) => {
   };
 
   return (
-    <ImageBackground
-      source={require('../../../assets/passwordbg.png')}
-      resizeMode="cover"
-      style={tw`w-full h-full`}>
+    <AuthScreenContainer>
       <View style={tw`mt-12 px-3`}>
         <RowContainer style={tw`mb-12 mt-3 items-center`}>
           <Icon
@@ -73,7 +71,7 @@ const DateOfBirth: FunctionComponent<Props> = ({navigation}) => {
             }}
             render={({field: {onChange}}) => (
               <CustomCalendar
-                isCalendarVisible={isApplicationaClosingDatePickerVisible}
+                isCalendarVisible={isApplicationClosingDatePickerVisible}
                 onBackDropPress={() =>
                   setIsApplicationClosingDatePickerVisible(false)
                 }
@@ -113,7 +111,7 @@ const DateOfBirth: FunctionComponent<Props> = ({navigation}) => {
           Next
         </CustomText>
       </TouchableOpacity>
-    </ImageBackground>
+    </AuthScreenContainer>
   );
 };
 
