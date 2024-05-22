@@ -55,7 +55,7 @@ const UsernameInput: FunctionComponent<Props> = ({navigation}) => {
           />
           <CustomText style={tw`text-lg ml-24`}>Create account</CustomText>
         </RowContainer>
-        <CustomText style={tw`text-white font-bold text-lg relative top-4`}>
+        <CustomText style={tw`text-white font-bold text-lg `}>
           Create your username
         </CustomText>
         <View>
@@ -76,7 +76,7 @@ const UsernameInput: FunctionComponent<Props> = ({navigation}) => {
             name="stageName"
           />
         </View>
-        <CustomText style={tw`text-white text-sm relative font-medium -top-2`}>
+        <CustomText style={tw`text-white text-xs relative font-medium -mt-2`}>
           This appears on your Onvail profile.
         </CustomText>
       </View>
