@@ -61,7 +61,7 @@ const DateOfBirth: FunctionComponent<Props> = ({navigation}) => {
           />
           <CustomText style={tw`text-lg ml-24`}>Create account</CustomText>
         </RowContainer>
-        <CustomText style={tw`text-white font-bold text-lg relative top-4`}>
+        <CustomText style={tw`text-white font-bold text-lg`}>
           What’s your date of birth?
         </CustomText>
         <View style={tw``}>
