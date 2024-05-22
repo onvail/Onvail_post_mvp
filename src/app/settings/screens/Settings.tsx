@@ -45,6 +45,7 @@ const Settings: FunctionComponent<Props> = ({navigation}) => {
     navigation.replace('AuthNavigator', {
       screen: 'Login',
     });
+    await AsyncStorage.removeItem(localStorageKeys.accessToken);
     await AsyncStorage.removeItem(localStorageKeys.userInfo);
   };
 
