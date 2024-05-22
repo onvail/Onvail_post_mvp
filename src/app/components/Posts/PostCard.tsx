@@ -295,7 +295,7 @@ interface PostCardProps {
 }
 const PostCard: FunctionComponent<PostCardProps> = ({
   handleJoinPartyBtnPress,
-  data,
+  data = [],
 }) => {
   const {user} = useUser();
 
@@ -313,10 +313,11 @@ const PostCard: FunctionComponent<PostCardProps> = ({
   // The custom navbar gets a background color placed behind the Onvail button when a margin-bottom is used to push the last-item to a visible position.
   // Adding a Footer component adds an extra item that makes the last component appear within users view, which in-turn helps for interaction.
   const renderFooterComponent = () => <View style={tw`h-12`} />;
+  const reversedItems = Array.isArray(data) ? [...data].reverse() : [];
 
   return (
     <FlashList
-      data={data}
+      data={reversedItems}
       renderItem={renderItem}
       estimatedItemSize={15}
       showsHorizontalScrollIndicator={false}
