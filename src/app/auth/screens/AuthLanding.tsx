@@ -47,7 +47,7 @@ const AuthLanding: FunctionComponent<Props> = ({navigation}) => {
           </CustomText>
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('NewLogin')}
+            onPress={() => navigation.navigate('Login')}
             style={tw`w-full rounded-12 border border-[#ffffff] self-center py-4.5`}>
             <CustomText style={tw`text-white text-center font-bold text-lg`}>
               Sign in
