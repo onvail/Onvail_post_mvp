@@ -89,7 +89,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       genre: '',
       album: '',
       artwork: party?.albumPicture,
-      duration: 30,
+      duration: song?.duration,
       url: song?.file_url,
       id: song?._id,
       date: party?.date,
@@ -97,24 +97,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       artist: party?.artist?.name,
     }));
   }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
-
-  const fetchDuration = useCallback(async (uri: string) => {
-    const sound = new Audio.Sound();
-
-    try {
-      const response = await sound.loadAsync({
-        uri,
-      });
-      const trackDetails: AVPlaybackStatusSuccess =
-        response as AVPlaybackStatusSuccess;
-      const duration = trackDetails?.durationMillis ?? 0;
-      return duration;
-    } catch (error) {
-      return 0;
-    } finally {
-      await sound.unloadAsync();
-    }
-  }, []);
 
   const leavePartyHandler = () => {
     Dialog.show({
@@ -176,31 +158,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   };
 
-  useEffect(() => {
-    const fetchAllDurations = async () => {
-      const durations: Record<string, number> = {};
-      try {
-        await Promise.all(
-          allTracks.map(async track => {
-            try {
-              const duration = await fetchDuration(track.url);
-              durations[track.id] = duration;
-            } catch (error) {
-              console.error(error);
-            }
-          }),
-        );
-        setTrackDurations(durations);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    if (allTracks.length > 0) {
-      fetchAllDurations();
-    }
-  }, [allTracks, fetchDuration]);
-
   const {
     handlePauseAndPlayTrack,
     playerState,
@@ -243,16 +200,15 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     });
   };
   const renderItem: ListRenderItem<Track> = ({item, index}) => {
-    const {artist, title, url, id} = item;
-    const trackDuration = trackDurations[id] ?? 0;
+    const {artist, title, url, id, duration} = item;
     return (
       <MusicList
-        duration={trackDuration}
+        duration={duration}
         title={title}
         index={index}
         artist={artist}
         url={url}
-        id={item?.id}
+        id={id}
       />
     );
   };
