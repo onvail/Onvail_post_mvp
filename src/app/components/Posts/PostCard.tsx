@@ -269,12 +269,12 @@ const PostItem: FunctionComponent<{
         ) : (
           <JoinPartyButton handleJoinPartyBtnPress={handleJoinPartyBtnPress} />
         )} */}
-        <JoinPartyButton
+        {/* <JoinPartyButton
           party={item}
           handleJoinPartyBtnPress={(item, albumBackgroundColor) =>
             handleJoinPartyBtnPress(item, albumBackgroundColor)
           }
-        />
+        /> */}
       </RowContainer>
     </View>
   );
