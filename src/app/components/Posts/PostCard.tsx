@@ -1,4 +1,11 @@
-import React, {FunctionComponent, useEffect, useMemo, useState} from 'react';
+import React, {
+  FunctionComponent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
 import UserHeader from './UserHeader';
 import CustomImage from 'components/Image/CustomImage';
@@ -16,6 +23,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {getColors} from 'react-native-image-colors';
 import {ColorScheme} from 'src/app/navigator/types/MainStackParamList';
 import socket from 'src/utils/socket';
+import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -39,6 +47,40 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const [albumBackgroundColor, setAlbumBackgroundColor] = useState<ColorScheme>(
     {} as ColorScheme,
   );
+  const [partyTrackWithDuration, setPartyTrackWithDuration] =
+    useState<PartiesResponse>({} as PartiesResponse);
+
+  const handleSongsDuration = useCallback(async () => {
+    const sound = new Audio.Sound();
+    const songs = party?.songs?.map(async item => {
+      try {
+        const songResponse = await sound.loadAsync({
+          uri: item.file_url,
+        });
+        const songDetails: AVPlaybackStatusSuccess =
+          songResponse as AVPlaybackStatusSuccess;
+        const duration = songDetails?.durationMillis ?? 0;
+        return {
+          ...item,
+          duration: duration,
+        };
+      } catch (error) {
+        return {
+          ...item,
+          duration: 0,
+        };
+      }
+    });
+    const updatedSongs = await Promise.all(songs);
+    setPartyTrackWithDuration({
+      ...party,
+      songs: updatedSongs,
+    });
+  }, [party]);
+
+  useLayoutEffect(() => {
+    handleSongsDuration();
+  }, [handleSongsDuration]);
 
   const fetchAlbumBackgroundColor = useMemo(async () => {
     try {
@@ -79,7 +121,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
         requiresToken: true,
         authorization: true,
       });
-      handleJoinPartyBtnPress(party, albumBackgroundColor);
+      handleJoinPartyBtnPress(partyTrackWithDuration, albumBackgroundColor);
     } catch (error) {
       console.log(error);
     } finally {
@@ -260,15 +302,12 @@ const PostItem: FunctionComponent<{
             </CustomText>
           </RowContainer>
         </RowContainer>
-        {/* {item.postType === 'Music' ? (
-          <MiniMusicPlayer
-            uri={item?.musicUrl ?? ''}
-            artiste={item?.artist ?? ''}
-            musicTitle={item?.musicTitle ?? ''}
-          />
-        ) : (
-          <JoinPartyButton handleJoinPartyBtnPress={handleJoinPartyBtnPress} />
-        )} */}
+        {/* <MiniMusicPlayer
+          uri={item?.musicUrl ?? ''}
+          artiste={item?.artist ?? ''}
+          musicTitle={item?.musicTitle ?? ''}
+        /> */}
+
         {/* <JoinPartyButton
           party={item}
           handleJoinPartyBtnPress={(item, albumBackgroundColor) =>
