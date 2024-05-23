@@ -319,7 +319,7 @@ const PostCard: FunctionComponent<PostCardProps> = ({
     <FlashList
       data={reversedItems}
       renderItem={renderItem}
-      estimatedItemSize={15}
+      estimatedItemSize={300}
       showsHorizontalScrollIndicator={false}
       ListFooterComponent={renderFooterComponent}
     />
