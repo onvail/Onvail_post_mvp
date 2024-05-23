@@ -1,11 +1,5 @@
 import React, {FunctionComponent, useState} from 'react';
-// import {ActivityIndicator, Pressable, Text, TouchableOpacity, View} from 'react-native';
-import {
-  ActivityIndicator,
-  Pressable,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {Pressable, ScrollView, TouchableOpacity, View} from 'react-native';
 import {generalIcon} from 'src/app/components/Icons/generalIcons';
 import PostCard from 'src/app/components/Posts/PostCard';
 import ScreenContainer from 'src/app/components/Screens/ScreenContainer';
@@ -23,6 +17,7 @@ import {Avatar} from 'react-native-paper';
 import {Colors} from 'src/app/styles/colors';
 import useUser from 'src/app/hooks/useUserInfo';
 import CustomImage from 'src/app/components/Image/CustomImage';
+import HomeSkeletonPlaceHolder from 'src/app/components/Screens/HomeSkeletonPlaceHolder';
 
 type Props = NativeStackScreenProps<BottomTabParamList, 'Home'>;
 
@@ -40,15 +35,17 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
 
   const AnimatedButton = Animated.createAnimatedComponent(TouchableOpacity);
 
-  const parties = useQuery({
+  const {data: partiesData, isLoading: loadingParties} = useQuery({
     queryKey: ['parties'],
     queryFn: fetchParties,
   });
 
-  const posts = useQuery({
+  const {data: postsData, isLoading: loadingPosts} = useQuery({
     queryKey: ['posts'],
     queryFn: fetchPosts,
   });
+
+  const isLoading = loadingParties || loadingPosts;
 
   return (
     <ScreenContainer>
@@ -102,7 +99,7 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
         </View>
         <View
           style={tw`items-center flex-row w-2/3 p-2 self-center h-12 rounded-full justify-center my-8 bg-grey6`}>
-          {tabs.map((item, _) => {
+          {tabs.map(item => {
             const isActive = item === selectedTab;
             const background = isActive ? 'white' : 'transparent';
             const text = isActive ? 'black' : 'white';
@@ -121,26 +118,31 @@ const Home: FunctionComponent<Props> = ({navigation}) => {
           })}
         </View>
         <View style={tw`flex-1`}>
-          {parties.isPending || posts.isPending ? (
-            <View style={tw`flex-1 justify-center items-center`}>
-              <ActivityIndicator size={30} />
-            </View>
-          ) : null}
-          {selectedTab === 'Parties' && (
-            <PostCard
-              handleJoinPartyBtnPress={(item, partyBackgroundColor) => {
-                navigation.navigate('MainAppNavigator', {
-                  screen: 'PartyScreen',
-                  params: {
-                    party: item,
-                    partyBackgroundColor: partyBackgroundColor,
-                  },
-                });
-              }}
-              data={parties.data}
-            />
+          {isLoading ? (
+            <ScrollView contentContainerStyle={tw`px-2`}>
+              {Array.from({length: 10}, (_, key) => (
+                <HomeSkeletonPlaceHolder key={key} />
+              ))}
+            </ScrollView>
+          ) : (
+            <>
+              {selectedTab === 'Parties' && (
+                <PostCard
+                  handleJoinPartyBtnPress={(item, partyBackgroundColor) => {
+                    navigation.navigate('MainAppNavigator', {
+                      screen: 'PartyScreen',
+                      params: {
+                        party: item,
+                        partyBackgroundColor: partyBackgroundColor,
+                      },
+                    });
+                  }}
+                  data={partiesData}
+                />
+              )}
+              {selectedTab === 'Feeds' && <Feeds data={postsData} />}
+            </>
           )}
-          {selectedTab === 'Feeds' && <Feeds data={posts.data} />}
         </View>
       </View>
     </ScreenContainer>
