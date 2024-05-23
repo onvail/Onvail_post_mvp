@@ -74,7 +74,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     accent:
       partyBackgroundColor?.platform === 'android'
         ? partyBackgroundColor?.darkMuted
-        : partyBackgroundColor?.quality,
+        : partyBackgroundColor?.detail,
   };
 
   const openBottomSheet = () => {
@@ -340,7 +340,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
             // eslint-disable-next-line react-native/no-inline-styles
             style={{
               color: screenColors?.accent,
-              fontWeight: 'bold',
+              fontWeight: '700',
             }}>
             {isHost ? 'End' : 'Leave'}
           </CustomText>
@@ -404,7 +404,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       <CustomBottomSheet
         ref={bottomSheetRef}
         customSnapPoints={[30, 300, 500, 700]}
-        backgroundColor={screenColors?.background}
+        backgroundColor={screenColors?.accent}
         visibilityHandler={() => {}}>
         <View style={tw`flex-1 py-3  pb-7`}>
           <ScrollView style={tw`flex-1 mb-4`}>
