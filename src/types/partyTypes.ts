@@ -36,6 +36,7 @@ export type Song = {
   name: string;
   file_url: string;
   _id: string;
+  duration?: number;
 };
 
 export type PartiesResponse = {
