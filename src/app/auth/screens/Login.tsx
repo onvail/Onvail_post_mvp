@@ -154,7 +154,7 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
         <CustomText style={tw`text-white font-bold text-xs`}>
           Don't have an account?{' '}
           <CustomText style={tw`text-purple7 font-bold text-xs`}>
-            Signup instead
+            Signup
           </CustomText>
         </CustomText>
       </Pressable>
