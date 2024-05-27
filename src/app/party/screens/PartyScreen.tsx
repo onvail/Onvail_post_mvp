@@ -38,17 +38,18 @@ import TrackPlayer, {State, Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
-import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import useUser from 'src/app/hooks/useUserInfo';
 import socket from 'src/utils/socket';
 import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
+import moment from 'moment-timezone';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
   const {user} = useUser();
+  const utcTimeStamp = moment().tz('UTC');
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
   const PauseIcon = generalIcon.PauseIcon;
@@ -59,9 +60,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
-  const [trackDurations, setTrackDurations] = useState<Record<string, number>>(
-    {},
-  );
+
   const screenColors = {
     background:
       partyBackgroundColor?.platform === 'android'
@@ -85,7 +84,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const isHost = party?.artist?._id === user?._id;
 
   const allTracks = useMemo(() => {
-    return songs.map(song => ({
+    return songs?.map(song => ({
       genre: '',
       album: '',
       artwork: party?.albumPicture,
@@ -159,11 +158,11 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   };
 
   const {
-    handlePauseAndPlayTrack,
     playerState,
     checkIfTrackQueueIsDifferent,
     skipToNext,
     skipToPrevious,
+    handlePauseAndPlayTrack,
   } = useMusicPlayer({
     track: allTracks,
   });
@@ -177,17 +176,23 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   }, [volume, volumeHandler]);
 
   const handlePlay = async () => {
-    await handlePauseAndPlayTrack().then(() => {
-      socket.emit('play', {
-        party: party?._id,
-      });
-    });
+    await handlePauseAndPlayTrack()
+      .then(_ => {
+        socket.emit('play', {
+          cmd: 'play',
+          timeStamp: utcTimeStamp,
+          party: party?._id,
+        });
+      })
+      .catch(error => console.log(error));
   };
 
   const handlePrevious = async () => {
     await skipToPrevious().then(() => {
       socket.emit('previous', {
         party: party?._id,
+        timeStamp: utcTimeStamp,
+        cmd: 'previous',
       });
     });
   };
@@ -196,6 +201,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     await skipToNext().then(() => {
       socket.emit('forward', {
         party: party?._id,
+        cmd: 'forward',
+        timeStamp: utcTimeStamp,
       });
     });
   };
@@ -242,26 +249,36 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   }, [allTracks, isHost]);
 
   const handleSocketEvents = useCallback(
-    async (data: string) => {
+    async (data: {cmd: string; timeStamp: string; party: string}) => {
+      const currentTime = moment().tz('UTC');
+      const eventTime = moment.tz(data.timeStamp, 'UTC');
+      const timeDifference = moment(currentTime).diff(eventTime) / 1000;
+      console.log('timeDifference', timeDifference);
+
       const playBackState = await getPlaybackState();
-      console.log(data);
+
       if (isHost) {
         return;
       }
-      switch (data) {
+      switch (data.cmd) {
         case 'play':
-          playBackState.state === State.Playing
-            ? await TrackPlayer.pause()
-            : await TrackPlayer.play();
+          if (playBackState.state === State.Playing) {
+            await TrackPlayer.pause().then(res => console.log('pause', res));
+          } else {
+            await TrackPlayer.play().then(res => console.log(res));
+            await TrackPlayer.seekTo(timeDifference);
+          }
           break;
         case 'stop':
           await TrackPlayer.stop();
           break;
-        case 'prev':
+        case 'previous':
           await TrackPlayer.skipToPrevious();
+          await TrackPlayer.seekTo(timeDifference);
           break;
-        case 'fwd':
+        case 'forward':
           await TrackPlayer.skipToNext();
+          await TrackPlayer.seekTo(timeDifference);
           break;
         default:
           break;
@@ -347,7 +364,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         <FlashList
           data={allTracks}
           renderItem={renderItem}
-          extraData={trackDurations}
           keyExtractor={item => item?.id}
           estimatedItemSize={20}
           estimatedListSize={{
