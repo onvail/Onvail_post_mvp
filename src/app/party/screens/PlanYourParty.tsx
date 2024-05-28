@@ -82,7 +82,6 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
     setIsCreatingParty(true);
     const imageUri = await getImageUrl();
     const musicUrl = await getMusicUrl();
-    console.log(musicUrl);
     const formData = {
       partyType,
       ...data,
@@ -180,9 +179,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
         name: uploadItem.name ?? '',
         type: uploadItem.type ?? '',
       })) ?? [];
-    console.log('itemsForClousdinaryUpload', itemsForCloudinaryUpload);
     try {
-      console.log('trying');
       const response = await handleMultipleUploads(itemsForCloudinaryUpload);
       if (response?.[0] !== undefined) {
         return response.map(item => ({
@@ -476,7 +473,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                   <CustomTimePicker
                     showTimePicker={isCalendarVisible}
                     onChangeTime={date => {
-                      onChange(date), console.log(date);
+                      onChange(date);
                     }}
                   />
                 </View>
