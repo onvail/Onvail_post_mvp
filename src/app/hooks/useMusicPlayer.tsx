@@ -91,6 +91,7 @@ const useMusicPlayer = ({track}: Props) => {
   useTrackPlayerEvents(events, event => {
     if (event.type === Event.PlaybackError) {
       console.warn('An error occured while playing the current track.');
+      console.log(event);
     }
     if (event.type === Event.PlaybackState) {
       setPlayerState(event.state);
