@@ -12,10 +12,11 @@ import {
   SafeAreaView,
   View,
   TextInput,
-  ScrollView,
   ActivityIndicator,
   Platform,
   TouchableOpacity,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'src/app/components/Icons/Icon';
@@ -36,7 +37,7 @@ import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {VolumeManager} from 'react-native-volume-manager';
 import TrackPlayer, {State, Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
-import {Song} from 'src/types/partyTypes';
+import {Comment, Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import useUser from 'src/app/hooks/useUserInfo';
@@ -60,6 +61,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
+  const [comment, setComment] = useState<string>('');
+  const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
 
   const screenColors = {
     background:
@@ -142,6 +145,29 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   };
 
+  const commentOnParty = async () => {
+    setIsUploadingComment(true);
+    try {
+      const response = await api.post({
+        url: `parties/comment-party/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+        data: {
+          text: comment,
+        },
+      });
+      setComment('');
+      console.log(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+    setIsUploadingComment(false);
+  };
+
+  const commentsRenderItem: ListRenderItem<Comment> = ({item}) => {
+    return <CommentCards item={item} />;
+  };
+
   const endParty = async () => {
     try {
       await api.post({
@@ -176,15 +202,30 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   }, [volume, volumeHandler]);
 
   const handlePlay = async () => {
-    await handlePauseAndPlayTrack()
-      .then(_ => {
+    // Get the previous playback state
+    const previousState = await getPlaybackState();
+
+    try {
+      // Call the function to play or pause the track
+      await handlePauseAndPlayTrack();
+
+      // Add a slight delay to ensure the state has time to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Get the current playback state after the delay
+      const currentState = await getPlaybackState();
+
+      // Emit the play event only if there is an actual state change
+      if (currentState !== previousState) {
         socket.emit('play', {
           cmd: 'play',
           timeStamp: utcTimeStamp,
           party: party?._id,
         });
-      })
-      .catch(error => console.log(error));
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handlePrevious = async () => {
@@ -206,6 +247,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       });
     });
   };
+
   const renderItem: ListRenderItem<Track> = ({item, index}) => {
     const {artist, title, url, id, duration} = item;
     return (
@@ -292,6 +334,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     socket.on('receive', handleSocketEvents);
 
     return () => {
+      TrackPlayer.stop();
+      TrackPlayer.reset();
       socket.off('receive', handleSocketEvents);
     };
   }, [isHost, mountTrackForGuests, handleSocketEvents]);
@@ -303,7 +347,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         screenColors?.background ?? '#0E0E0E',
         screenColors?.detail ?? '#087352',
       ]}>
-      <SafeAreaView style={tw`flex-1`}>
+      <SafeAreaView style={tw`h-full flex-1`}>
         <TouchableOpacity
           style={tw` ${
             Platform.OS === 'android' ? 'mt-6' : 'mt-0'
@@ -375,25 +419,28 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       </SafeAreaView>
       <CustomBottomSheet
         ref={bottomSheetRef}
-        customSnapPoints={[30, 300, 500, 700]}
+        customSnapPoints={[60, 300, 500, 700]}
         backgroundColor={screenColors?.accent}
         visibilityHandler={() => {}}>
-        <View style={tw`flex-1 py-3  pb-7`}>
-          <ScrollView style={tw`flex-1 mb-4`}>
-            {Array.from({length: 20}).map((_, index) => (
-              <CommentCards key={index} />
-            ))}
-          </ScrollView>
-          <RowContainer style={tw` px-6  justify-between `}>
+        <View style={styles.commentFlatList}>
+          <FlashList
+            renderItem={commentsRenderItem}
+            estimatedItemSize={200}
+            data={party?.comments}
+          />
+          <RowContainer style={tw` px-6 mb-5 `}>
             <View
-              style={tw`border flex-row items-center mr-3 justify-between px-3 h-10 rounded-lg border-grey4`}>
+              style={tw`border flex-row items-center mr-3 justify-between px-3 h-12 rounded-lg border-grey4`}>
               <TextInput
                 placeholder="Add comment"
-                style={tw`text-white text-sm w-[90%] font-poppinsItalic h-10`}
+                style={tw`text-white text-sm w-[90%] font-poppinsRegular h-12`}
                 placeholderTextColor={'#A2A2A2'}
+                onChangeText={text => setComment(text)}
               />
-              <Pressable>
-                <SendIcon />
+              <Pressable
+                disabled={comment.length < 1 || isUploadingComment}
+                onPress={() => commentOnParty()}>
+                {isUploadingComment ? <ActivityIndicator /> : <SendIcon />}
               </Pressable>
             </View>
             <Pressable onPress={() => setIsMuted(!isMuted)} style={tw``}>
@@ -409,5 +456,12 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     </LinearGradient>
   );
 };
+
+const styles = StyleSheet.create({
+  commentFlatList: {
+    minHeight: Dimensions.get('screen').height / 1.4,
+    flex: 1,
+  },
+});
 
 export default PartyScreen;
