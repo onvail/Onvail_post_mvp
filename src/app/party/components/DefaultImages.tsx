@@ -1,5 +1,6 @@
 import React, {FunctionComponent} from 'react';
 import {View} from 'react-native';
+import Icon from 'src/app/components/Icons/Icon';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import CustomText from 'src/app/components/Text/CustomText';
 import tw from 'src/lib/tailwind';
@@ -23,15 +24,20 @@ const DefaultImages: FunctionComponent<Props> = ({color, artist, imageUrl}) => {
                 style={tw`bg-purple9 h-[75%] self-center justify-center w-3/4 rounded-full`}>
                 <View
                   style={tw`bg-purple10 h-[75%] rounded-full w-3/4 self-center items-center justify-center`}>
-                  <CustomImage
-                    uri={imageUrl}
-                    style={tw`h-12 w-12 rounded-full`}
-                    resizeMode="cover"
-                  />
-                  <CustomText style={tw`text-grey8 mt-1 text-2xs z-50 `}>
+                  {imageUrl ? (
+                    <CustomImage
+                      uri={imageUrl}
+                      style={tw`h-12 w-12 rounded-full`}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Icon icon={'account'} color="white" size={45} />
+                  )}
+                  <CustomText style={tw`text-white mt-1 text-2xs z-50 `}>
                     Party with
                   </CustomText>
-                  <CustomText style={tw`text-white text-sm z-50 `}>
+                  <CustomText
+                    style={tw`text-white font-poppinsMedium text-xs z-50 `}>
                     {artist}
                   </CustomText>
                 </View>
@@ -49,15 +55,20 @@ const DefaultImages: FunctionComponent<Props> = ({color, artist, imageUrl}) => {
                 style={tw`bg-orange2 h-[75%] self-center justify-center w-3/4 rounded-full`}>
                 <View
                   style={tw`bg-orange6 h-[75%] justify-center items-center rounded-full w-3/4 self-center`}>
-                  <CustomImage
-                    uri={imageUrl}
-                    style={tw`h-12 w-12 rounded-full`}
-                    resizeMode="cover"
-                  />
-                  <CustomText style={tw`text-grey8 mt-1 text-2xs z-50 `}>
+                  {!imageUrl ? (
+                    <CustomImage
+                      uri={imageUrl}
+                      style={tw`h-12 w-12 rounded-full`}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Icon icon={'account'} color="white" size={45} />
+                  )}
+                  <CustomText style={tw`text-white mt-1 text-2xs z-50 `}>
                     Party with
                   </CustomText>
-                  <CustomText style={tw`text-white text-sm z-50 `}>
+                  <CustomText
+                    style={tw`text-white font-poppinsMedium text-xs z-50 `}>
                     {artist}
                   </CustomText>
                 </View>
