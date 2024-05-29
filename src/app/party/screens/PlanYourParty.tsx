@@ -42,7 +42,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   const [selectedColor, setSelectedColor] = useState<ImageColors>('purple');
 
   const [
-    isApplicationaClosingDatePickerVisible,
+    isApplicationClosingDatePickerVisible,
     setIsApplicationClosingDatePickerVisible,
   ] = useState<boolean>(false);
 
@@ -489,7 +489,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
             }}
             render={({field: {onChange}}) => (
               <CustomCalendar
-                isCalendarVisible={isApplicationaClosingDatePickerVisible}
+                isCalendarVisible={isApplicationClosingDatePickerVisible}
                 onBackDropPress={() =>
                   setIsApplicationClosingDatePickerVisible(false)
                 }
