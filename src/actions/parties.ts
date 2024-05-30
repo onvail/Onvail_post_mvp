@@ -47,6 +47,18 @@ export const fetchPosts = async () => {
   }
 };
 
+export const leaveParty = async (partyId: string) => {
+  try {
+    await api.post({
+      url: `parties/leave/${partyId}`,
+      requiresToken: true,
+      authorization: true,
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const partyCollection = collection(db, 'party');
 
 export const createFireStoreParties = async (data: {
