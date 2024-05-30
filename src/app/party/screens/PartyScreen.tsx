@@ -37,13 +37,16 @@ import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {VolumeManager} from 'react-native-volume-manager';
 import TrackPlayer, {State, Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
-import {Comment, Song} from 'src/types/partyTypes';
+import {Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import useUser from 'src/app/hooks/useUserInfo';
 import socket from 'src/utils/socket';
 import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
 import moment from 'moment-timezone';
+import {FireStoreComments, createFireStoreComments} from 'src/actions/parties';
+import {collection, onSnapshot, orderBy, query} from 'firebase/firestore';
+import {db} from '../../../../firebaseConfig';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -62,6 +65,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
   const [comment, setComment] = useState<string>('');
+  const [comments, setComments] = useState<FireStoreComments[]>([]);
   const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
 
   const screenColors = {
@@ -145,6 +149,28 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   };
 
+  useEffect(() => {
+    if (party?._id) {
+      const commentCollection = collection(db, `party/${party._id}/comments`);
+      const q = query(commentCollection, orderBy('timestamp', 'asc'));
+      const unsubscribe = onSnapshot(q, querySnapshot => {
+        const fetchedComments = querySnapshot.docs.map(
+          doc =>
+            ({
+              ...doc.data(),
+              commentId: doc.id,
+            } as FireStoreComments),
+        );
+        console.log(fetchedComments[10]?.timestamp);
+
+        setComments(fetchedComments);
+      });
+
+      // Cleanup the listener on unmount
+      return () => unsubscribe();
+    }
+  }, [party?._id]);
+
   const commentOnParty = async () => {
     setIsUploadingComment(true);
     try {
@@ -157,6 +183,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         },
       });
       setComment('');
+      createFireStoreComments(party?._id, user?._id, comment, user?.image);
       console.log(response.data);
     } catch (error) {
       console.log(error);
@@ -164,8 +191,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     setIsUploadingComment(false);
   };
 
-  const commentsRenderItem: ListRenderItem<Comment> = ({item}) => {
-    return <CommentCards item={item} />;
+  const commentsRenderItem: ListRenderItem<FireStoreComments> = ({item}) => {
+    return <CommentCards item={item} partyId={party?._id} />;
   };
 
   const endParty = async () => {
@@ -419,21 +446,24 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       </SafeAreaView>
       <CustomBottomSheet
         ref={bottomSheetRef}
-        customSnapPoints={[60, 300, 500, 700]}
+        customSnapPoints={[40, 300, 500, 700]}
         backgroundColor={screenColors?.accent}
         visibilityHandler={() => {}}>
-        <View style={styles.commentFlatList}>
-          <FlashList
-            renderItem={commentsRenderItem}
-            estimatedItemSize={200}
-            data={party?.comments}
-          />
-          <RowContainer style={tw` px-6 mb-5 `}>
+        <View style={tw`relative flex-1 px-3 mb-6`}>
+          <View style={styles.commentFlatList}>
+            <FlashList
+              renderItem={commentsRenderItem}
+              estimatedItemSize={200}
+              data={comments}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+          <RowContainer style={tw`absolute bottom-0 px-2 mt-6 `}>
             <View
-              style={tw`border flex-row items-center mr-3 justify-between px-3 h-12 rounded-lg border-grey4`}>
+              style={tw`border  flex-row w-80  items-center mx-3 justify-between px-3 h-12 rounded-lg border-grey4`}>
               <TextInput
                 placeholder="Add comment"
-                style={tw`text-white text-sm w-[90%] font-poppinsRegular h-12`}
+                style={tw`text-white text-sm w-[80%] font-poppinsRegular h-12`}
                 placeholderTextColor={'#A2A2A2'}
                 onChangeText={text => setComment(text)}
               />
@@ -459,8 +489,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
 const styles = StyleSheet.create({
   commentFlatList: {
-    minHeight: Dimensions.get('screen').height / 1.4,
-    flex: 1,
+    height: Dimensions.get('screen').height / 1.4,
+    marginBottom: 4,
   },
 });
 
