@@ -48,7 +48,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
     {} as ColorScheme,
   );
   const [partyTrackWithDuration, setPartyTrackWithDuration] =
-    useState<PartiesResponse>({} as PartiesResponse);
+    useState<PartiesResponse>(party);
 
   const handleSongsDuration = useCallback(async () => {
     const sound = new Audio.Sound();
@@ -60,6 +60,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
         const songDetails: AVPlaybackStatusSuccess =
           songResponse as AVPlaybackStatusSuccess;
         const duration = songDetails?.durationMillis ?? 0;
+
         return {
           ...item,
           duration: duration,
