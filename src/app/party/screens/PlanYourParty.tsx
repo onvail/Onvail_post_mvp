@@ -33,6 +33,7 @@ import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
 import CustomTimePicker from 'src/app/components/Calendar/CustomTimePicker';
 import Modal from 'react-native-modal/dist/modal';
 import useUser from 'src/app/hooks/useUserInfo';
+import {createFireStoreParties} from 'src/actions/parties';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
 const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
@@ -95,12 +96,20 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
     }
 
     try {
-      await api.post({
+      const response = await api.post({
         url: '/parties/create-party',
         data: formData,
         requiresToken: true,
         authorization: true,
       });
+      console.log(response?.data?.party);
+      const firestoreData = {
+        partyId: response?.data?.party?._id,
+        artist: response?.data?.party?.artist,
+        partyName: response?.data?.party?.artist,
+        partyType: response?.data?.party?.partyType,
+      };
+      await createFireStoreParties(firestoreData);
       toast('Party created! 🎉 🎊', {
         duration: 4000,
         position: ToastPosition.TOP,
