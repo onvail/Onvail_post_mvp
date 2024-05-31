@@ -72,7 +72,7 @@ const CommentCards: FunctionComponent<{
           />
         </TouchableOpacity>
         <CustomText style={tw`ml-2 text-xs`}>
-          {item?.likes?.length ?? 0}
+          {item?.likes?.length > 0 ? item?.likes?.length : null}
         </CustomText>
       </RowContainer>
     </View>
