@@ -55,6 +55,8 @@ const CustomBottomSheetInner: ForwardRefRenderFunction<
     <BottomSheet
       ref={bottomSheetRef}
       snapPoints={snapPoints}
+      topInset={80}
+      keyboardBehavior={'extend'}
       footerComponent={footerComponent}
       backgroundStyle={[
         tw``,
