@@ -400,7 +400,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     [isUploadingComment, screenColors?.accent, SendIcon, commentOnParty],
   );
 
-  const snapPoints = useMemo(() => ['20%', '75%'], []);
+  const snapPoints = useMemo(() => ['20%', '50%', '75%'], []);
   return (
     <LinearGradient
       style={tw`h-full  flex-1 p-4`}
