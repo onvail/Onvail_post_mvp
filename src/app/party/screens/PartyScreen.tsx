@@ -11,7 +11,6 @@ import {
   Pressable,
   SafeAreaView,
   View,
-  TextInput,
   ActivityIndicator,
   Platform,
   TouchableOpacity,
@@ -47,6 +46,9 @@ import moment from 'moment-timezone';
 import {FireStoreComments, createFireStoreComments} from 'src/actions/parties';
 import {collection, onSnapshot, orderBy, query} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
+import {ScrollView} from 'react-native-gesture-handler';
+import {BottomSheetFooter, BottomSheetTextInput} from '@gorhom/bottom-sheet';
+import LottieView from 'lottie-react-native';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -62,11 +64,10 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
   const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
 
-  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
-  const [comment, setComment] = useState<string>('');
   const [comments, setComments] = useState<FireStoreComments[]>([]);
   const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
+  const commentRef = useRef<string>('');
 
   const screenColors = {
     background:
@@ -152,7 +153,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   useEffect(() => {
     if (party?._id) {
       const commentCollection = collection(db, `party/${party._id}/comments`);
-      const q = query(commentCollection, orderBy('timestamp', 'asc'));
+      const q = query(commentCollection, orderBy('timestamp', 'desc'));
       const unsubscribe = onSnapshot(q, querySnapshot => {
         const fetchedComments = querySnapshot.docs.map(
           doc =>
@@ -171,9 +172,10 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [party?._id]);
 
-  const commentOnParty = async () => {
+  const commentOnParty = useCallback(async () => {
     setIsUploadingComment(true);
     try {
+      const comment = commentRef.current;
       const response = await api.post({
         url: `parties/comment-party/${party?._id}`,
         requiresToken: true,
@@ -182,14 +184,14 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           text: comment,
         },
       });
-      setComment('');
+      commentRef.current = '';
       createFireStoreComments(party?._id, user?._id, comment, user?.image);
       console.log(response.data);
     } catch (error) {
       console.log(error);
     }
     setIsUploadingComment(false);
-  };
+  }, [party?._id, user?._id, user?.image, commentRef]);
 
   const commentsRenderItem: ListRenderItem<FireStoreComments> = ({item}) => {
     return <CommentCards item={item} partyId={party?._id} />;
@@ -367,6 +369,38 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     };
   }, [isHost, mountTrackForGuests, handleSocketEvents]);
 
+  const handleCommentChange = (text: string) => {
+    commentRef.current = text;
+  };
+
+  const renderBottomFooter = useCallback(
+    (props: any) => (
+      <BottomSheetFooter {...props} bottomInset={24}>
+        <View
+          style={[
+            tw`bg-inherit m-4  rounded-md border-grey4 flex-row p-3 border `,
+            {
+              backgroundColor: screenColors.accent,
+            },
+          ]}>
+          <BottomSheetTextInput
+            placeholder="Add comment"
+            style={tw`text-white text-sm w-[90%] font-poppinsRegular h-6.5`}
+            placeholderTextColor={'#A2A2A2'}
+            onChangeText={handleCommentChange} // Use the new handler
+          />
+          <Pressable
+            disabled={isUploadingComment}
+            onPress={() => commentOnParty()}>
+            {isUploadingComment ? <ActivityIndicator /> : <SendIcon />}
+          </Pressable>
+        </View>
+      </BottomSheetFooter>
+    ),
+    [isUploadingComment, screenColors?.accent, SendIcon, commentOnParty],
+  );
+
+  const snapPoints = useMemo(() => ['20%', '75%'], []);
   return (
     <LinearGradient
       style={tw`h-full  flex-1 p-4`}
@@ -438,49 +472,42 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           keyExtractor={item => item?.id}
           estimatedItemSize={20}
           estimatedListSize={{
-            height: 200,
-            width: 300,
+            height: 120,
+            width: Dimensions.get('screen').width,
           }}
           showsVerticalScrollIndicator={false}
         />
       </SafeAreaView>
       <CustomBottomSheet
         ref={bottomSheetRef}
-        customSnapPoints={[40, 300, 500, 700]}
+        customSnapPoints={snapPoints}
         backgroundColor={screenColors?.accent}
+        footerComponent={renderBottomFooter}
         visibilityHandler={() => {}}>
-        <View style={tw`relative flex-1 px-3 mb-6`}>
+        <View style={tw`relative h-[40px] flex-1 px-3 mb-6`}>
           <View style={styles.commentFlatList}>
-            <FlashList
-              renderItem={commentsRenderItem}
-              estimatedItemSize={200}
-              data={comments}
-              showsVerticalScrollIndicator={false}
-            />
+            {comments.length === 0 ? (
+              <View style={tw`justify-center items-center mt-30`}>
+                <LottieView
+                  source={require('../../../assets/comments.json')}
+                  style={tw`h-50 w-50`}
+                  autoPlay={true}
+                  loop={true}
+                />
+                <CustomText style={tw`text-center text-base mt-5`}>
+                  Be the frist to say something
+                </CustomText>
+              </View>
+            ) : (
+              <FlashList
+                renderItem={commentsRenderItem}
+                estimatedItemSize={200}
+                data={comments}
+                renderScrollComponent={ScrollView}
+                showsVerticalScrollIndicator={false}
+              />
+            )}
           </View>
-          <RowContainer style={tw`absolute bottom-0 px-2 mt-6 `}>
-            <View
-              style={tw`border  flex-row w-80  items-center mx-3 justify-between px-3 h-12 rounded-lg border-grey4`}>
-              <TextInput
-                placeholder="Add comment"
-                style={tw`text-white text-sm w-[80%] font-poppinsRegular h-12`}
-                placeholderTextColor={'#A2A2A2'}
-                onChangeText={text => setComment(text)}
-              />
-              <Pressable
-                disabled={comment.length < 1 || isUploadingComment}
-                onPress={() => commentOnParty()}>
-                {isUploadingComment ? <ActivityIndicator /> : <SendIcon />}
-              </Pressable>
-            </View>
-            <Pressable onPress={() => setIsMuted(!isMuted)} style={tw``}>
-              <Icon
-                icon={isMuted ? 'microphone' : 'microphone-off'}
-                color="white"
-                size={25}
-              />
-            </Pressable>
-          </RowContainer>
         </View>
       </CustomBottomSheet>
     </LinearGradient>
@@ -489,8 +516,14 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
 const styles = StyleSheet.create({
   commentFlatList: {
-    height: Dimensions.get('screen').height / 1.4,
+    height: Dimensions.get('screen').height / 2,
+    width: Dimensions.get('screen').width / 1.1,
     marginBottom: 4,
+  },
+  container: {
+    flex: 1,
+    padding: 24,
+    backgroundColor: 'grey',
   },
 });
 
