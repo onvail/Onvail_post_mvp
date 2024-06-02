@@ -73,7 +73,7 @@ export const uploadToCloudinary = async (item: FileUploadItem) => {
   const data = new FormData();
   data.append('file', {
     uri: item.uri,
-    type: item.type,
+    type: item.type === 'jpeg' ? 'image/jpeg' : item?.type,
     name: item.name,
   });
   data.append('upload_preset', UPLOAD_PRESET);
@@ -103,6 +103,11 @@ export const uploadToCloudinary = async (item: FileUploadItem) => {
     const response = await axios.post(
       `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`,
       data,
+      {
+        headers: {
+          'content-type': 'multipart/form-data',
+        },
+      },
     );
     return {
       name: response.data.original_filename,
