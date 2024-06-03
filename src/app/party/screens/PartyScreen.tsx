@@ -378,15 +378,15 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       <BottomSheetFooter {...props} bottomInset={24}>
         <View
           style={[
-            tw`bg-inherit m-4  rounded-md border-grey4 flex-row p-3 border `,
+            tw`bg-inherit m-4  h-14 rounded-md border-grey4 flex-row px-3 items-center border `,
             {
               backgroundColor: screenColors.accent,
             },
           ]}>
           <BottomSheetTextInput
             placeholder="Add comment"
-            style={tw`text-white text-sm w-[90%] font-poppinsRegular h-6.5`}
-            placeholderTextColor={'#A2A2A2'}
+            style={tw`text-white text-sm w-[90%] font-poppinsRegular`}
+            placeholderTextColor={'white'}
             onChangeText={handleCommentChange} // Use the new handler
           />
           <Pressable
