@@ -81,35 +81,42 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   });
   const onSubmit = async (data: Party) => {
     setIsCreatingParty(true);
-    const imageUri = await getImageUrl();
-    const musicUrl = await getMusicUrl();
-    const formData = {
-      partyType,
-      ...data,
-      songs: musicUrl,
-      albumPicture: imageUri,
-    };
-    if (partyType === 'cozy_jam_session') {
-      delete formData.guests; // Explicitly delete guests if the array is empty
-      delete formData.pollQuestion;
-      delete formData.partyApplicationClosingDate;
-    }
 
     try {
+      const [imageUri, musicUrl] = await Promise.all([
+        getImageUrl(),
+        getMusicUrl(),
+      ]);
+
+      const formData = {
+        partyType,
+        ...data,
+        songs: musicUrl,
+        albumPicture: imageUri,
+      };
+
+      if (partyType === 'cozy_jam_session') {
+        delete formData.guests;
+        delete formData.pollQuestion;
+        delete formData.partyApplicationClosingDate;
+      }
+
       const response = await api.post({
         url: '/parties/create-party',
         data: formData,
         requiresToken: true,
         authorization: true,
       });
-      console.log(response?.data?.party);
+
       const firestoreData = {
         partyId: response?.data?.party?._id,
         artist: response?.data?.party?.artist,
         partyName: response?.data?.party?.artist,
         partyType: response?.data?.party?.partyType,
       };
+
       await createFireStoreParties(firestoreData);
+
       toast('Party created! 🎉 🎊', {
         duration: 4000,
         position: ToastPosition.TOP,
@@ -119,8 +126,9 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
           text: tw`text-white font-poppinsBold`,
         },
       });
+
       navigation.navigate('PartySuccessScreen');
-    } catch (error: unknown) {
+    } catch (error) {
       const createPartyError = error as PartyError;
       console.log(createPartyError.response?.data);
       toast("Oops! Party didn't create🚨", {
@@ -167,18 +175,22 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   };
 
   const getImageUrl = async () => {
-    let fileUri;
-    if (selectedImageOption === 'uploadedImage') {
-      fileUri = selectedImage?.file.uri;
-    } else {
-      fileUri = await captureDefaultImage();
+    try {
+      let fileUri;
+      if (selectedImageOption === 'uploadedImage') {
+        fileUri = selectedImage?.file.uri;
+      } else {
+        fileUri = await captureDefaultImage();
+      }
+      const response = await uploadToCloudinary({
+        uri: fileUri ?? '',
+        type: 'jpeg',
+        name: 'album-image',
+      });
+      return response?.file_url;
+    } catch (error) {
+      console.log('error', error);
     }
-    const response = await uploadToCloudinary({
-      uri: fileUri ?? '',
-      type: 'jpeg',
-      name: 'album-image',
-    });
-    return response?.file_url;
   };
 
   const getMusicUrl = async () => {
@@ -293,10 +305,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                           <DefaultImages
                             color={selectedColor}
                             artist={user.name}
-                            imageUrl={
-                              user?.image ??
-                              'https://img.icons8.com/nolan/64/user-default.png'
-                            }
+                            imageUrl={user?.image}
                           />
                         </View>
                       </ViewShot>
