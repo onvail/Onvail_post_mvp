@@ -33,6 +33,7 @@ import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
 import CustomTimePicker from 'src/app/components/Calendar/CustomTimePicker';
 import Modal from 'react-native-modal/dist/modal';
 import useUser from 'src/app/hooks/useUserInfo';
+import {createFireStoreParties} from 'src/actions/parties';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
 const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
@@ -42,7 +43,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   const [selectedColor, setSelectedColor] = useState<ImageColors>('purple');
 
   const [
-    isApplicationaClosingDatePickerVisible,
+    isApplicationClosingDatePickerVisible,
     setIsApplicationClosingDatePickerVisible,
   ] = useState<boolean>(false);
 
@@ -80,28 +81,42 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   });
   const onSubmit = async (data: Party) => {
     setIsCreatingParty(true);
-    const imageUri = await getImageUrl();
-    const musicUrl = await getMusicUrl();
-    console.log(musicUrl);
-    const formData = {
-      partyType,
-      ...data,
-      songs: musicUrl,
-      albumPicture: imageUri,
-    };
-    if (partyType === 'cozy_jam_session') {
-      delete formData.guests; // Explicitly delete guests if the array is empty
-      delete formData.pollQuestion;
-      delete formData.partyApplicationClosingDate;
-    }
 
     try {
-      await api.post({
+      const [imageUri, musicUrl] = await Promise.all([
+        getImageUrl(),
+        getMusicUrl(),
+      ]);
+
+      const formData = {
+        partyType,
+        ...data,
+        songs: musicUrl,
+        albumPicture: imageUri,
+      };
+
+      if (partyType === 'cozy_jam_session') {
+        delete formData.guests;
+        delete formData.pollQuestion;
+        delete formData.partyApplicationClosingDate;
+      }
+
+      const response = await api.post({
         url: '/parties/create-party',
         data: formData,
         requiresToken: true,
         authorization: true,
       });
+
+      const firestoreData = {
+        partyId: response?.data?.party?._id,
+        artist: response?.data?.party?.artist,
+        partyName: response?.data?.party?.artist,
+        partyType: response?.data?.party?.partyType,
+      };
+
+      await createFireStoreParties(firestoreData);
+
       toast('Party created! 🎉 🎊', {
         duration: 4000,
         position: ToastPosition.TOP,
@@ -111,8 +126,9 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
           text: tw`text-white font-poppinsBold`,
         },
       });
+
       navigation.navigate('PartySuccessScreen');
-    } catch (error: unknown) {
+    } catch (error) {
       const createPartyError = error as PartyError;
       console.log(createPartyError.response?.data);
       toast("Oops! Party didn't create🚨", {
@@ -159,18 +175,22 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   };
 
   const getImageUrl = async () => {
-    let fileUri;
-    if (selectedImageOption === 'uploadedImage') {
-      fileUri = selectedImage?.file.uri;
-    } else {
-      fileUri = await captureDefaultImage();
+    try {
+      let fileUri;
+      if (selectedImageOption === 'uploadedImage') {
+        fileUri = selectedImage?.file.uri;
+      } else {
+        fileUri = await captureDefaultImage();
+      }
+      const response = await uploadToCloudinary({
+        uri: fileUri ?? '',
+        type: 'jpeg',
+        name: 'album-image',
+      });
+      return response?.file_url;
+    } catch (error) {
+      console.log('error', error);
     }
-    const response = await uploadToCloudinary({
-      uri: fileUri ?? '',
-      type: 'jpeg',
-      name: 'album-image',
-    });
-    return response?.file_url;
   };
 
   const getMusicUrl = async () => {
@@ -180,9 +200,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
         name: uploadItem.name ?? '',
         type: uploadItem.type ?? '',
       })) ?? [];
-    console.log('itemsForClousdinaryUpload', itemsForCloudinaryUpload);
     try {
-      console.log('trying');
       const response = await handleMultipleUploads(itemsForCloudinaryUpload);
       if (response?.[0] !== undefined) {
         return response.map(item => ({
@@ -222,7 +240,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                   backgroundColor="transparent"
                   borderColor={'#717171'}
                   borderWidth="1"
-                  style={tw`text-white w-full`}
+                  style={tw`text-white w-full font-poppinsRegular`}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   value={value}
@@ -253,7 +271,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                   value={value}
                   multiline={true}
                   textAlignVertical="top"
-                  style={tw`h-11/12 w-full text-white`}
+                  style={tw`h-11/12 w-full font-poppinsRegular text-white`}
                 />
               )}
               name="partyDesc"
@@ -287,10 +305,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                           <DefaultImages
                             color={selectedColor}
                             artist={user.name}
-                            imageUrl={
-                              user?.image ??
-                              'https://img.icons8.com/nolan/64/user-default.png'
-                            }
+                            imageUrl={user?.image}
                           />
                         </View>
                       </ViewShot>
@@ -476,7 +491,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                   <CustomTimePicker
                     showTimePicker={isCalendarVisible}
                     onChangeTime={date => {
-                      onChange(date), console.log(date);
+                      onChange(date);
                     }}
                   />
                 </View>
@@ -492,7 +507,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
             }}
             render={({field: {onChange}}) => (
               <CustomCalendar
-                isCalendarVisible={isApplicationaClosingDatePickerVisible}
+                isCalendarVisible={isApplicationClosingDatePickerVisible}
                 onBackDropPress={() =>
                   setIsApplicationClosingDatePickerVisible(false)
                 }

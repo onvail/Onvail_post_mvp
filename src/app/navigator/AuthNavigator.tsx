@@ -16,7 +16,6 @@ import RoleInput from '../auth/screens/RoleInput';
 import TermsOfUse from '../auth/screens/TermsOfUse';
 import AccountCreated from '../auth/screens/AccountCreated';
 import AuthLanding from '../auth/screens/AuthLanding';
-import NewLogin from '../auth/screens/NewLogin';
 import ForgotPassword from '../auth/screens/ForgotPassword';
 import OtpInput from '../auth/screens/OtpInput';
 import ResetPassword from '../auth/screens/ResetPassword';
@@ -88,10 +87,6 @@ const screens: ScreenDef[] = [
   {
     name: 'Login',
     screen: Login,
-  },
-  {
-    name: 'NewLogin',
-    screen: NewLogin,
   },
   {
     name: 'ForgotPassword',

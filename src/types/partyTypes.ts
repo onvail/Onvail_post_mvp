@@ -1,3 +1,4 @@
+import {User} from 'src/app/hooks/useUserInfo';
 import {UserType} from './authType';
 
 export type Songs = {
@@ -36,6 +37,15 @@ export type Song = {
   name: string;
   file_url: string;
   _id: string;
+  duration?: number;
+};
+
+export type Comment = {
+  _id: string;
+  likes: string[]; // Adjust type if necessary
+  replies: string[]; // Adjust type if necessary
+  text: string;
+  user: User;
 };
 
 export type PartiesResponse = {
@@ -50,6 +60,7 @@ export type PartiesResponse = {
     followers: string[];
     following: string[];
     name: string;
+    image: string;
     userType: string;
     profile?: any;
     stageName: string;

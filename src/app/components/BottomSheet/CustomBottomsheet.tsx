@@ -4,7 +4,7 @@ import React, {
   ForwardRefRenderFunction,
   useMemo,
 } from 'react';
-import BottomSheet from '@gorhom/bottom-sheet';
+import BottomSheet, {BottomSheetFooterProps} from '@gorhom/bottom-sheet';
 import tw from 'src/lib/tailwind';
 import {Colors} from 'src/app/styles/colors';
 
@@ -13,6 +13,7 @@ interface Props {
   visibilityHandler: (isVisbile: boolean) => void;
   customSnapPoints?: number[] | string[];
   backgroundColor?: string;
+  footerComponent?: React.FC<BottomSheetFooterProps | undefined>;
 }
 
 export type CustomBottomSheetRef = {
@@ -24,7 +25,13 @@ const CustomBottomSheetInner: ForwardRefRenderFunction<
   CustomBottomSheetRef,
   Props
 > = (
-  {children, visibilityHandler, backgroundColor, customSnapPoints = ['5%']},
+  {
+    children,
+    visibilityHandler,
+    backgroundColor,
+    footerComponent,
+    customSnapPoints = ['5%'],
+  },
   ref,
 ) => {
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -48,6 +55,9 @@ const CustomBottomSheetInner: ForwardRefRenderFunction<
     <BottomSheet
       ref={bottomSheetRef}
       snapPoints={snapPoints}
+      topInset={80}
+      keyboardBehavior={'extend'}
+      footerComponent={footerComponent}
       backgroundStyle={[
         tw``,
         {

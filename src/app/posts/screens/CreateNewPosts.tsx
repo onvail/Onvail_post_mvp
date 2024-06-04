@@ -193,7 +193,7 @@ const CreateNewPosts: FunctionComponent<Props> = ({navigation}) => {
   const songFilesLength = songsFile.length;
 
   return (
-    <ScreenContainer goBack>
+    <ScreenContainer goHome>
       <View style={tw` flex-1 mt-4`}>
         {selectedPostOptions === 'Post' && (
           <View style={tw`bg-purple h-[80%] mx-5 text-sm rounded-lg p-3 `}>

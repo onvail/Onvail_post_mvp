@@ -1,25 +1,29 @@
-import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import React, {FunctionComponent, useState} from 'react';
-import {View} from 'react-native';
-import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
-import {generalIcon} from 'src/app/components/Icons/generalIcons';
-import CustomText from 'src/app/components/Text/CustomText';
-import CustomTextInput from 'src/app/components/TextInput/CustomTextInput';
-import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
-import tw from 'src/lib/tailwind';
+import {
+  ActivityIndicator,
+  ImageBackground,
+  Pressable,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {useForm, Controller} from 'react-hook-form';
+import CustomText from 'app/components/Text/CustomText';
+import tw from 'lib/tailwind';
+import CustomTextInput from 'app/components/TextInput/CustomTextInput';
+import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AuthError, LoginProps} from 'src/types/authType';
 import ErrorText from 'src/app/components/Text/ErrorText';
 import api from 'src/api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import localStorageKeys from 'src/api/config/local-storage-keys';
+import RowContainer from 'src/app/components/View/RowContainer';
+import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 const Login: FunctionComponent<Props> = ({navigation}) => {
-  const BackgroundGradientSvg = generalIcon.BackgroundGradient;
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
-  const [loginError, setLoginError] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const defaultValues: LoginProps = {
@@ -36,7 +40,6 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
     mode: 'all',
   });
   const onSubmit = async (data: LoginProps) => {
-    setLoginError(undefined);
     setIsLoading(true);
     try {
       const response = await api.post({
@@ -52,94 +55,110 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
       });
     } catch (err: unknown) {
       const error = err as AuthError;
-      setLoginError(error?.response?.data?.message);
+      Toast.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Login error',
+        textBody: error?.response?.data?.message,
+        titleStyle: tw`font-poppinsRegular text-xs`,
+        textBodyStyle: tw`font-poppinsRegular text-xs`,
+      });
     }
     setIsLoading(false);
   };
 
   return (
-    <View style={tw`relative pt-13`}>
-      <BackgroundGradientSvg style={tw`absolute h-full w-full -z-10`} />
-      <View style={tw`m-8 z-10 mt-12`}>
+    <ImageBackground
+      source={require('../../../assets/passwordbg.png')}
+      resizeMode="cover"
+      style={tw`w-full h-full`}>
+      <View style={tw`mt-30 px-3`}>
+        <CustomText
+          style={tw`text-white font-bold text-4xl relative top-4 mb-5`}>
+          Sign in
+        </CustomText>
         <View>
-          <CustomText style={tw`text-4xl`}>Login</CustomText>
-          <CustomText style={tw`mt-2 `}>
-            Don't have an account?{'  '}
-            <CustomText
-              style={tw`text-purple`}
-              onPress={() => navigation.navigate('Signup')}>
-              Signup
-            </CustomText>
-          </CustomText>
+          <ErrorText>{errors?.email?.message}</ErrorText>
+          <Controller
+            control={control}
+            rules={{
+              required: 'email is required',
+              pattern: {
+                value: /^[+a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/,
+                message: 'Invalid email address',
+              },
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <CustomTextInput
+                placeholder="email"
+                onChangeText={onChange}
+                value={value}
+                onBlur={onBlur}
+              />
+            )}
+            name="email"
+          />
         </View>
-        <View style={tw`mt-12`}>
-          <View>
-            <ErrorText>{errors?.email?.message}</ErrorText>
-            <Controller
-              control={control}
-              rules={{
-                required: 'email is required',
-                pattern: {
-                  value: /^[+a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/,
-                  message: 'Invalid email address',
-                },
-              }}
-              render={({field: {onChange, onBlur, value}}) => (
-                <CustomTextInput
-                  placeholder="email"
-                  onChangeText={onChange}
-                  value={value}
-                  onBlur={onBlur}
-                />
-              )}
-              name="email"
-            />
-          </View>
-          <View>
-            <ErrorText>{errors?.password?.message}</ErrorText>
-            <Controller
-              control={control}
-              rules={{
-                required: 'password is required',
-                minLength: 5,
-              }}
-              render={({field: {onChange, onBlur, value}}) => (
-                <CustomTextInput
-                  placeholder="password"
-                  onChangeText={onChange}
-                  value={value}
-                  onBlur={onBlur}
-                  secureTextEntry={isPasswordVisible}
-                  inputType="Password"
-                  passwordVisibility={isPasswordVisible}
-                  handlePasswordVisibility={() =>
-                    setIsPasswordVisible(prev => !prev)
-                  }
-                />
-              )}
-              name="password"
-            />
-            <View style={tw`items-center justify-center`}>
-              {loginError && <ErrorText>{loginError}</ErrorText>}
-            </View>
-          </View>
-          <CustomText style={tw`mt-10 text-center`}>
-            Forgot Password?{'  '}
-            <CustomText
-              style={tw`text-purple`}
-              onPress={() => navigation.navigate('Login')}>
-              Reset
-            </CustomText>
-          </CustomText>
+        <View>
+          <ErrorText>{errors?.password?.message}</ErrorText>
+          <Controller
+            control={control}
+            rules={{
+              required: 'password is required',
+              minLength: 5,
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <CustomTextInput
+                placeholder="password"
+                onChangeText={onChange}
+                value={value}
+                onBlur={onBlur}
+                secureTextEntry={!isPasswordVisible}
+                inputType="Password"
+                passwordVisibility={isPasswordVisible}
+                handlePasswordVisibility={() =>
+                  setIsPasswordVisible(prev => !prev)
+                }
+              />
+            )}
+            name="password"
+          />
         </View>
-        <ProceedBtn
-          title="Submit"
-          containerStyle={tw`mt-12`}
-          onPress={handleSubmit(onSubmit)}
-          isLoading={isLoading}
-        />
+        <RowContainer style={tw`items-center justify-between px-3`}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword')}
+            activeOpacity={0.7}>
+            <CustomText style={tw`text-white font-bold text-sm`}>
+              Forgot Password?
+            </CustomText>
+          </TouchableOpacity>
+          <CustomText style={tw`text-white font-bold text-sm`}>
+            Remember me
+          </CustomText>
+        </RowContainer>
       </View>
-    </View>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={handleSubmit(onSubmit)}
+        style={tw`w-11/12 self-center rounded-12 border border-[#ffffff] mt-12 py-4.5`}>
+        {isLoading ? (
+          <ActivityIndicator />
+        ) : (
+          <CustomText style={tw`text-white text-center font-bold text-lg`}>
+            Sign in
+          </CustomText>
+        )}
+      </TouchableOpacity>
+      <Pressable
+        onPress={() => navigation.navigate('EmailInput')}
+        style={tw`mx-4 items-center mt-8`}>
+        <CustomText style={tw`text-white font-bold text-xs`}>
+          Don't have an account?{' '}
+          <CustomText style={tw`text-purple7 font-bold text-xs`}>
+            Signup
+          </CustomText>
+        </CustomText>
+      </Pressable>
+    </ImageBackground>
   );
 };
 

@@ -11,11 +11,11 @@ import {
   Pressable,
   SafeAreaView,
   View,
-  TextInput,
-  ScrollView,
   ActivityIndicator,
   Platform,
   TouchableOpacity,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'src/app/components/Icons/Icon';
@@ -38,17 +38,24 @@ import TrackPlayer, {State, Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
-import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import useUser from 'src/app/hooks/useUserInfo';
 import socket from 'src/utils/socket';
 import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
+import moment from 'moment-timezone';
+import {FireStoreComments, createFireStoreComments} from 'src/actions/parties';
+import {collection, onSnapshot, orderBy, query} from 'firebase/firestore';
+import {db} from '../../../../firebaseConfig';
+import {ScrollView} from 'react-native-gesture-handler';
+import {BottomSheetFooter, BottomSheetTextInput} from '@gorhom/bottom-sheet';
+import LottieView from 'lottie-react-native';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
   const {user} = useUser();
+  const utcTimeStamp = moment().tz('UTC');
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
   const PauseIcon = generalIcon.PauseIcon;
@@ -57,11 +64,11 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
   const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
 
-  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
-  const [trackDurations, setTrackDurations] = useState<Record<string, number>>(
-    {},
-  );
+  const [comments, setComments] = useState<FireStoreComments[]>([]);
+  const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
+  const commentRef = useRef<string>('');
+
   const screenColors = {
     background:
       partyBackgroundColor?.platform === 'android'
@@ -74,7 +81,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     accent:
       partyBackgroundColor?.platform === 'android'
         ? partyBackgroundColor?.darkMuted
-        : partyBackgroundColor?.quality,
+        : partyBackgroundColor?.detail,
   };
 
   const openBottomSheet = () => {
@@ -85,11 +92,11 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const isHost = party?.artist?._id === user?._id;
 
   const allTracks = useMemo(() => {
-    return songs.map(song => ({
+    return songs?.map(song => ({
       genre: '',
       album: '',
       artwork: party?.albumPicture,
-      duration: 30,
+      duration: song?.duration,
       url: song?.file_url,
       id: song?._id,
       date: party?.date,
@@ -97,24 +104,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       artist: party?.artist?.name,
     }));
   }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
-
-  const fetchDuration = useCallback(async (uri: string) => {
-    const sound = new Audio.Sound();
-
-    try {
-      const response = await sound.loadAsync({
-        uri,
-      });
-      const trackDetails: AVPlaybackStatusSuccess =
-        response as AVPlaybackStatusSuccess;
-      const duration = trackDetails?.durationMillis ?? 0;
-      return duration;
-    } catch (error) {
-      return 0;
-    } finally {
-      await sound.unloadAsync();
-    }
-  }, []);
 
   const leavePartyHandler = () => {
     Dialog.show({
@@ -161,6 +150,53 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   };
 
+  useEffect(() => {
+    if (party?._id) {
+      const commentCollection = collection(db, `party/${party._id}/comments`);
+      const q = query(commentCollection, orderBy('timestamp', 'desc'));
+      const unsubscribe = onSnapshot(q, querySnapshot => {
+        const fetchedComments = querySnapshot.docs.map(
+          doc =>
+            ({
+              ...doc.data(),
+              commentId: doc.id,
+            } as FireStoreComments),
+        );
+        console.log(fetchedComments[10]?.timestamp);
+
+        setComments(fetchedComments);
+      });
+
+      // Cleanup the listener on unmount
+      return () => unsubscribe();
+    }
+  }, [party?._id]);
+
+  const commentOnParty = useCallback(async () => {
+    setIsUploadingComment(true);
+    try {
+      const comment = commentRef.current;
+      const response = await api.post({
+        url: `parties/comment-party/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+        data: {
+          text: comment,
+        },
+      });
+      commentRef.current = '';
+      createFireStoreComments(party?._id, user?._id, comment, user?.image);
+      console.log(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+    setIsUploadingComment(false);
+  }, [party?._id, user?._id, user?.image, commentRef]);
+
+  const commentsRenderItem: ListRenderItem<FireStoreComments> = ({item}) => {
+    return <CommentCards item={item} partyId={party?._id} />;
+  };
+
   const endParty = async () => {
     try {
       await api.post({
@@ -176,39 +212,12 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   };
 
-  useEffect(() => {
-    const fetchAllDurations = async () => {
-      const durations: Record<string, number> = {};
-
-      try {
-        await Promise.all(
-          allTracks.map(async track => {
-            try {
-              const duration = await fetchDuration(track.url);
-              durations[track.id] = duration;
-            } catch (error) {
-              console.error(error);
-            }
-          }),
-        );
-        setTrackDurations(durations);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    if (allTracks.length > 0) {
-      fetchAllDurations();
-    }
-  }, [allTracks, fetchDuration]);
-
   const {
-    handlePauseAndPlayTrack,
     playerState,
     checkIfTrackQueueIsDifferent,
     skipToNext,
     skipToPrevious,
-    stop,
+    handlePauseAndPlayTrack,
   } = useMusicPlayer({
     track: allTracks,
   });
@@ -222,17 +231,38 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   }, [volume, volumeHandler]);
 
   const handlePlay = async () => {
-    await handlePauseAndPlayTrack().then(() => {
-      socket.emit('play', {
-        party: party?._id,
-      });
-    });
+    // Get the previous playback state
+    const previousState = await getPlaybackState();
+
+    try {
+      // Call the function to play or pause the track
+      await handlePauseAndPlayTrack();
+
+      // Add a slight delay to ensure the state has time to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Get the current playback state after the delay
+      const currentState = await getPlaybackState();
+
+      // Emit the play event only if there is an actual state change
+      if (currentState !== previousState) {
+        socket.emit('play', {
+          cmd: 'play',
+          timeStamp: utcTimeStamp,
+          party: party?._id,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handlePrevious = async () => {
     await skipToPrevious().then(() => {
       socket.emit('previous', {
         party: party?._id,
+        timeStamp: utcTimeStamp,
+        cmd: 'previous',
       });
     });
   };
@@ -241,20 +271,22 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     await skipToNext().then(() => {
       socket.emit('forward', {
         party: party?._id,
+        cmd: 'forward',
+        timeStamp: utcTimeStamp,
       });
     });
   };
+
   const renderItem: ListRenderItem<Track> = ({item, index}) => {
-    const {artist, title, url, id} = item;
-    const trackDuration = trackDurations[id] ?? 0;
+    const {artist, title, url, id, duration} = item;
     return (
       <MusicList
-        duration={trackDuration}
+        duration={duration}
         title={title}
         index={index}
         artist={artist}
         url={url}
-        id={item?.id}
+        id={id}
       />
     );
   };
@@ -287,46 +319,88 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [allTracks, isHost]);
 
-  useEffect(() => {
-    mountTrackForGuests();
-    const handleSocketEvents = async (data: string) => {
+  const handleSocketEvents = useCallback(
+    async (data: {cmd: string; timeStamp: string; party: string}) => {
+      const currentTime = moment().tz('UTC');
+      const eventTime = moment.tz(data.timeStamp, 'UTC');
+      const timeDifference = moment(currentTime).diff(eventTime) / 1000;
+      console.log('timeDifference', timeDifference);
+
       const playBackState = await getPlaybackState();
-      console.log(data);
+
       if (isHost) {
         return;
       }
-      if (data === 'play') {
-        if (playBackState.state === State.Playing) {
-          await TrackPlayer.pause();
-        } else {
-          await TrackPlayer.play();
-        }
+      switch (data.cmd) {
+        case 'play':
+          if (playBackState.state === State.Playing) {
+            await TrackPlayer.pause().then(res => console.log('pause', res));
+          } else {
+            await TrackPlayer.play().then(res => console.log(res));
+            await TrackPlayer.seekTo(timeDifference);
+          }
+          break;
+        case 'stop':
+          await TrackPlayer.stop();
+          break;
+        case 'previous':
+          await TrackPlayer.skipToPrevious();
+          await TrackPlayer.seekTo(timeDifference);
+          break;
+        case 'forward':
+          await TrackPlayer.skipToNext();
+          await TrackPlayer.seekTo(timeDifference);
+          break;
+        default:
+          break;
       }
-      if (data === 'stop') {
-        await TrackPlayer.stop();
-      }
-      if (data === 'prev') {
-        await TrackPlayer.skipToPrevious();
-      }
-      if (data === 'fwd') {
-        await TrackPlayer.skipToNext();
-      }
-    };
+    },
+    [isHost],
+  );
 
+  useEffect(() => {
+    mountTrackForGuests();
     socket.on('receive', handleSocketEvents);
 
     return () => {
+      TrackPlayer.stop();
+      TrackPlayer.reset();
       socket.off('receive', handleSocketEvents);
     };
-  }, [
-    isHost,
-    handlePauseAndPlayTrack,
-    skipToNext,
-    skipToPrevious,
-    stop,
-    mountTrackForGuests,
-  ]);
+  }, [isHost, mountTrackForGuests, handleSocketEvents]);
 
+  const handleCommentChange = (text: string) => {
+    commentRef.current = text;
+  };
+
+  const renderBottomFooter = useCallback(
+    (props: any) => (
+      <BottomSheetFooter {...props} bottomInset={24}>
+        <View
+          style={[
+            tw`bg-inherit m-4  h-14 rounded-md border-grey4 flex-row px-3 items-center border `,
+            {
+              backgroundColor: screenColors.accent,
+            },
+          ]}>
+          <BottomSheetTextInput
+            placeholder="Add comment"
+            style={tw`text-white text-sm w-[90%] font-poppinsRegular`}
+            placeholderTextColor={'white'}
+            onChangeText={handleCommentChange} // Use the new handler
+          />
+          <Pressable
+            disabled={isUploadingComment}
+            onPress={() => commentOnParty()}>
+            {isUploadingComment ? <ActivityIndicator /> : <SendIcon />}
+          </Pressable>
+        </View>
+      </BottomSheetFooter>
+    ),
+    [isUploadingComment, screenColors?.accent, SendIcon, commentOnParty],
+  );
+
+  const snapPoints = useMemo(() => ['20%', '50%', '75%'], []);
   return (
     <LinearGradient
       style={tw`h-full  flex-1 p-4`}
@@ -334,7 +408,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         screenColors?.background ?? '#0E0E0E',
         screenColors?.detail ?? '#087352',
       ]}>
-      <SafeAreaView style={tw`flex-1`}>
+      <SafeAreaView style={tw`h-full flex-1`}>
         <TouchableOpacity
           style={tw` ${
             Platform.OS === 'android' ? 'mt-6' : 'mt-0'
@@ -344,7 +418,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
             // eslint-disable-next-line react-native/no-inline-styles
             style={{
               color: screenColors?.accent,
-              fontWeight: 'bold',
+              fontWeight: '700',
             }}>
             {isHost ? 'End' : 'Leave'}
           </CustomText>
@@ -395,51 +469,62 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         <FlashList
           data={allTracks}
           renderItem={renderItem}
-          extraData={trackDurations}
           keyExtractor={item => item?.id}
           estimatedItemSize={20}
           estimatedListSize={{
-            height: 200,
-            width: 300,
+            height: 120,
+            width: Dimensions.get('screen').width,
           }}
           showsVerticalScrollIndicator={false}
         />
       </SafeAreaView>
       <CustomBottomSheet
         ref={bottomSheetRef}
-        customSnapPoints={[30, 300, 500, 700]}
-        backgroundColor={screenColors?.background}
+        customSnapPoints={snapPoints}
+        backgroundColor={screenColors?.accent}
+        footerComponent={renderBottomFooter}
         visibilityHandler={() => {}}>
-        <View style={tw`flex-1 py-3  pb-7`}>
-          <ScrollView style={tw`flex-1 mb-4`}>
-            {Array.from({length: 20}).map((_, index) => (
-              <CommentCards key={index} />
-            ))}
-          </ScrollView>
-          <RowContainer style={tw` px-6  justify-between `}>
-            <View
-              style={tw`border flex-row items-center mr-3 justify-between px-3 h-10 rounded-lg border-grey4`}>
-              <TextInput
-                placeholder="Add comment"
-                style={tw`text-white text-sm w-[90%] font-poppinsItalic h-10`}
-                placeholderTextColor={'#A2A2A2'}
+        <View style={tw`relative h-[40px] flex-1 px-3 mb-6`}>
+          <View style={styles.commentFlatList}>
+            {comments.length === 0 ? (
+              <View style={tw`justify-center items-center mt-30`}>
+                <LottieView
+                  source={require('../../../assets/comments.json')}
+                  style={tw`h-50 w-50`}
+                  autoPlay={true}
+                  loop={true}
+                />
+                <CustomText style={tw`text-center text-base mt-5`}>
+                  Be the frist to say something
+                </CustomText>
+              </View>
+            ) : (
+              <FlashList
+                renderItem={commentsRenderItem}
+                estimatedItemSize={200}
+                data={comments}
+                renderScrollComponent={ScrollView}
+                showsVerticalScrollIndicator={false}
               />
-              <Pressable>
-                <SendIcon />
-              </Pressable>
-            </View>
-            <Pressable onPress={() => setIsMuted(!isMuted)} style={tw``}>
-              <Icon
-                icon={isMuted ? 'microphone' : 'microphone-off'}
-                color="white"
-                size={25}
-              />
-            </Pressable>
-          </RowContainer>
+            )}
+          </View>
         </View>
       </CustomBottomSheet>
     </LinearGradient>
   );
 };
+
+const styles = StyleSheet.create({
+  commentFlatList: {
+    height: Dimensions.get('screen').height / 2,
+    width: Dimensions.get('screen').width / 1.1,
+    marginBottom: 4,
+  },
+  container: {
+    flex: 1,
+    padding: 24,
+    backgroundColor: 'grey',
+  },
+});
 
 export default PartyScreen;

@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {SafeAreaView} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import {Colors} from 'src/app/styles/colors';
 
 interface Props {
   showTimePicker: boolean;
@@ -16,6 +17,8 @@ const CustomTimePicker: React.FC<Props> = ({showTimePicker, onChangeTime}) => {
           testID="dateTimePicker"
           value={date}
           mode={'datetime'}
+          textColor={Colors.primary}
+          themeVariant="dark"
           onChange={(_, selectedDate) => {
             onChangeTime(selectedDate?.toISOString());
             setDate(selectedDate);

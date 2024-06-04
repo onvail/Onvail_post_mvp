@@ -95,14 +95,17 @@ interface FeedsProps {
   data: FeedResponse[];
 }
 
-const Feeds: FunctionComponent<FeedsProps> = ({data}) => {
+const Feeds: FunctionComponent<FeedsProps> = ({data = []}) => {
   const {user} = useUser();
+
   const renderItem: ListRenderItem<FeedResponse> = ({item}) => (
     <FeedItem item={item} userId={user?._id ?? ''} />
   );
 
   const renderFooterComponent = () => <View style={tw`h-12`} />;
-  const reversedItems = [...data].reverse();
+
+  // Check if data is an array and safely reverse it
+  const reversedItems = Array.isArray(data) ? [...data].reverse() : [];
 
   return (
     <FlashList

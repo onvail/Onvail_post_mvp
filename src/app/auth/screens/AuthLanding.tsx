@@ -1,11 +1,5 @@
-import React, {FunctionComponent, useEffect, useState} from 'react';
-import {
-  ImageBackground,
-  ScrollView,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import {useForm} from 'react-hook-form';
+import React, {FunctionComponent} from 'react';
+import {ImageBackground, TouchableOpacity, View} from 'react-native';
 import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
 import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
@@ -47,7 +41,7 @@ const AuthLanding: FunctionComponent<Props> = ({navigation}) => {
           </CustomText>
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('NewLogin')}
+            onPress={() => navigation.navigate('Login')}
             style={tw`w-full rounded-12 border border-[#ffffff] self-center py-4.5`}>
             <CustomText style={tw`text-white text-center font-bold text-lg`}>
               Sign in

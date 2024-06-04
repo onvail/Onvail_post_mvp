@@ -6,7 +6,6 @@ export enum UserType {
   Manager = 'manager',
   Label_Representative = 'label_representative',
   Music_Content_Creator = 'music_content_creator',
-  Other = 'other',
 }
 
 export type SignInProps = {
@@ -15,6 +14,10 @@ export type SignInProps = {
   password: string;
   stageName: string;
   userType: UserType;
+  dateOfBirth: string;
+  gender: 'male' | 'female';
+  country: string;
+  state: string;
 };
 
 export type LoginProps = {
@@ -27,6 +30,7 @@ export type AuthError = {
     data?: {
       message?: string;
       statusCode?: number;
+      error?: string;
     };
   };
   code?: string;
