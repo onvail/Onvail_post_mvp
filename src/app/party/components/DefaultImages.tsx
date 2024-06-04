@@ -24,7 +24,7 @@ const DefaultImages: FunctionComponent<Props> = ({color, artist, imageUrl}) => {
                 style={tw`bg-purple9 h-[75%] self-center justify-center w-3/4 rounded-full`}>
                 <View
                   style={tw`bg-purple10 h-[75%] rounded-full w-3/4 self-center items-center justify-center`}>
-                  {imageUrl ? (
+                  {imageUrl?.length > 0 ? (
                     <CustomImage
                       uri={imageUrl}
                       style={tw`h-12 w-12 rounded-full`}
@@ -55,7 +55,7 @@ const DefaultImages: FunctionComponent<Props> = ({color, artist, imageUrl}) => {
                 style={tw`bg-orange2 h-[75%] self-center justify-center w-3/4 rounded-full`}>
                 <View
                   style={tw`bg-orange6 h-[75%] justify-center items-center rounded-full w-3/4 self-center`}>
-                  {imageUrl ? (
+                  {imageUrl?.length > 0 ? (
                     <CustomImage
                       uri={imageUrl}
                       style={tw`h-12 w-12 rounded-full`}
