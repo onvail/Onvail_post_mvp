@@ -240,7 +240,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                   backgroundColor="transparent"
                   borderColor={'#717171'}
                   borderWidth="1"
-                  style={tw`text-white w-full`}
+                  style={tw`text-white w-full font-poppinsRegular`}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   value={value}
@@ -271,7 +271,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                   value={value}
                   multiline={true}
                   textAlignVertical="top"
-                  style={tw`h-11/12 w-full text-white`}
+                  style={tw`h-11/12 w-full font-poppinsRegular text-white`}
                 />
               )}
               name="partyDesc"
