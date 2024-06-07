@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import api from 'src/api/api';
 import {db} from '../../firebaseConfig';
+import socket from 'src/utils/socket';
 
 export const fetchParties = async () => {
   try {
@@ -47,8 +48,12 @@ export const fetchPosts = async () => {
   }
 };
 
-export const leaveParty = async (partyId: string) => {
+export const leaveParty = async (partyId: string, user: any) => {
   try {
+    socket.emit('leave_party', {
+      party: partyId,
+      user,
+    });
     await api.post({
       url: `parties/leave/${partyId}`,
       requiresToken: true,
