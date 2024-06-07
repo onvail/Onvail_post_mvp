@@ -22,7 +22,6 @@ import useUser from 'src/app/hooks/useUserInfo';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {getColors} from 'react-native-image-colors';
 import {ColorScheme} from 'src/app/navigator/types/MainStackParamList';
-import socket from 'src/utils/socket';
 import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
@@ -133,10 +132,6 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const joinParty = async () => {
     setIsLoading(true);
     try {
-      socket.emit('join_party', {
-        party: party._id,
-        user,
-      });
       await api.post({
         url: `parties/join-party/${party?._id}`,
         requiresToken: true,
