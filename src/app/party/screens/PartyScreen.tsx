@@ -137,11 +137,16 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   const leaveParty = async () => {
     try {
+      socket.emit('leave_party', {
+        party: party?._id,
+        user,
+      });
       await api.post({
         url: `parties/leave/${party?._id}`,
         requiresToken: true,
         authorization: true,
       });
+
       navigation.navigate('BottomNavigator', {
         screen: 'Home',
       });
@@ -162,8 +167,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
               commentId: doc.id,
             } as FireStoreComments),
         );
-        console.log(fetchedComments[10]?.timestamp);
-
         setComments(fetchedComments);
       });
 
@@ -176,7 +179,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     setIsUploadingComment(true);
     try {
       const comment = commentRef.current;
-      const response = await api.post({
+      await api.post({
         url: `parties/comment-party/${party?._id}`,
         requiresToken: true,
         authorization: true,
@@ -186,7 +189,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       });
       commentRef.current = '';
       createFireStoreComments(party?._id, user?._id, comment, user?.image);
-      console.log(response.data);
     } catch (error) {
       console.log(error);
     }
@@ -319,15 +321,20 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [allTracks, isHost]);
 
+  interface SocketData {
+    cmd: string;
+    timeStamp: string;
+    party: string;
+    user?: any;
+  }
+
   const handleSocketEvents = useCallback(
-    async (data: {cmd: string; timeStamp: string; party: string}) => {
+    async (data: SocketData) => {
       const currentTime = moment().tz('UTC');
       const eventTime = moment.tz(data.timeStamp, 'UTC');
       const timeDifference = moment(currentTime).diff(eventTime) / 1000;
-      console.log('timeDifference', timeDifference);
 
       const playBackState = await getPlaybackState();
-
       if (isHost) {
         return;
       }
@@ -348,7 +355,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           await TrackPlayer.seekTo(timeDifference);
           break;
         case 'forward':
-          await TrackPlayer.skipToNext();
           await TrackPlayer.seekTo(timeDifference);
           break;
         default:
@@ -358,20 +364,52 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     [isHost],
   );
 
+  const handleSocketEventsForEveryone = useCallback(
+    async (data: SocketData) => {
+      console.log(data);
+      switch (data.cmd) {
+        case 'user_joined':
+          return console.log('user joined', user);
+        case 'user_left':
+          console.log('user left', user);
+          break;
+        default:
+          break;
+      }
+    },
+    [user],
+  );
+
   useEffect(() => {
     mountTrackForGuests();
     socket.on('receive', handleSocketEvents);
+    socket.on('receive', handleSocketEventsForEveryone);
 
     return () => {
       TrackPlayer.stop();
       TrackPlayer.reset();
       socket.off('receive', handleSocketEvents);
+      socket.off('receive', handleSocketEventsForEveryone);
     };
-  }, [isHost, mountTrackForGuests, handleSocketEvents]);
+  }, [
+    isHost,
+    mountTrackForGuests,
+    handleSocketEvents,
+    handleSocketEventsForEveryone,
+  ]);
 
   const handleCommentChange = (text: string) => {
     commentRef.current = text;
   };
+
+  useEffect(() => {
+    if (!isHost) {
+      socket.emit('join_party', {
+        party: party._id,
+        user,
+      });
+    }
+  }, [isHost, party?._id, user]);
 
   const renderBottomFooter = useCallback(
     (props: any) => (
@@ -519,11 +557,6 @@ const styles = StyleSheet.create({
     height: Dimensions.get('screen').height / 2,
     width: Dimensions.get('screen').width / 1.1,
     marginBottom: 4,
-  },
-  container: {
-    flex: 1,
-    padding: 24,
-    backgroundColor: 'grey',
   },
 });
 
