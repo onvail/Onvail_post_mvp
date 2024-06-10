@@ -103,7 +103,8 @@ const TermsOfUse: FunctionComponent<Props> = ({navigation}) => {
             <View>
               <View
                 style={tw`w-46 h-46 self-center rounded-full bg-[#7C1AFC] items-center justify-center mb-16`}>
-                <CustomText style={tw`text-black text-[123px] font-semibold`}>
+                <CustomText
+                  style={tw`text-black text-[123px] uppercase font-semibold`}>
                   {storeUser.stageName.charAt(0)}
                 </CustomText>
               </View>
