@@ -9,7 +9,6 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import {Avatar} from 'react-native-paper';
 import Icon from '../Icons/Icon';
@@ -29,6 +28,11 @@ import {db} from '../../../../firebaseConfig';
 import {FlashList, ListRenderItem} from '@shopify/flash-list';
 import tw from 'src/lib/tailwind';
 import {generalIcon} from '../Icons/generalIcons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 
 const CommentCards: FunctionComponent<{
   item: FireStoreComments;
@@ -128,12 +132,34 @@ const CommentCards: FunctionComponent<{
     );
   }, []);
 
-  const getDynamicHeight = (numReplies: number) => {
-    const repliesCount = numReplies > 0 ? numReplies : 0.1;
-    const itemHeight = 8; // Assuming each item has a height of 8
-    const maxHeight = 30; // Maximum height for the FlashList 30
-    const calculatedHeight = repliesCount * itemHeight;
-    return Math.min(calculatedHeight, maxHeight);
+  const height = useSharedValue(20);
+
+  const calculateDynamicHeight = useCallback(
+    (numReplies: number) => {
+      const repliesCount = numReplies > 0 ? numReplies : 0.1;
+      const itemHeight = 30; // Assuming each item has a height of 50
+      const maxHeight = 120; // Maximum height for the FlashList
+      const calculatedHeight = repliesCount * itemHeight;
+      height.value = withSpring(Math.min(calculatedHeight, maxHeight));
+      return Math.min(calculatedHeight, maxHeight);
+    },
+    [height],
+  );
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      height: height.value,
+    };
+  });
+
+  const toggleReplyFieldVisibility = () => {
+    if (isReplyFieldOpen) {
+      height.value = withSpring(20);
+      setTimeout(() => setIsReplyFieldOpen(false), 200);
+    } else {
+      setIsReplyFieldOpen(true);
+      calculateDynamicHeight(commentData?.replies?.length ?? 0);
+    }
   };
 
   return (
@@ -177,7 +203,7 @@ const CommentCards: FunctionComponent<{
             </CustomText>
           </RowContainer>
           <TouchableOpacity
-            onPress={() => setIsReplyFieldOpen(prev => !prev)}
+            onPress={toggleReplyFieldVisibility}
             style={tw` ml-5`}>
             <RowContainer>
               <Icon icon={'reply'} color={Colors.grey} size={13} />
@@ -186,7 +212,7 @@ const CommentCards: FunctionComponent<{
           </TouchableOpacity>
           <RowContainer>
             <TouchableOpacity
-              onPress={() => setIsReplyFieldOpen(prev => !prev)}
+              onPress={toggleReplyFieldVisibility}
               style={tw` ml-5`}>
               <Icon icon={'comment-outline'} color={Colors.grey} size={13} />
             </TouchableOpacity>
@@ -197,21 +223,14 @@ const CommentCards: FunctionComponent<{
         </RowContainer>
         {isReplyFieldOpen && (
           <>
-            <View
-              style={tw`h-${getDynamicHeight(
-                commentData?.replies?.length ?? 0,
-              )} w-100`}>
+            <Animated.View style={[tw`w-full`, animatedStyle]}>
               <FlashList
                 data={commentData?.replies ?? []}
                 renderItem={commentsRenderItem}
                 estimatedItemSize={50}
-                estimatedListSize={{
-                  height: 30,
-                  width: Dimensions.get('screen').width,
-                }}
                 keyExtractor={reply => reply.commentId}
               />
-            </View>
+            </Animated.View>
             <RowContainer
               style={tw`border border-grey justify-between mt-4 px-2 h-8 rounded-lg `}>
               <TextInput
