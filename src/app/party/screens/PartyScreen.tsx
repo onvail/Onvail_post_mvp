@@ -39,7 +39,7 @@ import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
-import useUser from 'src/app/hooks/useUserInfo';
+import useUser, {User} from 'src/app/hooks/useUserInfo';
 import socket from 'src/utils/socket';
 import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
 import moment from 'moment-timezone';
@@ -52,14 +52,20 @@ import {
   query,
 } from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
-import {ScrollView} from 'react-native-gesture-handler';
+import {
+  Gesture,
+  GestureDetector,
+  ScrollView,
+} from 'react-native-gesture-handler';
 import {BottomSheetFooter, BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
 import {RTCPeerConnection, mediaDevices} from 'react-native-webrtc';
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -78,6 +84,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
   const [selectedBottomSheetTab, setSelectedBottomSheetTab] =
     useState<number>(0);
+  const [guestList, setGuestList] = useState<User[]>([]);
 
   const [volume, setVolume] = useState<number>(0.5);
   const [comments, setComments] = useState<FireStoreComments[]>([]);
@@ -203,6 +210,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         authorization: true,
       });
       console.log(response?.data, Platform.OS);
+      setGuestList(response?.data?.joined);
     } catch (error) {
       console.log(error);
     }
@@ -511,6 +519,37 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [isHost, party?._id, user]);
 
+  const updateTab = (direction: number) => {
+    setSelectedBottomSheetTab(prev => {
+      let nextTab = prev + direction;
+      if (nextTab < 0) {
+        nextTab = 0;
+      }
+      if (nextTab > 2) {
+        nextTab = 2;
+      }
+      return nextTab;
+    });
+  };
+
+  const screenWidth = Dimensions.get('window').width;
+
+  const swipeGesture = Gesture.Pan()
+    .onUpdate(event => {
+      translateX.value = event.translationX;
+    })
+    .onEnd(event => {
+      if (event.translationX < -screenWidth / 4) {
+        runOnJS(updateTab)(1);
+      } else if (event.translationX > screenWidth / 4) {
+        runOnJS(updateTab)(-1);
+      }
+      translateX.value = withSpring(0, {
+        damping: 20,
+        stiffness: 90,
+      });
+    });
+
   const renderBottomFooter = useCallback(
     (props: any) => (
       <>
@@ -649,31 +688,38 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
               />
             ))}
           </RowContainer>
-          {selectedBottomSheetTab === 0 && (
+          <GestureDetector gesture={swipeGesture}>
             <Animated.View style={[styles.commentFlatList, animatedStyle]}>
-              {comments.length === 0 ? (
-                <View style={tw`justify-center items-center mt-30`}>
-                  <LottieView
-                    source={require('../../../assets/comments.json')}
-                    style={tw`h-50 w-50`}
-                    autoPlay={true}
-                    loop={true}
-                  />
-                  <CustomText style={tw`text-center text-base mt-5`}>
-                    Be the frist to say something
-                  </CustomText>
-                </View>
-              ) : (
-                <FlashList
-                  renderItem={commentsRenderItem}
-                  estimatedItemSize={200}
-                  data={comments}
-                  renderScrollComponent={ScrollView}
-                  showsVerticalScrollIndicator={false}
-                />
+              {selectedBottomSheetTab === 0 && (
+                <>
+                  {comments.length === 0 ? (
+                    <View style={tw`justify-center items-center mt-30`}>
+                      <LottieView
+                        source={require('../../../assets/comments.json')}
+                        style={tw`h-50 w-50`}
+                        autoPlay={true}
+                        loop={true}
+                      />
+                      <CustomText style={tw`text-center text-base mt-5`}>
+                        Be the frist to say something
+                      </CustomText>
+                    </View>
+                  ) : (
+                    <FlashList
+                      renderItem={commentsRenderItem}
+                      estimatedItemSize={200}
+                      data={comments}
+                      renderScrollComponent={ScrollView}
+                      showsVerticalScrollIndicator={false}
+                    />
+                  )}
+                </>
+              )}
+              {selectedBottomSheetTab === 1 && (
+                <View style={tw`bg-white flex-1 h-20`} />
               )}
             </Animated.View>
-          )}
+          </GestureDetector>
         </View>
       </CustomBottomSheet>
     </LinearGradient>
@@ -682,8 +728,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
 const styles = StyleSheet.create({
   commentFlatList: {
-    height: Dimensions.get('screen').height / 2,
-    width: Dimensions.get('screen').width / 1.1,
+    width: Dimensions.get('window').width * 3,
+    height: Dimensions.get('window').height / 2,
     marginBottom: 4,
   },
 });
