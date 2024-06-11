@@ -70,7 +70,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const SendIcon = generalIcon.SendIcon;
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
   const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
-  const [commentReply, setCommentReply] = useState<string>('');
+  const [selectedBottomSheetTab, setSelectedBottomSheetTab] =
+    useState<number>(0);
 
   const [volume, setVolume] = useState<number>(0.5);
   const [comments, setComments] = useState<FireStoreComments[]>([]);
@@ -162,6 +163,23 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       console.log(error);
     }
   };
+
+  const fetchPartyGuests = useCallback(async () => {
+    try {
+      const response = await api.get({
+        url: `parties/guests/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+      });
+      console.log(response?.data, Platform.OS);
+    } catch (error) {
+      console.log(error);
+    }
+  }, [party?._id]);
+
+  useEffect(() => {
+    fetchPartyGuests();
+  }, [fetchPartyGuests]);
 
   useEffect(() => {
     if (party?._id) {
@@ -464,29 +482,41 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   const renderBottomFooter = useCallback(
     (props: any) => (
-      <BottomSheetFooter {...props} bottomInset={24}>
-        <View
-          style={[
-            tw`bg-inherit m-4  h-12 rounded-md border-grey4 flex-row px-3 items-center border `,
-            {
-              backgroundColor: screenColors.accent,
-            },
-          ]}>
-          <BottomSheetTextInput
-            placeholder="Add comment"
-            style={tw`text-white text-sm w-[90%] font-poppinsRegular`}
-            placeholderTextColor={'white'}
-            onChangeText={handleCommentChange} // Use the new handler
-          />
-          <Pressable
-            disabled={isUploadingComment}
-            onPress={() => commentOnParty()}>
-            {isUploadingComment ? <ActivityIndicator /> : <SendIcon />}
-          </Pressable>
-        </View>
-      </BottomSheetFooter>
+      <>
+        {selectedBottomSheetTab === 0 ? (
+          <BottomSheetFooter {...props} bottomInset={24}>
+            <View
+              style={[
+                tw`bg-inherit m-4  h-10 rounded-full border-grey4 flex-row px-3 items-center border `,
+                {
+                  backgroundColor: screenColors.accent,
+                },
+              ]}>
+              <BottomSheetTextInput
+                placeholder="Add comment"
+                style={tw`text-white text-xs w-[90%]  font-poppinsRegular`}
+                placeholderTextColor={'white'}
+                onChangeText={handleCommentChange} // Use the new handler
+              />
+              <Pressable
+                disabled={isUploadingComment}
+                onPress={() => commentOnParty()}>
+                {isUploadingComment ? <ActivityIndicator /> : <SendIcon />}
+              </Pressable>
+            </View>
+          </BottomSheetFooter>
+        ) : (
+          <></>
+        )}
+      </>
     ),
-    [isUploadingComment, screenColors?.accent, SendIcon, commentOnParty],
+    [
+      isUploadingComment,
+      screenColors?.accent,
+      SendIcon,
+      commentOnParty,
+      selectedBottomSheetTab,
+    ],
   );
 
   const snapPoints = useMemo(() => ['20%', '50%', '75%'], []);
@@ -575,29 +605,44 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         footerComponent={renderBottomFooter}
         visibilityHandler={() => {}}>
         <View style={tw`relative h-[40px] flex-1 px-3 mb-6`}>
-          <View style={styles.commentFlatList}>
-            {comments.length === 0 ? (
-              <View style={tw`justify-center items-center mt-30`}>
-                <LottieView
-                  source={require('../../../assets/comments.json')}
-                  style={tw`h-50 w-50`}
-                  autoPlay={true}
-                  loop={true}
-                />
-                <CustomText style={tw`text-center text-base mt-5`}>
-                  Be the frist to say something
-                </CustomText>
-              </View>
-            ) : (
-              <FlashList
-                renderItem={commentsRenderItem}
-                estimatedItemSize={200}
-                data={comments}
-                renderScrollComponent={ScrollView}
-                showsVerticalScrollIndicator={false}
+          <RowContainer style={tw`items-center mb-3 justify-center`}>
+            {Array.from({length: 3}, (_, key) => (
+              <Pressable
+                key={key}
+                onPress={() => {
+                  setSelectedBottomSheetTab(key);
+                }}
+                style={tw`h-1 w-6 rounded-lg bg-${
+                  selectedBottomSheetTab === key ? 'white' : 'grey2'
+                } mr-1`}
               />
-            )}
-          </View>
+            ))}
+          </RowContainer>
+          {selectedBottomSheetTab === 0 && (
+            <View style={styles.commentFlatList}>
+              {comments.length === 0 ? (
+                <View style={tw`justify-center items-center mt-30`}>
+                  <LottieView
+                    source={require('../../../assets/comments.json')}
+                    style={tw`h-50 w-50`}
+                    autoPlay={true}
+                    loop={true}
+                  />
+                  <CustomText style={tw`text-center text-base mt-5`}>
+                    Be the frist to say something
+                  </CustomText>
+                </View>
+              ) : (
+                <FlashList
+                  renderItem={commentsRenderItem}
+                  estimatedItemSize={200}
+                  data={comments}
+                  renderScrollComponent={ScrollView}
+                  showsVerticalScrollIndicator={false}
+                />
+              )}
+            </View>
+          )}
         </View>
       </CustomBottomSheet>
     </LinearGradient>
