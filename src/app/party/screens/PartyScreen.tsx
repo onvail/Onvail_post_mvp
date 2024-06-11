@@ -44,11 +44,18 @@ import socket from 'src/utils/socket';
 import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
 import moment from 'moment-timezone';
 import {FireStoreComments, createFireStoreComments} from 'src/actions/parties';
-import {collection, onSnapshot, orderBy, query} from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
 import {ScrollView} from 'react-native-gesture-handler';
 import {BottomSheetFooter, BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
+import {RTCPeerConnection, mediaDevices} from 'react-native-webrtc';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -63,6 +70,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const SendIcon = generalIcon.SendIcon;
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
   const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
+  const [commentReply, setCommentReply] = useState<string>('');
 
   const [volume, setVolume] = useState<number>(0.5);
   const [comments, setComments] = useState<FireStoreComments[]>([]);
@@ -159,13 +167,30 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     if (party?._id) {
       const commentCollection = collection(db, `party/${party._id}/comments`);
       const q = query(commentCollection, orderBy('timestamp', 'desc'));
-      const unsubscribe = onSnapshot(q, querySnapshot => {
-        const fetchedComments = querySnapshot.docs.map(
-          doc =>
-            ({
+      const unsubscribe = onSnapshot(q, async querySnapshot => {
+        const fetchedComments = await Promise.all(
+          querySnapshot.docs.map(async doc => {
+            const commentData = {
               ...doc.data(),
               commentId: doc.id,
-            } as FireStoreComments),
+            };
+
+            // Fetch replies for each comment
+            const repliesCollection = collection(
+              db,
+              `party/${party?._id}/comments/${doc.id}/replies`,
+            );
+            const repliesSnapshot = await getDocs(repliesCollection);
+            const replies = repliesSnapshot.docs.map(replyDoc => ({
+              ...replyDoc.data(),
+              commentId: replyDoc.id,
+            }));
+
+            return {
+              ...commentData,
+              replies,
+            };
+          }),
         );
         setComments(fetchedComments);
       });
@@ -188,12 +213,26 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         },
       });
       commentRef.current = '';
-      createFireStoreComments(party?._id, user?._id, comment, user?.image);
+      createFireStoreComments(
+        party?._id,
+        user?._id,
+        comment,
+        user?.image,
+        user?.stageName,
+        user?.name,
+      );
     } catch (error) {
       console.log(error);
     }
     setIsUploadingComment(false);
-  }, [party?._id, user?._id, user?.image, commentRef]);
+  }, [
+    party?._id,
+    user?._id,
+    user?.image,
+    user?.stageName,
+    user?.name,
+    commentRef,
+  ]);
 
   const commentsRenderItem: ListRenderItem<FireStoreComments> = ({item}) => {
     return <CommentCards item={item} partyId={party?._id} />;
@@ -402,6 +441,18 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     commentRef.current = text;
   };
 
+  const startWebRTC = async () => {
+    await mediaDevices.getUserMedia({
+      audio: true,
+      video: false,
+    });
+    // const peerConnection = new RTCPeerConnection(configuration);
+  };
+
+  useEffect(() => {
+    startWebRTC();
+  }, []);
+
   useEffect(() => {
     if (!isHost) {
       socket.emit('join_party', {
@@ -516,6 +567,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           showsVerticalScrollIndicator={false}
         />
       </SafeAreaView>
+
       <CustomBottomSheet
         ref={bottomSheetRef}
         customSnapPoints={snapPoints}
