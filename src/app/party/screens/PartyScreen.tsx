@@ -467,7 +467,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       <BottomSheetFooter {...props} bottomInset={24}>
         <View
           style={[
-            tw`bg-inherit m-4  h-14 rounded-md border-grey4 flex-row px-3 items-center border `,
+            tw`bg-inherit m-4  h-12 rounded-md border-grey4 flex-row px-3 items-center border `,
             {
               backgroundColor: screenColors.accent,
             },
