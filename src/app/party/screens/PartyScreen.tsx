@@ -56,6 +56,12 @@ import {ScrollView} from 'react-native-gesture-handler';
 import {BottomSheetFooter, BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
 import {RTCPeerConnection, mediaDevices} from 'react-native-webrtc';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -77,6 +83,31 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const [comments, setComments] = useState<FireStoreComments[]>([]);
   const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
   const commentRef = useRef<string>('');
+
+  // Initialize the animated value
+  const translateX = useSharedValue(-Dimensions.get('window').width);
+
+  // Animated style
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{translateX: translateX.value}],
+    };
+  });
+
+  // Trigger the animation
+  useEffect(() => {
+    if (selectedBottomSheetTab === 0) {
+      translateX.value = withTiming(0, {
+        duration: 500,
+        easing: Easing.inOut(Easing.ease),
+      });
+    } else {
+      translateX.value = withTiming(-Dimensions.get('window').width, {
+        duration: 500,
+        easing: Easing.inOut(Easing.ease),
+      });
+    }
+  }, [selectedBottomSheetTab, translateX]);
 
   const screenColors = {
     background:
@@ -619,7 +650,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
             ))}
           </RowContainer>
           {selectedBottomSheetTab === 0 && (
-            <View style={styles.commentFlatList}>
+            <Animated.View style={[styles.commentFlatList, animatedStyle]}>
               {comments.length === 0 ? (
                 <View style={tw`justify-center items-center mt-30`}>
                   <LottieView
@@ -641,7 +672,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                   showsVerticalScrollIndicator={false}
                 />
               )}
-            </View>
+            </Animated.View>
           )}
         </View>
       </CustomBottomSheet>
