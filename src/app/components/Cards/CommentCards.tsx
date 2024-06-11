@@ -1,56 +1,144 @@
-import React, {FunctionComponent, useEffect, useState} from 'react';
-import CustomText from '../Text/CustomText';
-import tw from 'src/lib/tailwind';
-import RowContainer from '../View/RowContainer';
-import Icon from '../Icons/Icon';
-import {Colors} from 'src/app/styles/colors';
-import {TouchableOpacity, View} from 'react-native';
+import React, {
+  FunctionComponent,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Dimensions,
+} from 'react-native';
+import {Avatar} from 'react-native-paper';
+import Icon from '../Icons/Icon';
+import CustomText from '../Text/CustomText';
+import RowContainer from '../View/RowContainer';
+import {Colors} from 'src/app/styles/colors';
+import {
+  Comments,
   FireStoreComments,
+  createFireStoreComments,
   likeComment,
   unlikeComment,
 } from 'src/actions/parties';
 import useUser from 'src/app/hooks/useUserInfo';
-import {MediaStream, mediaDevices} from 'react-native-webrtc';
-import {Avatar} from 'react-native-paper';
+import {collection, onSnapshot, doc, getDocs} from 'firebase/firestore';
+import {db} from '../../../../firebaseConfig';
+import {FlashList, ListRenderItem} from '@shopify/flash-list';
+import tw from 'src/lib/tailwind';
+import {generalIcon} from '../Icons/generalIcons';
 
 const CommentCards: FunctionComponent<{
   item: FireStoreComments;
   partyId: string;
 }> = ({item, partyId}) => {
-  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const SendIcon = generalIcon.SendIcon;
+  const [commentData, setCommentData] = useState<FireStoreComments>(item);
   const [isLiked, setIsLiked] = useState<boolean>(false);
-  const localStream = new MediaStream();
+  const [commentReply, setCommentReply] = useState<string>('');
+  const [isReplyFieldOpen, setIsReplyFieldOpen] = useState<boolean>(false);
+  const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
   const {user} = useUser();
 
   useEffect(() => {
-    if (item?.likes?.includes?.(user?._id)) {
+    if (commentData?.likes?.includes?.(user?._id)) {
       setIsLiked(true);
     } else {
       setIsLiked(false);
     }
-  }, [item?.likes, user?._id]);
+  }, [commentData?.likes, user?._id]);
+
+  useEffect(() => {
+    const commentDocRef = doc(db, `party/${partyId}/comments`, item.commentId);
+    const unsubscribe = onSnapshot(commentDocRef, async docSnapshot => {
+      const updatedCommentData = docSnapshot.data() as FireStoreComments;
+      const repliesCollection = collection(
+        db,
+        `party/${partyId}/comments/${docSnapshot.id}/replies`,
+      );
+      const repliesSnapshot = await getDocs(repliesCollection);
+      const replies = repliesSnapshot.docs.map(replyDoc => ({
+        ...replyDoc.data(),
+        commentId: replyDoc.id,
+      }));
+      const responses = replies as Comments[];
+      setCommentData({
+        ...updatedCommentData,
+        replies: responses,
+        commentId: docSnapshot.id,
+      });
+    });
+
+    return () => unsubscribe();
+  }, [partyId, item.commentId, isUploadingComment]);
 
   const handleLike = async () => {
-    if (item?.likes?.includes?.(user?._id)) {
-      await unlikeComment(partyId, item?.commentId, user?._id);
+    if (commentData?.likes?.includes?.(user?._id)) {
+      await unlikeComment(partyId, commentData?.commentId, user?._id);
       setIsLiked(false);
     } else {
-      await likeComment(partyId, item?.commentId, user?._id);
+      await likeComment(partyId, commentData?.commentId, user?._id);
       setIsLiked(true);
     }
   };
 
-  const toggleMute = async () => {
-    setIsMuted(!isMuted);
-    const audioTrack = localStream.getAudioTracks()[0];
+  const replyComment = useCallback(async () => {
+    setIsUploadingComment(true);
+    try {
+      await createFireStoreComments(
+        partyId,
+        user?._id,
+        commentReply,
+        user?.image,
+        user?.stageName,
+        user?.name,
+        commentData?.commentId,
+      );
+      setCommentReply('');
+    } catch (error) {
+      console.log(error);
+    }
+    setIsUploadingComment(false);
+  }, [
+    partyId,
+    user?._id,
+    user?.image,
+    user?.stageName,
+    user?.name,
+    commentReply,
+    commentData?.commentId,
+  ]);
 
-    // audioTrack.enabled = !audioTrack.enabled;
+  const commentsRenderItem: ListRenderItem<Comments> = useCallback(({item}) => {
+    return (
+      <RowContainer style={tw`flex-1 min-h-9 max-h-14 w-[80%]`}>
+        <Avatar.Text
+          label={item?.name?.substring(0, 1) ?? ''}
+          size={20}
+          style={tw`bg-yellow1 `}
+          labelStyle={tw`font-poppinsBold text-xs text-darkGreen`}
+          color={Colors.white}
+        />
+        <View style={tw`w-[80%]`}>
+          <CustomText style={tw`text-[8px] ml-3`}>{item.text}</CustomText>
+        </View>
+      </RowContainer>
+    );
+  }, []);
+
+  const getDynamicHeight = (numReplies: number) => {
+    const repliesCount = numReplies > 0 ? numReplies : 0.1;
+    const itemHeight = 8; // Assuming each item has a height of 8
+    const maxHeight = 30; // Maximum height for the FlashList 30
+    const calculatedHeight = repliesCount * itemHeight;
+    return Math.min(calculatedHeight, maxHeight);
   };
 
   return (
-    <View style={tw`flex-1  py-3 px-4`}>
-      <RowContainer style={tw`flex-1 flex-row justify-between   `}>
+    <View style={tw`flex-1 py-3 px-4`}>
+      <RowContainer style={tw`flex-1 flex-row justify-between`}>
         <RowContainer>
           <Avatar.Text
             label={user?.name?.substring(0, 1) ?? ''}
@@ -61,10 +149,10 @@ const CommentCards: FunctionComponent<{
           />
           <View style={tw`w-[82%]`}>
             <CustomText style={tw`text-[10px] ml-5 w-full`}>
-              @{item?.userStageName}
+              @{commentData?.userStageName}
             </CustomText>
             <CustomText style={tw`text-[10px] w-full ml-5`}>
-              {item?.text}
+              {commentData?.text}
             </CustomText>
           </View>
         </RowContainer>
@@ -76,28 +164,76 @@ const CommentCards: FunctionComponent<{
           />
         </TouchableOpacity>
       </RowContainer>
-      <RowContainer style={tw`mt-1`}>
-        <RowContainer>
-          <TouchableOpacity onPress={() => handleLike()} style={tw` ml-12`}>
-            <Icon icon={'heart'} color={Colors.grey} size={13} />
+      <View style={tw`ml-12 flex-1 min-h-6`}>
+        <RowContainer style={tw`flex-1 mt-1`}>
+          <RowContainer>
+            <TouchableOpacity onPress={() => handleLike()}>
+              <Icon icon={'heart'} color={Colors.grey} size={13} />
+            </TouchableOpacity>
+            <CustomText style={tw`ml-1 text-[10px]`}>
+              {commentData?.likes?.length > 0
+                ? commentData?.likes?.length
+                : null}
+            </CustomText>
+          </RowContainer>
+          <TouchableOpacity
+            onPress={() => setIsReplyFieldOpen(prev => !prev)}
+            style={tw` ml-5`}>
+            <RowContainer>
+              <Icon icon={'reply'} color={Colors.grey} size={13} />
+              <CustomText style={tw`ml-1 text-[10px]`}>Reply</CustomText>
+            </RowContainer>
           </TouchableOpacity>
-          <CustomText style={tw`ml-1 text-[10px]`}>
-            {item?.likes?.length > 0 ? item?.likes?.length : null}
-          </CustomText>
+          <RowContainer>
+            <TouchableOpacity
+              onPress={() => setIsReplyFieldOpen(prev => !prev)}
+              style={tw` ml-5`}>
+              <Icon icon={'comment-outline'} color={Colors.grey} size={13} />
+            </TouchableOpacity>
+            <CustomText style={tw`ml-1 text-[10px]`}>
+              {commentData?.replies?.length}
+            </CustomText>
+          </RowContainer>
         </RowContainer>
-        <RowContainer>
-          <TouchableOpacity onPress={() => handleLike()} style={tw` ml-5`}>
-            <Icon icon={'reply'} color={Colors.grey} size={13} />
-          </TouchableOpacity>
-          <CustomText style={tw`ml-1 text-[10px]`}>Reply</CustomText>
-        </RowContainer>
-        <RowContainer>
-          <TouchableOpacity onPress={() => handleLike()} style={tw` ml-5`}>
-            <Icon icon={'comment-outline'} color={Colors.grey} size={13} />
-          </TouchableOpacity>
-          <CustomText style={tw`ml-1 text-[10px]`}>10</CustomText>
-        </RowContainer>
-      </RowContainer>
+        {isReplyFieldOpen && (
+          <>
+            <View
+              style={tw`h-${getDynamicHeight(
+                commentData?.replies?.length ?? 0,
+              )} w-100`}>
+              <FlashList
+                data={commentData?.replies ?? []}
+                renderItem={commentsRenderItem}
+                estimatedItemSize={50}
+                estimatedListSize={{
+                  height: 30,
+                  width: Dimensions.get('screen').width,
+                }}
+                keyExtractor={reply => reply.commentId}
+              />
+            </View>
+            <RowContainer
+              style={tw`border border-grey justify-between mt-4 px-2 h-8 rounded-lg `}>
+              <TextInput
+                value={commentReply}
+                onChangeText={text => setCommentReply(text)}
+                style={tw`h-8 text-2xs w-[85%] rounded-lg text-white`}
+                placeholderTextColor={'white'}
+                placeholder="your response"
+              />
+              <View>
+                {isUploadingComment ? (
+                  <ActivityIndicator />
+                ) : (
+                  <TouchableOpacity onPress={replyComment}>
+                    <SendIcon height={15} width={15} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </RowContainer>
+          </>
+        )}
+      </View>
     </View>
   );
 };
