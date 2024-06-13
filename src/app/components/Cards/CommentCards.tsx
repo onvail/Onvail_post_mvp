@@ -164,7 +164,7 @@ const CommentCards: FunctionComponent<{
 
   return (
     <View style={tw`flex-1 py-3 px-4`}>
-      <RowContainer style={tw`flex-1 flex-row justify-between`}>
+      <RowContainer style={tw`flex-1 flex-row pr-5 justify-between`}>
         <RowContainer>
           <Avatar.Text
             label={user?.name?.substring(0, 1) ?? ''}
