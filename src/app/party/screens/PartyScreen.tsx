@@ -61,13 +61,12 @@ import {BottomSheetFooter, BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
 import {RTCPeerConnection, mediaDevices} from 'react-native-webrtc';
 import Animated, {
-  Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
+import GuestsList from '../components/GuestsList';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -92,7 +91,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const commentRef = useRef<string>('');
 
   // Initialize the animated value
-  const translateX = useSharedValue(-Dimensions.get('window').width);
+  const translateX = useSharedValue(0);
 
   // Animated style
   const animatedStyle = useAnimatedStyle(() => {
@@ -100,21 +99,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       transform: [{translateX: translateX.value}],
     };
   });
-
-  // Trigger the animation
-  useEffect(() => {
-    if (selectedBottomSheetTab === 0) {
-      translateX.value = withTiming(0, {
-        duration: 500,
-        easing: Easing.inOut(Easing.ease),
-      });
-    } else {
-      translateX.value = withTiming(-Dimensions.get('window').width, {
-        duration: 500,
-        easing: Easing.inOut(Easing.ease),
-      });
-    }
-  }, [selectedBottomSheetTab, translateX]);
 
   const screenColors = {
     background:
@@ -209,7 +193,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         requiresToken: true,
         authorization: true,
       });
-      console.log(response?.data, Platform.OS);
       setGuestList(response?.data?.joined);
     } catch (error) {
       console.log(error);
@@ -375,7 +358,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     });
   };
 
-  const renderItem: ListRenderItem<Track> = ({item, index}) => {
+  const trackRenderItem: ListRenderItem<Track> = ({item, index}) => {
     const {artist, title, url, id, duration} = item;
     return (
       <MusicList
@@ -539,9 +522,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       translateX.value = event.translationX;
     })
     .onEnd(event => {
-      if (event.translationX < -screenWidth / 4) {
+      if (event.translationX < -screenWidth / 3) {
         runOnJS(updateTab)(1);
-      } else if (event.translationX > screenWidth / 4) {
+      } else if (event.translationX > screenWidth / 3) {
         runOnJS(updateTab)(-1);
       }
       translateX.value = withSpring(0, {
@@ -549,6 +532,10 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         stiffness: 90,
       });
     });
+
+  const guestRenderItem: ListRenderItem<User> = ({item}) => {
+    return <GuestsList item={item} />;
+  };
 
   const renderBottomFooter = useCallback(
     (props: any) => (
@@ -657,7 +644,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         </View>
         <FlashList
           data={allTracks}
-          renderItem={renderItem}
+          renderItem={trackRenderItem}
           keyExtractor={item => item?.id}
           estimatedItemSize={20}
           estimatedListSize={{
@@ -689,35 +676,44 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
             ))}
           </RowContainer>
           <GestureDetector gesture={swipeGesture}>
-            <Animated.View style={[styles.commentFlatList, animatedStyle]}>
-              {selectedBottomSheetTab === 0 && (
-                <>
-                  {comments.length === 0 ? (
-                    <View style={tw`justify-center items-center mt-30`}>
-                      <LottieView
-                        source={require('../../../assets/comments.json')}
-                        style={tw`h-50 w-50`}
-                        autoPlay={true}
-                        loop={true}
+            <Animated.View style={[styles.tabsContainer, animatedStyle]}>
+              <View style={styles.tabContent}>
+                {selectedBottomSheetTab === 0 && (
+                  <>
+                    {comments.length === 0 ? (
+                      <View style={tw`justify-center items-center mt-30`}>
+                        <LottieView
+                          source={require('../../../assets/comments.json')}
+                          style={tw`h-50 w-50`}
+                          autoPlay={true}
+                          loop={true}
+                        />
+                        <CustomText style={tw`text-center text-base mt-5`}>
+                          Be the frist to say something
+                        </CustomText>
+                      </View>
+                    ) : (
+                      <FlashList
+                        renderItem={commentsRenderItem}
+                        estimatedItemSize={200}
+                        data={comments}
+                        renderScrollComponent={ScrollView}
+                        showsVerticalScrollIndicator={false}
                       />
-                      <CustomText style={tw`text-center text-base mt-5`}>
-                        Be the frist to say something
-                      </CustomText>
-                    </View>
-                  ) : (
-                    <FlashList
-                      renderItem={commentsRenderItem}
-                      estimatedItemSize={200}
-                      data={comments}
-                      renderScrollComponent={ScrollView}
-                      showsVerticalScrollIndicator={false}
-                    />
-                  )}
-                </>
-              )}
-              {selectedBottomSheetTab === 1 && (
-                <View style={tw`bg-white flex-1 h-20`} />
-              )}
+                    )}
+                  </>
+                )}
+                {selectedBottomSheetTab === 1 && (
+                  <FlashList
+                    data={guestList}
+                    renderItem={guestRenderItem}
+                    estimatedItemSize={200}
+                    numColumns={4}
+                    horizontal={false}
+                  />
+                )}
+                {selectedBottomSheetTab === 2 && <></>}
+              </View>
             </Animated.View>
           </GestureDetector>
         </View>
@@ -731,6 +727,15 @@ const styles = StyleSheet.create({
     width: Dimensions.get('window').width * 3,
     height: Dimensions.get('window').height / 2,
     marginBottom: 4,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    width: Dimensions.get('window').width * 3, // Adjust width for three tabs
+  },
+
+  tabContent: {
+    width: Dimensions.get('window').width, // Width of each tab content
+    height: Dimensions.get('window').height / 2, // Adjust height as needed
   },
 });
 
