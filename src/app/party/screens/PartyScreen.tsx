@@ -723,11 +723,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 };
 
 const styles = StyleSheet.create({
-  commentFlatList: {
-    width: Dimensions.get('window').width * 3,
-    height: Dimensions.get('window').height / 2,
-    marginBottom: 4,
-  },
   tabsContainer: {
     flexDirection: 'row',
     width: Dimensions.get('window').width * 3, // Adjust width for three tabs
