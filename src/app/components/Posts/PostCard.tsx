@@ -23,6 +23,9 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {getColors} from 'react-native-image-colors';
 import {ColorScheme} from 'src/app/navigator/types/MainStackParamList';
 import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
+import {leaveParty} from 'src/actions/parties';
+import {arrayUnion, doc, updateDoc} from 'firebase/firestore';
+import {db} from '../../../../firebaseConfig';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -116,6 +119,10 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const startParty = async () => {
     setIsLoading(true);
     try {
+      const partyDocRef = doc(db, 'party', party?._id);
+      await updateDoc(partyDocRef, {
+        participants: arrayUnion(user),
+      });
       await api.patch({
         url: `parties/start-party/${party?._id}`,
         requiresToken: true,
@@ -130,8 +137,13 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   };
 
   const joinParty = async () => {
+    // leaveParty(party?._id, user)
     setIsLoading(true);
     try {
+      const partyDocRef = doc(db, 'party', party?._id);
+      await updateDoc(partyDocRef, {
+        participants: arrayUnion(user),
+      });
       await api.post({
         url: `parties/join-party/${party?._id}`,
         requiresToken: true,
