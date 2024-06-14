@@ -45,11 +45,14 @@ import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
 import moment from 'moment-timezone';
 import {FireStoreComments, createFireStoreComments} from 'src/actions/parties';
 import {
+  arrayRemove,
   collection,
+  doc,
   getDocs,
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
 } from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
 import {
@@ -59,7 +62,6 @@ import {
 } from 'react-native-gesture-handler';
 import {BottomSheetFooter, BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
-import {RTCPeerConnection, mediaDevices} from 'react-native-webrtc';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -67,6 +69,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import GuestsList from '../components/GuestsList';
+import useParty from '../useParty';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -89,6 +92,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const [comments, setComments] = useState<FireStoreComments[]>([]);
   const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
   const commentRef = useRef<string>('');
+  const partyId = party?._id;
 
   // Initialize the animated value
   const translateX = useSharedValue(0);
@@ -172,6 +176,10 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         party: party?._id,
         user,
       });
+      const partyDocRef = doc(db, 'party', party?._id);
+      await updateDoc(partyDocRef, {
+        participants: arrayRemove(user),
+      });
       await api.post({
         url: `parties/leave/${party?._id}`,
         requiresToken: true,
@@ -188,20 +196,41 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   const fetchPartyGuests = useCallback(async () => {
     try {
-      const response = await api.get({
-        url: `parties/guests/${party?._id}`,
-        requiresToken: true,
-        authorization: true,
+      const partyDocRef = doc(db, 'party', partyId);
+      const unsubscribe = onSnapshot(partyDocRef, doc => {
+        const data = doc.data();
+        let userList: User[] =
+          data?.participants?.map((allusers: User) => allusers) ?? [];
+        setGuestList(userList);
       });
-      setGuestList(response?.data?.joined);
+      return () => unsubscribe();
     } catch (error) {
       console.log(error);
     }
-  }, [party?._id]);
+  }, [partyId]);
 
   useEffect(() => {
     fetchPartyGuests();
   }, [fetchPartyGuests]);
+
+  const {localStream, remoteStream, createRoom, joinRoom} = useParty();
+  const [joinedRoomId, setJoinedRoomId] = useState('');
+
+  useEffect(() => {
+    const handleCreateRoom = async () => {
+      await createRoom(party?._id);
+    };
+
+    const handleJoinRoom = async () => {
+      await joinRoom(joinedRoomId);
+    };
+
+    if (isHost) {
+      handleCreateRoom();
+    } else {
+      handleJoinRoom();
+    }
+  }, [createRoom, party?._id, isHost, joinRoom, joinedRoomId]);
 
   useEffect(() => {
     if (party?._id) {
@@ -280,6 +309,10 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   const endParty = async () => {
     try {
+      const partyDocRef = doc(db, 'party', party?._id);
+      await updateDoc(partyDocRef, {
+        participants: arrayRemove(user),
+      });
       await api.post({
         url: `parties/leave/${party?._id}`,
         requiresToken: true,
@@ -443,55 +476,43 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     [isHost],
   );
 
-  const handleSocketEventsForEveryone = useCallback(
-    async (data: SocketData) => {
-      console.log(data);
-      switch (data.cmd) {
-        case 'user_joined':
-          return console.log('user joined', user);
-        case 'user_left':
-          console.log('user left', user);
-          break;
-        default:
-          break;
-      }
-    },
-    [user],
-  );
+  // const handleSocketEventsForEveryone = useCallback(
+  //   async (data: SocketData) => {
+  //     console.log(data);
+  //     switch (data.cmd) {
+  //       case 'user_joined':
+  //         return console.log('user joined', user);
+  //       case 'user_left':
+  //         console.log('user left', user);
+  //         break;
+  //       default:
+  //         break;
+  //     }
+  //   },
+  //   [user],
+  // );
 
   useEffect(() => {
     mountTrackForGuests();
     socket.on('receive', handleSocketEvents);
-    socket.on('receive', handleSocketEventsForEveryone);
+    // socket.on('receive', handleSocketEventsForEveryone);
 
     return () => {
       TrackPlayer.stop();
       TrackPlayer.reset();
       socket.off('receive', handleSocketEvents);
-      socket.off('receive', handleSocketEventsForEveryone);
+      // socket.off('receive', handleSocketEventsForEveryone);
     };
   }, [
     isHost,
     mountTrackForGuests,
     handleSocketEvents,
-    handleSocketEventsForEveryone,
+    // handleSocketEventsForEveryone,
   ]);
 
   const handleCommentChange = (text: string) => {
     commentRef.current = text;
   };
-
-  const startWebRTC = async () => {
-    await mediaDevices.getUserMedia({
-      audio: true,
-      video: false,
-    });
-    // const peerConnection = new RTCPeerConnection(configuration);
-  };
-
-  useEffect(() => {
-    startWebRTC();
-  }, []);
 
   useEffect(() => {
     if (!isHost) {
@@ -534,7 +555,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     });
 
   const guestRenderItem: ListRenderItem<User> = ({item}) => {
-    return <GuestsList item={item} />;
+    return <GuestsList item={item} isHost={party?.artist?._id === item?._id} />;
   };
 
   const renderBottomFooter = useCallback(
