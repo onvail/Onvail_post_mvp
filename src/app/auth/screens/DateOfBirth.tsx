@@ -24,8 +24,6 @@ const DateOfBirth: FunctionComponent<Props> = ({navigation}) => {
     dateOfBirth: '',
   };
 
-  console.log(defaultValues);
-
   const updateUserSignUpStore = useSignUpStore(
     (state: SignUpStoreState) => state.updateUserSignUpStore,
   );
