@@ -30,10 +30,9 @@ import DefaultImages from '../components/DefaultImages';
 import {DocumentPickerResponse} from 'react-native-document-picker';
 import ViewShot, {captureRef} from 'react-native-view-shot';
 import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
-import CustomTimePicker from 'src/app/components/Calendar/CustomTimePicker';
-import Modal from 'react-native-modal/dist/modal';
 import useUser from 'src/app/hooks/useUserInfo';
 import {createFireStoreParties} from 'src/actions/parties';
+import DatePicker from 'react-native-date-picker';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
 const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
@@ -55,6 +54,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
   );
   const [musicFiles, setMusicFiles] = useState<DocumentPickerResponse[]>([]);
   const [isCreatingParty, setIsCreatingParty] = useState<boolean>(false);
+  const [partyDate, setPartyDate] = useState<Date>(new Date());
   const {tryPickImageFromDevice} = useImageService();
 
   const defaultValues: Party = {
@@ -484,18 +484,22 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
               required: 'Date is required',
             }}
             render={({field: {onChange}}) => (
-              <Modal
-                isVisible={isCalendarVisible}
-                onBackdropPress={() => setIsCalendarVisible(false)}>
-                <View style={tw`bg-white rounded-md`}>
-                  <CustomTimePicker
-                    showTimePicker={isCalendarVisible}
-                    onChangeTime={date => {
-                      onChange(date);
-                    }}
-                  />
-                </View>
-              </Modal>
+              <DatePicker
+                modal
+                theme="dark"
+                mode="datetime"
+                open={isCalendarVisible}
+                title={'Date and Time of Party'}
+                date={partyDate}
+                onConfirm={calendarDate => {
+                  setIsCalendarVisible(false);
+                  setPartyDate(calendarDate);
+                  onChange(calendarDate);
+                }}
+                onCancel={() => {
+                  setIsCalendarVisible(false);
+                }}
+              />
             )}
             name="date"
           />
