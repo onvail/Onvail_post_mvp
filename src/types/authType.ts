@@ -18,6 +18,7 @@ export type SignInProps = {
   gender: 'male' | 'female';
   country: string;
   state: string;
+  city: string;
 };
 
 export type LoginProps = {
