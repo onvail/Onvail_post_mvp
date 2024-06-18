@@ -105,11 +105,24 @@ const LocationInput: FunctionComponent<Props> = ({navigation}) => {
   });
 
   const onSubmit = async ({country, city, state}: InitialValue) => {
+    // In Islands without states and cities, return countries as the state and city;
+    // In countries with states but not 'cities' e.g the United Kingdom, use the 'state' as the city;
+    // whenever a city is present use it.
+    const cityValue = () => {
+      if (selectedState) {
+        if (cities.length === 0) {
+          return state;
+        }
+        return city;
+      } else {
+        return country;
+      }
+    };
     updateUserSignUpStore({
       ...storeUser,
       country,
-      state,
-      city,
+      state: selectedCountry && states.length === 0 ? country : state,
+      city: cityValue(),
     });
     navigation.navigate('RoleInput');
   };
@@ -138,7 +151,8 @@ const LocationInput: FunctionComponent<Props> = ({navigation}) => {
             }}
             render={({field: {onChange, onBlur, value}}) => (
               <CustomDropDown
-                data={countriesAndStates}
+                data={countriesAndStates ?? []}
+                search
                 onChange={item => {
                   onChange(item.name);
                   setSelectedCountry(item);
@@ -149,61 +163,76 @@ const LocationInput: FunctionComponent<Props> = ({navigation}) => {
                 value={value}
                 onBlur={onBlur}
                 placeholder="Select country"
+                searchField={'name'}
+                searchPlaceholder="search for country"
+                inputSearchStyle={tw`rounded font-poppinsRegular text-sm`}
               />
             )}
             name="country"
           />
         </View>
-        <View>
-          <ErrorText>{errors?.state?.message}</ErrorText>
-          <Controller
-            control={control}
-            rules={{
-              required: 'State/Province is required',
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <CustomDropDown
-                data={states || []}
-                onChange={item => {
-                  onChange(item.name);
-                  setSelectedState(item);
-                }}
-                labelField={'name'}
-                valueField={'name'}
-                maxHeight={250}
-                value={value}
-                onBlur={onBlur}
-                placeholder="Select state/province"
-              />
-            )}
-            name="state"
-          />
-        </View>
-        <View>
-          <ErrorText>{errors?.city?.message}</ErrorText>
-          <Controller
-            control={control}
-            rules={{
-              required: 'City is required',
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <CustomDropDown
-                data={cities || []}
-                onChange={item => {
-                  onChange(item.name);
-                  setSelectedCity(item.name);
-                }}
-                labelField={'name'}
-                valueField={'name'}
-                maxHeight={250}
-                value={value}
-                onBlur={onBlur}
-                placeholder="City"
-              />
-            )}
-            name="city"
-          />
-        </View>
+        {selectedCountry && states.length !== 0 && (
+          <View>
+            <ErrorText>{errors?.state?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'State/Province is required',
+              }}
+              render={({field: {onChange, onBlur, value}}) => (
+                <CustomDropDown
+                  data={states || []}
+                  search
+                  searchField={'name'}
+                  searchPlaceholder="search for state"
+                  inputSearchStyle={tw`rounded font-poppinsRegular text-sm`}
+                  onChange={item => {
+                    onChange(item.name);
+                    setSelectedState(item);
+                  }}
+                  labelField={'name'}
+                  valueField={'name'}
+                  maxHeight={250}
+                  value={value}
+                  onBlur={onBlur}
+                  placeholder="Select state/province"
+                />
+              )}
+              name="state"
+            />
+          </View>
+        )}
+        {selectedState && cities.length !== 0 && (
+          <View>
+            <ErrorText>{errors?.city?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'City is required',
+              }}
+              render={({field: {onChange, onBlur, value}}) => (
+                <CustomDropDown
+                  data={cities || []}
+                  onChange={item => {
+                    onChange(item.name);
+                    setSelectedCity(item.name);
+                  }}
+                  labelField={'name'}
+                  valueField={'name'}
+                  maxHeight={250}
+                  value={value}
+                  onBlur={onBlur}
+                  placeholder="City"
+                  search
+                  searchField={'name'}
+                  searchPlaceholder="search for city"
+                  inputSearchStyle={tw`rounded font-poppinsRegular text-sm`}
+                />
+              )}
+              name="city"
+            />
+          </View>
+        )}
       </View>
       <TouchableOpacity
         activeOpacity={0.8}
