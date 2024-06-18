@@ -15,8 +15,15 @@ import RowContainer from 'src/app/components/View/RowContainer';
 import Icon from 'src/app/components/Icons/Icon';
 import AuthScreenContainer from 'src/app/components/Screens/AuthScreenContainer';
 import {SignUpStoreState, useSignUpStore} from 'src/app/zustand/store';
-import axios from 'axios';
 import CustomDropDown from 'src/app/components/Dropdown/CustomDropDown';
+import {
+  Country,
+  City,
+  State,
+  ICountry,
+  IState,
+  ICity,
+} from 'country-state-city';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
@@ -26,18 +33,6 @@ type InitialValue = {
   state: string;
 };
 
-interface State {
-  name: string;
-  state_code: string;
-}
-
-interface Country {
-  name: string;
-  iso3: string;
-  iso2: string;
-  states: State[];
-}
-
 const LocationInput: FunctionComponent<Props> = ({navigation}) => {
   const defaultValues: InitialValue = {
     country: '',
@@ -45,44 +40,47 @@ const LocationInput: FunctionComponent<Props> = ({navigation}) => {
     state: '',
   };
 
-  const [countriesAndStates, setCountriesAndStates] = useState<Country[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
-  const [selectedState, setSelectedState] = useState<State | null>(null);
-  const [cities, setCities] = useState<string[]>([]);
+  const [countriesAndStates, setCountriesAndStates] = useState<ICountry[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(null);
+  const [states, setStates] = useState<IState[]>([]);
+  const [selectedState, setSelectedState] = useState<IState | null>(null);
+  const [cities, setCities] = useState<ICity[]>([]);
+  const [_selectedCity, setSelectedCity] = useState<IState | null>(null);
 
   const fetchAllCountries = async () => {
+    setCountriesAndStates(Country.getAllCountries());
+  };
+
+  const fetchStatesInCountry = useCallback(() => {
+    if (!selectedCountry) {
+      return;
+    }
     try {
-      const response = await axios.get(
-        'https://countriesnow.space/api/v0.1/countries/states',
-      );
-      setCountriesAndStates(response?.data?.data);
+      const response = State.getStatesOfCountry(selectedCountry.isoCode);
+      setStates(response);
     } catch (error) {
       console.log(error);
     }
-  };
+  }, [selectedCountry]);
 
   const fetchCitiesInAState = useCallback(async () => {
     if (!selectedCountry || !selectedState) {
       return;
     }
     try {
-      const response = await axios.post(
-        'https://countriesnow.space/api/v0.1/countries/state/cities',
-        {
-          country: selectedCountry?.name,
-          state: selectedState?.name,
-        },
+      const response = City.getCitiesOfState(
+        selectedCountry.isoCode,
+        selectedState.isoCode,
       );
-      setCities(
-        response?.data?.data.map((item: string) => ({
-          name: item,
-          key: item,
-        })),
-      );
+      setCities(response);
     } catch (error) {
       console.log(error);
     }
   }, [selectedCountry, selectedState]);
+
+  useEffect(() => {
+    fetchStatesInCountry();
+  }, [fetchStatesInCountry]);
 
   useEffect(() => {
     fetchAllCountries();
@@ -165,7 +163,7 @@ const LocationInput: FunctionComponent<Props> = ({navigation}) => {
             }}
             render={({field: {onChange, onBlur, value}}) => (
               <CustomDropDown
-                data={selectedCountry?.states || []}
+                data={states || []}
                 onChange={item => {
                   onChange(item.name);
                   setSelectedState(item);
@@ -190,10 +188,10 @@ const LocationInput: FunctionComponent<Props> = ({navigation}) => {
             }}
             render={({field: {onChange, onBlur, value}}) => (
               <CustomDropDown
-                data={cities}
+                data={cities || []}
                 onChange={item => {
                   onChange(item.name);
-                  setSelectedState(item);
+                  setSelectedCity(item.name);
                 }}
                 labelField={'name'}
                 valueField={'name'}
