@@ -213,25 +213,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     fetchPartyGuests();
   }, [fetchPartyGuests]);
 
-  const {localStream, remoteStream, createRoom, joinRoom} = useParty();
-  const [joinedRoomId, setJoinedRoomId] = useState('');
-
-  useEffect(() => {
-    const handleCreateRoom = async () => {
-      await createRoom(party?._id);
-    };
-
-    const handleJoinRoom = async () => {
-      await joinRoom(joinedRoomId);
-    };
-
-    if (isHost) {
-      handleCreateRoom();
-    } else {
-      handleJoinRoom();
-    }
-  }, [createRoom, party?._id, isHost, joinRoom, joinedRoomId]);
-
   useEffect(() => {
     if (party?._id) {
       const commentCollection = collection(db, `party/${party._id}/comments`);
