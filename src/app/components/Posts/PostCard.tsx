@@ -4,9 +4,16 @@ import React, {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
-import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Dimensions,
+  TouchableOpacity,
+  View,
+  Animated,
+} from 'react-native';
 import UserHeader from './UserHeader';
 import CustomImage from 'components/Image/CustomImage';
 import tw from 'src/lib/tailwind';
@@ -26,6 +33,7 @@ import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
 import {leaveParty} from 'src/actions/parties';
 import {arrayUnion, doc, updateDoc} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
+import useWebrtc from 'src/app/hooks/useWebrtc';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -51,6 +59,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   );
   const [partyTrackWithDuration, setPartyTrackWithDuration] =
     useState<PartiesResponse>(party);
+  const {beginParty, joinCall} = useWebrtc(party?._id);
 
   const handleSongsDuration = useCallback(async () => {
     const sound = new Audio.Sound();
@@ -123,6 +132,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
       await updateDoc(partyDocRef, {
         participants: arrayUnion(user),
       });
+      beginParty();
       await api.patch({
         url: `parties/start-party/${party?._id}`,
         requiresToken: true,
@@ -137,13 +147,14 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   };
 
   const joinParty = async () => {
-    // leaveParty(party?._id, user)
+    // leaveParty(party?._id, user);
     setIsLoading(true);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
       await updateDoc(partyDocRef, {
         participants: arrayUnion(user),
       });
+      joinCall();
       await api.post({
         url: `parties/join-party/${party?._id}`,
         requiresToken: true,
@@ -231,9 +242,15 @@ const PostItem: FunctionComponent<{
   const canFollowUser = item?.artist?._id !== userId;
   const isFollowing = item?.artist?.followers?.includes(userId);
   const isLiked = item?.likes?.some(likes => likes?._id === userId);
+  const {height} = Dimensions.get('window');
+  const ITEM_SIZE = height * 0.62;
 
   return (
-    <View style={tw`mb-4 border-b-[0.2px] border-grey2 pb-7`}>
+    <View
+      style={[
+        tw`mb-4 border-b-[0.2px] border-grey2 pb-7`,
+        {height: ITEM_SIZE},
+      ]}>
       <UserHeader
         name={item?.artist?.name}
         uri={item?.artist?.image}
@@ -256,7 +273,7 @@ const PostItem: FunctionComponent<{
         </RowContainer>
         <CustomImage
           uri={item?.albumPicture ?? ''}
-          style={tw`h-100 w-[100%] rounded-4`}
+          style={[tw`h-100 w-[100%] rounded-4`]}
           resizeMode="cover"
         />
         <RowContainer
@@ -345,16 +362,55 @@ const PostCard: FunctionComponent<PostCardProps> = ({
   data = [],
 }) => {
   const {user} = useUser();
+  const {height} = Dimensions.get('window');
 
-  const renderItem: ListRenderItem<PartiesResponse> = ({item}) => (
-    <PostItem
-      item={item}
-      handleJoinPartyBtnPress={(partyItem, albumBackgroundColor) =>
-        handleJoinPartyBtnPress(partyItem, albumBackgroundColor)
-      }
-      userId={user?._id ?? ''}
-    />
-  );
+  const ITEM_SIZE = height * 0.62;
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const renderItem: ListRenderItem<PartiesResponse | any> = ({item, index}) => {
+    const inputRange = [-1, 0, index * ITEM_SIZE, (index + 2) * ITEM_SIZE];
+    const opacityInputRange = [
+      -1,
+      0,
+      index * ITEM_SIZE,
+      (index + 1.3) * ITEM_SIZE,
+    ];
+    const scale = scrollY.interpolate({
+      inputRange,
+      outputRange: [1, 1, 1, 0.8],
+      // outputRange: [0.8, 1, 0.8],
+      extrapolate: 'clamp',
+    });
+
+    const opacity = scrollY.interpolate({
+      inputRange: opacityInputRange,
+      outputRange: [1, 1, 1, 0],
+      // outputRange: [0.8, 1, 0.8],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View
+        style={{
+          opacity,
+          transform: [
+            {
+              scale,
+            },
+          ],
+        }}>
+        <PostItem
+          item={item}
+          handleJoinPartyBtnPress={(partyItem, albumBackgroundColor) =>
+            handleJoinPartyBtnPress(partyItem, albumBackgroundColor)
+          }
+          userId={user?._id ?? ''}
+        />
+      </Animated.View>
+    );
+  };
+
+  const AnimatedFlashList = Animated.createAnimatedComponent(FlashList);
 
   // NOTE:
   // The custom navbar gets a background color placed behind the Onvail button when a margin-bottom is used to push the last-item to a visible position.
@@ -363,10 +419,23 @@ const PostCard: FunctionComponent<PostCardProps> = ({
   const reversedItems = Array.isArray(data) ? [...data].reverse() : [];
 
   return (
-    <FlashList
+    <AnimatedFlashList
       data={reversedItems}
       renderItem={renderItem}
+      snapToInterval={ITEM_SIZE * 2}
       estimatedItemSize={300}
+      bounces={false}
+      onScroll={Animated.event(
+        [
+          {
+            nativeEvent: {contentOffset: {y: scrollY}},
+          },
+        ],
+        {
+          useNativeDriver: true,
+        },
+      )}
+      scrollEventThrottle={16}
       showsHorizontalScrollIndicator={false}
       ListFooterComponent={renderFooterComponent}
     />
