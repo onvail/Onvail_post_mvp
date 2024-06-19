@@ -1,6 +1,6 @@
-import React, {FunctionComponent, useState} from 'react';
+import React, {FunctionComponent, useCallback, useState} from 'react';
 import {Pressable, View} from 'react-native';
-import {User} from 'src/app/hooks/useUserInfo';
+import useUser, {User} from 'src/app/hooks/useUserInfo';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import Icon from 'src/app/components/Icons/Icon';
 import tw from 'src/lib/tailwind';
@@ -15,19 +15,23 @@ const GuestsList: FunctionComponent<{
   localStream: MediaStream | null;
 }> = ({item, isHost, localStream}) => {
   const [isMuted, setIsMuted] = useState<boolean>(true);
+  const {user} = useUser();
 
-  const handleMute = async () => {
+  const handleMute = useCallback(async () => {
+    if (user?._id !== item?._id) {
+      return;
+    }
     try {
       if (localStream) {
         const audioTrack = localStream.getAudioTracks()[0];
-        audioTrack._enabled = !audioTrack._enabled;
+        audioTrack._enabled = !isMuted;
         setIsMuted(prev => !prev);
       }
     } catch (err) {
       console.log('error occured while muting', err);
       // Handle Error
     }
-  };
+  }, [isMuted, localStream, user?._id, item?._id]);
 
   return (
     <View style={tw`flex-1 h-full  items-center justify-center m-1`}>
