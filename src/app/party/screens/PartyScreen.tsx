@@ -69,13 +69,14 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import GuestsList from '../components/GuestsList';
-import useParty from '../useParty';
+import useWebrtc from 'src/app/hooks/useWebrtc';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
   const {user} = useUser();
+  const {localStream} = useWebrtc(party?._id);
   const utcTimeStamp = moment().tz('UTC');
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
@@ -536,7 +537,13 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     });
 
   const guestRenderItem: ListRenderItem<User> = ({item}) => {
-    return <GuestsList item={item} isHost={party?.artist?._id === item?._id} />;
+    return (
+      <GuestsList
+        item={item}
+        isHost={party?.artist?._id === item?._id}
+        localStream={localStream}
+      />
+    );
   };
 
   const renderBottomFooter = useCallback(

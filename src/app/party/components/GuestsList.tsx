@@ -6,23 +6,25 @@ import Icon from 'src/app/components/Icons/Icon';
 import tw from 'src/lib/tailwind';
 import CustomText from 'src/app/components/Text/CustomText';
 import RowContainer from 'src/app/components/View/RowContainer';
-import {mediaDevices} from 'react-native-webrtc';
+import {MediaStream} from 'react-native-webrtc';
 import {truncateText} from 'src/utils/utilities';
 
 const GuestsList: FunctionComponent<{
   item: User;
   isHost: boolean;
-}> = ({item, isHost}) => {
+  localStream: MediaStream | null;
+}> = ({item, isHost, localStream}) => {
   const [isMuted, setIsMuted] = useState<boolean>(true);
 
   const handleMute = async () => {
     try {
-      const mediaConstraints = {audio: true, video: false};
-      const localStream = await mediaDevices.getUserMedia(mediaConstraints);
-      const audioTrack = await localStream.getAudioTracks()[0];
-      audioTrack.enabled = !audioTrack.enabled;
-      setIsMuted(prev => !prev);
+      if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        audioTrack._enabled = !audioTrack._enabled;
+        setIsMuted(prev => !prev);
+      }
     } catch (err) {
+      console.log('error occured while muting', err);
       // Handle Error
     }
   };
