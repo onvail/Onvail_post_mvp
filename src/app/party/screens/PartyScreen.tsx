@@ -38,7 +38,7 @@ import TrackPlayer, {State, Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
-import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
+import {ALERT_TYPE, Dialog, Toast} from 'react-native-alert-notification';
 import useUser, {User} from 'src/app/hooks/useUserInfo';
 import socket from 'src/utils/socket';
 import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
@@ -216,26 +216,38 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   }, [fetchPartyGuests]);
 
   useEffect(() => {
-    if (!isHost) {
-      const callDoc = doc(db, 'calls', partyId);
+    const handlePartyStatus = async () => {
+      if (!isHost) {
+        const callDoc = doc(db, 'calls', partyId);
 
-      const unsubscribe = onSnapshot(callDoc, snapshot => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          if (data) {
-            if (data.callEnded === true) {
-              leavePartyHandler();
+        const unsubscribe = onSnapshot(callDoc, async snapshot => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            if (data) {
+              if (data.callEnded === true) {
+                await TrackPlayer.stop();
+                await TrackPlayer.reset();
+                await leaveParty();
+                Toast.show({
+                  type: ALERT_TYPE.INFO,
+                  title: 'Party ended!',
+                  textBody: 'The host ended the party',
+                  titleStyle: tw`font-poppinsRegular text-xs`,
+                  textBodyStyle: tw`font-poppinsRegular text-xs`,
+                });
+              }
             }
+          } else {
+            console.log('Document does not exist');
           }
-        } else {
-          console.log('Document does not exist');
-        }
-      });
+        });
 
-      // Clean up the subscription on unmount
-      return () => unsubscribe();
-    }
-  }, [callEnded, navigation, partyId, leavePartyHandler, isHost]);
+        // Clean up the subscription on unmount
+        return () => unsubscribe();
+      }
+    };
+    handlePartyStatus();
+  }, [callEnded, navigation, partyId, leaveParty, isHost]);
 
   useEffect(() => {
     if (party?._id) {
