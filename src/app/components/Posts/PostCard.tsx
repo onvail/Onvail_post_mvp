@@ -261,7 +261,6 @@ const PostItem: FunctionComponent<{
       if (snapshot.exists()) {
         const data = snapshot.data();
         if (data) {
-          console.log('data', data.callStarted);
           setPartyStarted(data.callStarted ?? false);
         }
       } else {
