@@ -76,7 +76,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
   const {user} = useUser();
-  const {localStream} = useWebrtc(party?._id);
+  const {localStream, callEnded, endCall, leaveCall} = useWebrtc(party?._id);
   const utcTimeStamp = moment().tz('UTC');
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
@@ -141,7 +141,32 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }));
   }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
 
-  const leavePartyHandler = () => {
+  const leaveParty = useCallback(async () => {
+    try {
+      await leaveCall();
+      socket.emit('leave_party', {
+        party: partyId,
+        user,
+      });
+      const partyDocRef = doc(db, 'party', partyId);
+      await updateDoc(partyDocRef, {
+        participants: arrayRemove(user),
+      });
+      await api.post({
+        url: `parties/leave/${partyId}`,
+        requiresToken: true,
+        authorization: true,
+      });
+
+      navigation.navigate('BottomNavigator', {
+        screen: 'Home',
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }, [leaveCall, navigation, partyId, user]);
+
+  const leavePartyHandler = useCallback(() => {
     Dialog.show({
       type: ALERT_TYPE.WARNING,
       title: 'Leave party',
@@ -154,7 +179,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         Dialog.hide();
       },
     });
-  };
+  }, [leaveParty]);
 
   const endPartyHandler = () => {
     Dialog.show({
@@ -169,30 +194,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         Dialog.hide();
       },
     });
-  };
-
-  const leaveParty = async () => {
-    try {
-      socket.emit('leave_party', {
-        party: party?._id,
-        user,
-      });
-      const partyDocRef = doc(db, 'party', party?._id);
-      await updateDoc(partyDocRef, {
-        participants: arrayRemove(user),
-      });
-      await api.post({
-        url: `parties/leave/${party?._id}`,
-        requiresToken: true,
-        authorization: true,
-      });
-
-      navigation.navigate('BottomNavigator', {
-        screen: 'Home',
-      });
-    } catch (error) {
-      console.log(error);
-    }
   };
 
   const fetchPartyGuests = useCallback(async () => {
@@ -213,6 +214,28 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   useEffect(() => {
     fetchPartyGuests();
   }, [fetchPartyGuests]);
+
+  useEffect(() => {
+    if (!isHost) {
+      const callDoc = doc(db, 'calls', partyId);
+
+      const unsubscribe = onSnapshot(callDoc, snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (data) {
+            if (data.callEnded === true) {
+              leavePartyHandler();
+            }
+          }
+        } else {
+          console.log('Document does not exist');
+        }
+      });
+
+      // Clean up the subscription on unmount
+      return () => unsubscribe();
+    }
+  }, [callEnded, navigation, partyId, leavePartyHandler, isHost]);
 
   useEffect(() => {
     if (party?._id) {
@@ -292,6 +315,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const endParty = async () => {
     try {
       const partyDocRef = doc(db, 'party', party?._id);
+      await endCall();
       await updateDoc(partyDocRef, {
         participants: arrayRemove(user),
       });
