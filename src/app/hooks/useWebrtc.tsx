@@ -17,6 +17,8 @@ import {
   mediaDevices,
 } from 'react-native-webrtc';
 import {db} from '../../../firebaseConfig';
+import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
+import tw from 'src/lib/tailwind';
 
 const peerConstraints = {
   iceServers: [
@@ -50,6 +52,8 @@ const useWebrtc = (partyId: string) => {
     new MediaStream(),
   );
   const [isConnected, setIsConnected] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
+  const [callStarted, setCallStarted] = useState(false);
   const firestore = getFirestore();
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const iceCandidatesQueue = useRef<RTCIceCandidate[]>([]);
@@ -134,10 +138,18 @@ const useWebrtc = (partyId: string) => {
     };
     const offer = await pc.createOffer(offerOptions);
     await pc.setLocalDescription(offer);
-    await setDoc(callDoc, {offer: offer, candidates: []});
+    await setDoc(callDoc, {
+      offer: offer,
+      candidates: [],
+      callStarted: true,
+      callEnded: false,
+    });
 
     onSnapshot(callDoc, snapshot => {
       const data = snapshot.data();
+      if (data?.callEnded) {
+        setCallEnded(true);
+      }
       if (data?.answer && pc.signalingState === 'have-local-offer') {
         const answerDescription = new RTCSessionDescription(data.answer);
         pc.setRemoteDescription(answerDescription).then(
@@ -165,6 +177,35 @@ const useWebrtc = (partyId: string) => {
   ]);
 
   const joinCall = useCallback(async () => {
+    const callDoc = doc(collection(firestore, 'calls'), partyId);
+    const callData = (await getDoc(callDoc)).data();
+
+    if (callData?.callEnded) {
+      Toast.show({
+        type: ALERT_TYPE.DANGER,
+        title: "Can't join party",
+        textBody: 'The party has ended',
+        titleStyle: tw`font-poppinsRegular text-xs`,
+        textBodyStyle: tw`font-poppinsRegular text-xs`,
+      });
+      setCallEnded(true);
+      return false;
+    }
+
+    if (!callData?.callStarted) {
+      Toast.show({
+        type: ALERT_TYPE.DANGER,
+        title: "Can't join party yet",
+        textBody: "Host hasn't started the party",
+        titleStyle: tw`font-poppinsRegular text-xs`,
+        textBodyStyle: tw`font-poppinsRegular text-xs`,
+      });
+      setCallStarted(false);
+      return false;
+    }
+
+    setCallStarted(true);
+
     const pc = createPeerConnection();
     const stream = await setupMediaStream();
 
@@ -172,22 +213,27 @@ const useWebrtc = (partyId: string) => {
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
     }
 
-    const callDoc = doc(collection(firestore, 'calls'), partyId);
-    const callData = (await getDoc(callDoc)).data();
-
     if (callData?.offer && pc.signalingState === 'stable') {
       const offerDescription = new RTCSessionDescription(callData.offer);
       await pc
         .setRemoteDescription(offerDescription)
-        .then(processIceCandidatesQueue);
-
-      const answerDescription = await pc.createAnswer();
-      await pc.setLocalDescription(answerDescription);
-      await updateDoc(callDoc, {answer: answerDescription});
+        .then(() => {
+          return pc.createAnswer();
+        })
+        .then(answerDescription => {
+          return pc.setLocalDescription(answerDescription).then(() => {
+            updateDoc(callDoc, {answer: answerDescription});
+            processIceCandidatesQueue();
+          });
+        })
+        .catch(error => console.error('Failed to set remote offer', error));
     }
 
     onSnapshot(callDoc, snapshot => {
       const data = snapshot.data();
+      if (data?.callEnded) {
+        setCallEnded(true);
+      }
       if (data?.candidates) {
         data.candidates.forEach((candidateData: any) => {
           const candidate = new RTCIceCandidate(candidateData);
@@ -201,6 +247,8 @@ const useWebrtc = (partyId: string) => {
         });
       }
     });
+
+    return true;
   }, [
     createPeerConnection,
     setupMediaStream,
@@ -208,6 +256,39 @@ const useWebrtc = (partyId: string) => {
     partyId,
     processIceCandidatesQueue,
   ]);
+
+  const endCall = useCallback(async () => {
+    const pc = peerConnectionRef.current;
+    if (pc) {
+      pc.close();
+      peerConnectionRef.current = null;
+    }
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
+    }
+    setRemoteStream(null);
+
+    // Update the call document to indicate that the call has ended
+    const callDoc = doc(collection(firestore, 'calls'), partyId);
+    await updateDoc(callDoc, {callEnded: true, callStarted: false});
+
+    setIsConnected(false);
+  }, [firestore, localStream, partyId]);
+
+  const leaveCall = useCallback(async () => {
+    const pc = peerConnectionRef.current;
+    if (pc) {
+      pc.close();
+      peerConnectionRef.current = null;
+    }
+    if (localStream) {
+      localStream.getTracks().map(track => track.stop());
+      setLocalStream(null);
+    }
+    setRemoteStream(null);
+    setIsConnected(false);
+  }, [localStream]);
 
   useEffect(() => {
     setupMediaStream();
@@ -217,9 +298,13 @@ const useWebrtc = (partyId: string) => {
     setupMediaStream,
     beginParty,
     joinCall,
+    endCall,
     localStream,
     remoteStream,
     isConnected,
+    callEnded,
+    callStarted,
+    leaveCall,
   };
 };
 
