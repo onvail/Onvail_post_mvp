@@ -25,13 +25,13 @@ import MiniMusicPlayer from './MiniMusicPlayer';
 import {PartiesResponse} from 'src/types/partyTypes';
 import Icon from '../Icons/Icon';
 import api from 'src/api/api';
-import useUser from 'src/app/hooks/useUserInfo';
+import useUser, {User} from 'src/app/hooks/useUserInfo';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {getColors} from 'react-native-image-colors';
 import {ColorScheme} from 'src/app/navigator/types/MainStackParamList';
 import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
 import {leaveParty} from 'src/actions/parties';
-import {arrayUnion, doc, updateDoc} from 'firebase/firestore';
+import {arrayUnion, doc, onSnapshot, updateDoc} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
 import useWebrtc from 'src/app/hooks/useWebrtc';
 interface JoinPartyProps {
@@ -147,20 +147,24 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   };
 
   const joinParty = async () => {
-    // leaveParty(party?._id, user);
     setIsLoading(true);
+    leaveParty(party?._id, user);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
       await updateDoc(partyDocRef, {
         participants: arrayUnion(user),
       });
-      joinCall();
-      await api.post({
-        url: `parties/join-party/${party?._id}`,
-        requiresToken: true,
-        authorization: true,
-      });
-      handleJoinPartyBtnPress(party, albumBackgroundColor);
+      const canJoinCall = await joinCall();
+      if (!canJoinCall) {
+        return;
+      } else {
+        await api.post({
+          url: `parties/join-party/${party?._id}`,
+          requiresToken: true,
+          authorization: true,
+        });
+        handleJoinPartyBtnPress(party, albumBackgroundColor);
+      }
     } catch (error) {
       console.log(error);
     } finally {
@@ -239,11 +243,55 @@ const PostItem: FunctionComponent<{
     },
   });
 
+  const partyId = item?._id;
+
   const canFollowUser = item?.artist?._id !== userId;
   const isFollowing = item?.artist?.followers?.includes(userId);
   const isLiked = item?.likes?.some(likes => likes?._id === userId);
   const {height} = Dimensions.get('window');
   const ITEM_SIZE = height * 0.62;
+
+  const [guestList, setGuestList] = useState<User[]>([]);
+  const [partyStarted, setPartyStarted] = useState<boolean>(false);
+
+  useEffect(() => {
+    const callDoc = doc(db, 'calls', partyId);
+
+    const unsubscribe = onSnapshot(callDoc, snapshot => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data) {
+          console.log('data', data.callStarted);
+          setPartyStarted(data.callStarted ?? false);
+        }
+      } else {
+        console.log('Document does not exist');
+        setPartyStarted(false);
+      }
+    });
+
+    // Clean up the subscription on unmount
+    return () => unsubscribe();
+  }, [partyId]);
+
+  const fetchPartyGuests = useCallback(async () => {
+    try {
+      const partyDocRef = doc(db, 'party', partyId);
+      const unsubscribe = onSnapshot(partyDocRef, doc => {
+        const data = doc.data();
+        let userList: User[] =
+          data?.participants?.map((allusers: User) => allusers) ?? [];
+        setGuestList(userList);
+      });
+      return () => unsubscribe();
+    } catch (error) {
+      console.log(error);
+    }
+  }, [partyId]);
+
+  useEffect(() => {
+    fetchPartyGuests();
+  }, [fetchPartyGuests]);
 
   return (
     <View
@@ -259,18 +307,22 @@ const PostItem: FunctionComponent<{
         isFollowing={isFollowing}
       />
       <View style={tw`self-center relative rounded-lg mx-8 mt-2 w-[95%]`}>
-        <RowContainer
-          style={tw`flex-row justify-between items-center w-full absolute  px-3 top-2 left-0 z-20`}>
-          <View
-            style={tw`bg-[#D92A2A] rounded-20 h-12 w-22 items-center justify-center`}>
-            <CustomText style={tw`text-xs`}>Live</CustomText>
-          </View>
+        {partyStarted && (
           <RowContainer
-            style={tw`bg-primary opacity-70 rounded-20 h-12 w-22 justify-center`}>
-            <PartyJoinersIcon />
-            <CustomText style={tw`text-xs text-white ml-1`}>21k</CustomText>
+            style={tw`flex-row justify-between items-center w-full absolute  px-3 top-2 left-0 z-20`}>
+            <View
+              style={tw`bg-[#D92A2A] rounded-20 h-12 w-22 items-center justify-center`}>
+              <CustomText style={tw`text-xs`}>Live</CustomText>
+            </View>
+            <RowContainer
+              style={tw`bg-primary opacity-70 rounded-20 h-12 w-22 justify-center`}>
+              <PartyJoinersIcon />
+              <CustomText style={tw`text-xs text-white ml-1`}>
+                {guestList.length}
+              </CustomText>
+            </RowContainer>
           </RowContainer>
-        </RowContainer>
+        )}
         <CustomImage
           uri={item?.albumPicture ?? ''}
           style={[tw`h-100 w-[100%] rounded-4`]}
@@ -368,19 +420,12 @@ const PostCard: FunctionComponent<PostCardProps> = ({
   const scrollY = useRef(new Animated.Value(0)).current;
 
   const renderItem: ListRenderItem<PartiesResponse | any> = ({item, index}) => {
-    const inputRange = [-1, 0, index * ITEM_SIZE, (index + 2) * ITEM_SIZE];
     const opacityInputRange = [
       -1,
       0,
       index * ITEM_SIZE,
       (index + 1.3) * ITEM_SIZE,
     ];
-    const scale = scrollY.interpolate({
-      inputRange,
-      outputRange: [1, 1, 1, 0.8],
-      // outputRange: [0.8, 1, 0.8],
-      extrapolate: 'clamp',
-    });
 
     const opacity = scrollY.interpolate({
       inputRange: opacityInputRange,
@@ -393,11 +438,6 @@ const PostCard: FunctionComponent<PostCardProps> = ({
       <Animated.View
         style={{
           opacity,
-          transform: [
-            {
-              scale,
-            },
-          ],
         }}>
         <PostItem
           item={item}
@@ -422,7 +462,7 @@ const PostCard: FunctionComponent<PostCardProps> = ({
     <AnimatedFlashList
       data={reversedItems}
       renderItem={renderItem}
-      snapToInterval={ITEM_SIZE * 2}
+      // snapToInterval={ITEM_SIZE}
       estimatedItemSize={300}
       bounces={false}
       onScroll={Animated.event(
