@@ -59,7 +59,10 @@ const Status: FunctionComponent = () => {
           Your Story
         </Text>
       </TouchableOpacity>
-      <ScrollView horizontal style={tw`flex-row`}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={tw`flex-row`}>
         <FlashList
           data={sampleStatus}
           renderItem={renderItem}
