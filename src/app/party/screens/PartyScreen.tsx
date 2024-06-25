@@ -38,7 +38,7 @@ import TrackPlayer, {State, Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
-import {ALERT_TYPE, Dialog, Toast} from 'react-native-alert-notification';
+import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
 import useUser, {User} from 'src/app/hooks/useUserInfo';
 import socket from 'src/utils/socket';
 import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
@@ -70,6 +70,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import GuestsList from '../components/GuestsList';
 import useWebrtc from 'src/app/hooks/useWebrtc';
+import {Colors} from 'src/app/styles/colors';
+import Modal from 'react-native-modal/dist/modal';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -93,6 +95,14 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const [comments, setComments] = useState<FireStoreComments[]>([]);
   const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
   const commentRef = useRef<string>('');
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isHandRaised, setIsHandRaised] = useState<boolean>(false);
+  const [isEndPartyModalVisible, setIsEndPartyModalVisible] =
+    useState<boolean>(false);
+  const [isLeavePartyModalVisible, setIsLeavePartyModalVisible] =
+    useState<boolean>(false);
+  const [isEndingParty, setIsEndingParty] = useState<boolean>(false);
+  const [isLeavingParty, setIsLeavingParty] = useState<boolean>(false);
   const partyId = party?._id;
 
   // Initialize the animated value
@@ -142,6 +152,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
 
   const leaveParty = useCallback(async () => {
+    setIsLeavingParty(true);
     try {
       await leaveCall();
       socket.emit('leave_party', {
@@ -163,37 +174,24 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       });
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLeavingParty(false);
     }
   }, [leaveCall, navigation, partyId, user]);
 
-  const leavePartyHandler = useCallback(() => {
-    Dialog.show({
-      type: ALERT_TYPE.WARNING,
-      title: 'Leave party',
-      textBody: 'Are you sure you want to leave this party?',
-      button: 'continue',
-      onPressButton: async () => {
-        await leaveParty();
-        await TrackPlayer.stop();
-        await TrackPlayer.reset();
-        Dialog.hide();
-      },
-    });
+  const leavePartyHandler = useCallback(async () => {
+    await leaveParty();
+    setIsLeavePartyModalVisible(false);
+    await TrackPlayer.stop();
+    await TrackPlayer.reset();
   }, [leaveParty]);
 
-  const endPartyHandler = () => {
-    Dialog.show({
-      type: ALERT_TYPE.WARNING,
-      title: 'End party',
-      textBody: 'Are you sure you want to end this party?',
-      button: 'continue',
-      onPressButton: async () => {
-        endParty();
-        await TrackPlayer.stop();
-        await TrackPlayer.reset();
-        Dialog.hide();
-      },
-    });
+  const endPartyHandler = async () => {
+    // await endCall();
+    await endParty();
+    setIsEndPartyModalVisible(false);
+    await TrackPlayer.stop();
+    await TrackPlayer.reset();
   };
 
   const fetchPartyGuests = useCallback(async () => {
@@ -320,11 +318,21 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     commentRef,
   ]);
 
-  const commentsRenderItem: ListRenderItem<FireStoreComments> = ({item}) => {
-    return <CommentCards item={item} partyId={party?._id} />;
+  const commentsRenderItem: ListRenderItem<FireStoreComments> = ({
+    item,
+    index,
+  }) => {
+    return (
+      <CommentCards
+        item={item}
+        partyId={party?._id}
+        isLastItem={index + 1 === comments.length}
+      />
+    );
   };
 
   const endParty = async () => {
+    setIsEndingParty(true);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
       await endCall();
@@ -341,6 +349,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       });
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsEndingParty(false);
     }
   };
 
@@ -589,7 +599,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           <BottomSheetFooter {...props} bottomInset={24}>
             <View
               style={[
-                tw`bg-inherit m-4  h-10 rounded-full border-grey4 flex-row px-3 items-center border `,
+                tw`bg-inherit m-4 mt-3  h-10 rounded-full border-grey4 flex-row px-3 items-center border `,
                 {
                   backgroundColor: screenColors.accent,
                 },
@@ -634,7 +644,11 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           style={tw` ${
             Platform.OS === 'android' ? 'mt-6' : 'mt-0'
           } h-10 w-20 items-center  justify-center self-end`}
-          onPress={() => (isHost ? endPartyHandler() : leavePartyHandler())}>
+          onPress={() =>
+            isHost
+              ? setIsEndPartyModalVisible(true)
+              : setIsLeavePartyModalVisible(true)
+          }>
           <CustomText
             // eslint-disable-next-line react-native/no-inline-styles
             style={{
@@ -699,6 +713,72 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           showsVerticalScrollIndicator={false}
         />
       </SafeAreaView>
+      <Modal
+        style={tw`flex-1 justify-center items-center`}
+        backdropOpacity={0.9}
+        onBackdropPress={() => setIsLeavePartyModalVisible(false)}
+        isVisible={isLeavePartyModalVisible}>
+        <View
+          style={tw` bg-white w-[80%] h-1/7 p-3 rounded-lg items-center justify-center`}>
+          <CustomText style={tw`text-grey6 font-poppinsBold`}>
+            Are you sure you want to leave the party?
+          </CustomText>
+          <RowContainer style={tw`mt-3 `}>
+            <Pressable
+              onPress={() => setIsLeavePartyModalVisible(false)}
+              style={tw`border w-15 items-center h-7 justify-center rounded-full border-grey4`}>
+              <CustomText style={tw`text-grey7 text-xs font-poppinsRegular`}>
+                Stay
+              </CustomText>
+            </Pressable>
+            <Pressable
+              onPress={() => leavePartyHandler()}
+              style={tw` w-15 items-center h-7 justify-center  ml-4 rounded-full bg-purple`}>
+              {isLeavingParty ? (
+                <ActivityIndicator />
+              ) : (
+                <CustomText style={tw`text-white text-xs font-poppinsRegular`}>
+                  Leave
+                </CustomText>
+              )}
+            </Pressable>
+          </RowContainer>
+        </View>
+      </Modal>
+
+      <Modal
+        style={tw`flex-1 justify-center items-center`}
+        backdropOpacity={0.9}
+        onBackdropPress={() => setIsEndPartyModalVisible(false)}
+        isVisible={isEndPartyModalVisible}>
+        <View
+          style={tw` bg-white w-[80%] h-1/7 p-3 rounded-lg items-center justify-center`}>
+          <CustomText style={tw`text-grey6 font-poppinsBold`}>
+            Are you sure you want to end the party?
+          </CustomText>
+          <RowContainer style={tw`mt-3 `}>
+            <Pressable
+              onPress={() => setIsEndPartyModalVisible(false)}
+              style={tw`border w-15 items-center h-7 justify-center rounded-full border-grey4`}>
+              <CustomText style={tw`text-grey7 text-xs font-poppinsRegular`}>
+                Stay
+              </CustomText>
+            </Pressable>
+            <Pressable
+              disabled={isEndingParty}
+              onPress={() => endPartyHandler()}
+              style={tw` w-15 items-center h-7 justify-center  ml-4 rounded-full bg-purple`}>
+              {isEndingParty ? (
+                <ActivityIndicator color={'white'} />
+              ) : (
+                <CustomText style={tw`text-white text-xs font-poppinsRegular`}>
+                  End
+                </CustomText>
+              )}
+            </Pressable>
+          </RowContainer>
+        </View>
+      </Modal>
 
       <CustomBottomSheet
         ref={bottomSheetRef}
@@ -706,8 +786,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         backgroundColor={screenColors?.accent}
         footerComponent={renderBottomFooter}
         visibilityHandler={() => {}}>
-        <View style={tw`relative h-[40px] flex-1 px-3 mb-6`}>
-          <RowContainer style={tw`items-center mb-3 justify-center`}>
+        <View style={tw`relative h-[40px] flex-1  mb-6`}>
+          <RowContainer style={tw`items-center mb-3 mt-5 px-3 justify-center`}>
             {Array.from({length: 3}, (_, key) => (
               <Pressable
                 key={key}
@@ -721,45 +801,96 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
             ))}
           </RowContainer>
           <GestureDetector gesture={swipeGesture}>
-            <Animated.View style={[styles.tabsContainer, animatedStyle]}>
-              <View style={styles.tabContent}>
-                {selectedBottomSheetTab === 0 && (
-                  <>
-                    {comments.length === 0 ? (
-                      <View style={tw`justify-center items-center mt-30`}>
-                        <LottieView
-                          source={require('../../../assets/comments.json')}
-                          style={tw`h-50 w-50`}
-                          autoPlay={true}
-                          loop={true}
+            <View style={tw`relative w-full`}>
+              <Animated.View style={[styles.tabsContainer, animatedStyle]}>
+                <View style={styles.tabContent}>
+                  {selectedBottomSheetTab === 0 && (
+                    <View style={tw`flex-1 px-3`}>
+                      {comments.length === 0 ? (
+                        <View style={tw`justify-center items-center  mt-30`}>
+                          <LottieView
+                            source={require('../../../assets/comments.json')}
+                            style={tw`h-50 w-50`}
+                            autoPlay={true}
+                            loop={true}
+                          />
+                          <CustomText style={tw`text-center text-base mt-5`}>
+                            Be the frist to say something
+                          </CustomText>
+                        </View>
+                      ) : (
+                        <FlashList
+                          renderItem={commentsRenderItem}
+                          estimatedItemSize={200}
+                          data={comments}
+                          renderScrollComponent={ScrollView}
+                          showsVerticalScrollIndicator={false}
                         />
-                        <CustomText style={tw`text-center text-base mt-5`}>
-                          Be the frist to say something
-                        </CustomText>
-                      </View>
-                    ) : (
-                      <FlashList
-                        renderItem={commentsRenderItem}
-                        estimatedItemSize={200}
-                        data={comments}
-                        renderScrollComponent={ScrollView}
-                        showsVerticalScrollIndicator={false}
+                      )}
+                    </View>
+                  )}
+                  {selectedBottomSheetTab === 1 && (
+                    <FlashList
+                      data={guestList}
+                      renderItem={guestRenderItem}
+                      estimatedItemSize={200}
+                      numColumns={4}
+                      horizontal={false}
+                    />
+                  )}
+                  {selectedBottomSheetTab === 2 && <></>}
+                </View>
+              </Animated.View>
+              <View
+                style={tw`absolute border-t z-20 bg-black border-grey2 pt-2 ${
+                  selectedBottomSheetTab === 0 ? 'bottom-0' : '-bottom-12'
+                } w-full `}>
+                <RowContainer style={tw`justify-between mx-3 items-center`}>
+                  <RowContainer style={tw`justify-between items-center w-1/4`}>
+                    <Pressable
+                      onPress={() => setIsMuted(prev => !prev)}
+                      style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
+                      <Icon
+                        icon={isMuted ? 'microphone-off' : 'microphone-outline'}
+                        color={isMuted ? 'red' : Colors.purple11}
+                        size={22}
                       />
-                    )}
-                  </>
-                )}
-                {selectedBottomSheetTab === 1 && (
-                  <FlashList
-                    data={guestList}
-                    renderItem={guestRenderItem}
-                    estimatedItemSize={200}
-                    numColumns={4}
-                    horizontal={false}
-                  />
-                )}
-                {selectedBottomSheetTab === 2 && <></>}
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setIsHandRaised(prev => !prev)}
+                      style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
+                      <Icon
+                        icon={
+                          isHandRaised
+                            ? 'hand-back-left'
+                            : 'hand-back-left-outline'
+                        }
+                        color={isHandRaised ? 'yellow' : Colors.purple11}
+                        size={22}
+                      />
+                    </Pressable>
+                  </RowContainer>
+                  {selectedBottomSheetTab !== 0 && (
+                    <RowContainer
+                      style={tw`justify-between items-center w-1/3`}>
+                      <Pressable
+                        style={tw`  items-center justify-center rounded-full`}>
+                        <Icon icon={'gift-outline'} color="grey" size={20} />
+                      </Pressable>
+                      <Pressable
+                        style={tw`  items-center justify-center rounded-full`}>
+                        <Icon icon={'heart-outline'} color="grey" size={20} />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => setSelectedBottomSheetTab(0)}
+                        style={tw`  items-center justify-center rounded-full`}>
+                        <Icon icon={'message-outline'} color="grey" size={25} />
+                      </Pressable>
+                    </RowContainer>
+                  )}
+                </RowContainer>
               </View>
-            </Animated.View>
+            </View>
           </GestureDetector>
         </View>
       </CustomBottomSheet>
@@ -769,11 +900,14 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
 const styles = StyleSheet.create({
   tabsContainer: {
+    zIndex: 0,
     flexDirection: 'row',
+    paddingHorizontal: 3,
     width: Dimensions.get('window').width * 3, // Adjust width for three tabs
   },
 
   tabContent: {
+    zIndex: 0,
     width: Dimensions.get('window').width, // Width of each tab content
     height: Dimensions.get('window').height / 2, // Adjust height as needed
   },
