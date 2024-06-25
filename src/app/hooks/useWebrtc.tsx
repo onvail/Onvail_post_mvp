@@ -8,7 +8,7 @@ import {
   updateDoc,
   arrayUnion,
 } from 'firebase/firestore';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useRef, useState} from 'react';
 import {
   MediaStream,
   RTCIceCandidate,
@@ -44,25 +44,51 @@ const peerConstraints = {
       credential: 'YFpowISujSKSY0AR',
     },
   ],
+  iceCandidatePoolSize: 80,
 };
 
+/**
+ * Provides a custom React hook for managing a WebRTC peer-to-peer connection.
+ *
+ * The `useWebrtc` hook handles the setup, connection, and management of a WebRTC peer connection,
+ * including the handling of media streams, ICE candidates, and call state. It also provides
+ * functions to begin a new call, join an existing call, end a call, and mute the remote audio.
+ *
+ * @param {string} partyId - The unique identifier for the WebRTC call party.
+ * @returns {Object} - An object containing the following properties and functions:
+ *   - `setupMediaStream`: A function that sets up the local media stream.
+ *   - `beginParty`: A function that initiates a new WebRTC call.
+ *   - `joinCall`: A function that joins an existing WebRTC call.
+ *   - `endCall`: A function that ends the current WebRTC call.
+ *   - `localStream`: The local media stream.
+ *   - `remoteStream`: The remote media stream.
+ *   - `isConnected`: A boolean indicating whether the WebRTC connection is established.
+ *   - `callEnded`: A boolean indicating whether the call has ended.
+ *   - `callStarted`: A boolean indicating whether the call has started.
+ *   - `leaveCall`: A function that leaves the current WebRTC call.
+ *   - `muteAll`: A function that mutes the remote audio.
+ */
 const useWebrtc = (partyId: string) => {
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(
-    new MediaStream(),
-  );
   const [isConnected, setIsConnected] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
   const [callStarted, setCallStarted] = useState(false);
   const firestore = getFirestore();
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const iceCandidatesQueue = useRef<RTCIceCandidate[]>([]);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
 
+  /**
+   * Sets up the local media stream.
+   * Access the local media stream using the `localStream` property.
+   * @returns {MediaStream} - The local media stream.
+   *
+   */
   const setupMediaStream = useCallback(async () => {
     try {
       const mediaConstraints = {audio: true, video: false};
       const stream = await mediaDevices.getUserMedia(mediaConstraints);
-      setLocalStream(stream);
+      localStreamRef.current = stream;
       return stream;
     } catch (error) {
       console.error('Error accessing media devices.', error);
@@ -70,10 +96,13 @@ const useWebrtc = (partyId: string) => {
     }
   }, []);
 
+  console.log('peer connection global ref', peerConnectionRef.current);
+
   const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection(peerConstraints);
 
     pc.addEventListener('connectionstatechange', () => {
+      console.log('Connection state changed:', pc.connectionState);
       switch (pc.connectionState) {
         case 'closed':
           console.log('Connection ended');
@@ -81,6 +110,11 @@ const useWebrtc = (partyId: string) => {
         case 'connected':
           console.log('Connection connected');
           setIsConnected(true);
+          break;
+        case 'disconnected':
+        case 'failed':
+          console.log('Connection disconnected or failed');
+          setIsConnected(false);
           break;
         default:
           break;
@@ -97,20 +131,18 @@ const useWebrtc = (partyId: string) => {
     });
 
     pc.addEventListener('track', event => {
-      setRemoteStream(prevStream => {
-        const updatedStream = new MediaStream([
-          ...prevStream.getTracks(),
-          event.track!,
-        ]);
-        return updatedStream;
-      });
+      remoteStreamRef.current = new MediaStream([event.track!]);
     });
 
     peerConnectionRef.current = pc;
     return pc;
   }, [firestore, partyId]);
 
-  const processIceCandidatesQueue = useCallback(() => {
+  /**
+   * Retrieves the current WebRTC peer connection from the `peerConnectionRef` reference and adds any pending ICE candidates to the connection.
+   * This function is used to handle the asynchronous nature of ICE candidate gathering, ensuring that all candidates are added to the peer connection.
+   */
+  const addIceCandidatesToPeerConnection = useCallback(() => {
     const pc = peerConnectionRef.current;
     if (pc) {
       while (iceCandidatesQueue.current.length) {
@@ -122,8 +154,14 @@ const useWebrtc = (partyId: string) => {
     }
   }, []);
 
+  /**
+   *  Initiates a new WebRTC call.
+   *  This function sets up the local media stream, creates a new peer connection, adds the local stream to the peer connection, and sends the offer to the remote peer.
+   * @returns {void}
+   */
   const beginParty = useCallback(async () => {
     const pc = createPeerConnection();
+    console.log('peer connection when beginning part', pc);
     const stream = await setupMediaStream();
 
     if (stream) {
@@ -153,7 +191,7 @@ const useWebrtc = (partyId: string) => {
       if (data?.answer && pc.signalingState === 'have-local-offer') {
         const answerDescription = new RTCSessionDescription(data.answer);
         pc.setRemoteDescription(answerDescription).then(
-          processIceCandidatesQueue,
+          addIceCandidatesToPeerConnection,
         );
       }
       if (data?.candidates) {
@@ -169,13 +207,24 @@ const useWebrtc = (partyId: string) => {
         });
       }
     });
+    console.log('peer connection when beginning part', pc);
   }, [
     createPeerConnection,
     setupMediaStream,
     partyId,
-    processIceCandidatesQueue,
+    addIceCandidatesToPeerConnection,
   ]);
 
+  /**
+   * Joins a WebRTC call with the given party ID.
+   *
+   * This function sets up a WebRTC peer connection, retrieves the call data from Firestore,
+   * and handles the call flow, including setting the remote description, creating an answer,
+   * and processing ICE candidates.
+   *
+   * @param {string} partyId - The ID of the party to join.
+   * @returns {Promise<boolean>} - A promise that resolves to `true` if the call was successfully joined, or `false` otherwise.
+   */
   const joinCall = useCallback(async () => {
     const callDoc = doc(collection(firestore, 'calls'), partyId);
     const callData = (await getDoc(callDoc)).data();
@@ -212,7 +261,6 @@ const useWebrtc = (partyId: string) => {
     if (stream) {
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
     }
-
     if (callData?.offer && pc.signalingState === 'stable') {
       const offerDescription = new RTCSessionDescription(callData.offer);
       await pc
@@ -223,7 +271,7 @@ const useWebrtc = (partyId: string) => {
         .then(answerDescription => {
           return pc.setLocalDescription(answerDescription).then(() => {
             updateDoc(callDoc, {answer: answerDescription});
-            processIceCandidatesQueue();
+            addIceCandidatesToPeerConnection();
           });
         })
         .catch(error => console.error('Failed to set remote offer', error));
@@ -254,27 +302,41 @@ const useWebrtc = (partyId: string) => {
     setupMediaStream,
     firestore,
     partyId,
-    processIceCandidatesQueue,
+    addIceCandidatesToPeerConnection,
   ]);
 
   const endCall = useCallback(async () => {
     const pc = peerConnectionRef.current;
+    console.log('Ending call', pc);
+    console.log('Closing peer connection', pc);
     if (pc) {
+      pc.getTransceivers().forEach(transceiver => {
+        transceiver.stop();
+      });
       pc.close();
       peerConnectionRef.current = null;
     }
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-      setLocalStream(null);
-    }
-    setRemoteStream(null);
 
-    // Update the call document to indicate that the call has ended
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+      localStreamRef.current = null;
+    }
+
+    if (remoteStreamRef.current) {
+      remoteStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+      remoteStreamRef.current = null;
+    }
+
     const callDoc = doc(collection(firestore, 'calls'), partyId);
     await updateDoc(callDoc, {callEnded: true, callStarted: false});
 
     setIsConnected(false);
-  }, [firestore, localStream, partyId]);
+    setCallEnded(true);
+  }, [firestore, partyId]);
 
   const leaveCall = useCallback(async () => {
     const pc = peerConnectionRef.current;
@@ -282,17 +344,36 @@ const useWebrtc = (partyId: string) => {
       pc.close();
       peerConnectionRef.current = null;
     }
-    if (localStream) {
-      localStream.getTracks().map(track => track.stop());
-      setLocalStream(null);
-    }
-    setRemoteStream(null);
-    setIsConnected(false);
-  }, [localStream]);
 
-  useEffect(() => {
-    setupMediaStream();
-  }, [setupMediaStream]);
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        console.log('Stopping local track:', track);
+        track.stop();
+      });
+      localStreamRef.current = null;
+    }
+
+    if (remoteStreamRef.current) {
+      remoteStreamRef.current.getTracks().forEach(track => {
+        console.log('Stopping remote track:', track);
+        track.stop();
+      });
+      remoteStreamRef.current = null;
+    }
+
+    setIsConnected(false);
+    setCallEnded(true);
+  }, []);
+
+  const muteAll = useCallback(async () => {
+    const audioTrack = remoteStreamRef.current?.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack._muted = true;
+    }
+  }, [remoteStreamRef]);
+
+  const localStream = localStreamRef.current;
+  const remoteStream = remoteStreamRef.current;
 
   return {
     setupMediaStream,
@@ -305,6 +386,7 @@ const useWebrtc = (partyId: string) => {
     callEnded,
     callStarted,
     leaveCall,
+    muteAll,
   };
 };
 
