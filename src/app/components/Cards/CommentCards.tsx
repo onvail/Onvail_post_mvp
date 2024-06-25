@@ -37,7 +37,8 @@ import Animated, {
 const CommentCards: FunctionComponent<{
   item: FireStoreComments;
   partyId: string;
-}> = ({item, partyId}) => {
+  isLastItem: boolean;
+}> = ({item, partyId, isLastItem}) => {
   const SendIcon = generalIcon.SendIcon;
   const [commentData, setCommentData] = useState<FireStoreComments>(item);
   const [isLiked, setIsLiked] = useState<boolean>(false);
@@ -126,7 +127,7 @@ const CommentCards: FunctionComponent<{
           color={Colors.white}
         />
         <View style={tw`w-[80%]`}>
-          <CustomText style={tw`text-[8px] ml-3`}>{item.text}</CustomText>
+          <CustomText style={tw`text-[11px] ml-3`}>{item.text}</CustomText>
         </View>
       </RowContainer>
     );
@@ -137,8 +138,8 @@ const CommentCards: FunctionComponent<{
   const calculateDynamicHeight = useCallback(
     (numReplies: number) => {
       const repliesCount = numReplies > 0 ? numReplies : 0.1;
-      const itemHeight = 30; // Assuming each item has a height of 50
-      const maxHeight = 120; // Maximum height for the FlashList
+      const itemHeight = 50; // Assuming each item has a height of 50
+      const maxHeight = 130; // Maximum height for the FlashList
       const calculatedHeight = repliesCount * itemHeight;
       height.value = withSpring(Math.min(calculatedHeight, maxHeight));
       return Math.min(calculatedHeight, maxHeight);
@@ -167,17 +168,17 @@ const CommentCards: FunctionComponent<{
       <RowContainer style={tw`flex-1 flex-row pr-5 justify-between`}>
         <RowContainer>
           <Avatar.Text
-            label={user?.name?.substring(0, 1) ?? ''}
+            label={commentData?.name?.substring(0, 1) ?? ''}
             size={27}
             style={tw`bg-yellow1 `}
             labelStyle={tw`font-poppinsBold text-base text-darkGreen`}
             color={Colors.white}
           />
           <View style={tw`w-[82%]`}>
-            <CustomText style={tw`text-[10px] ml-5 w-full`}>
+            <CustomText style={tw`text-[12px] ml-5 w-full`}>
               @{commentData?.userStageName}
             </CustomText>
-            <CustomText style={tw`text-[10px] w-full ml-5`}>
+            <CustomText style={tw`text-[11px] w-full ml-5`}>
               {commentData?.text}
             </CustomText>
           </View>
@@ -194,9 +195,9 @@ const CommentCards: FunctionComponent<{
         <RowContainer style={tw`flex-1 mt-1`}>
           <RowContainer>
             <TouchableOpacity onPress={() => handleLike()}>
-              <Icon icon={'heart'} color={Colors.grey} size={13} />
+              <Icon icon={'heart'} color={Colors.grey} size={15} />
             </TouchableOpacity>
-            <CustomText style={tw`ml-1 text-[10px]`}>
+            <CustomText style={tw`ml-1 text-[12px]`}>
               {commentData?.likes?.length > 0
                 ? commentData?.likes?.length
                 : null}
@@ -206,17 +207,17 @@ const CommentCards: FunctionComponent<{
             onPress={toggleReplyFieldVisibility}
             style={tw` ml-5`}>
             <RowContainer>
-              <Icon icon={'reply'} color={Colors.grey} size={13} />
-              <CustomText style={tw`ml-1 text-[10px]`}>Reply</CustomText>
+              <Icon icon={'reply'} color={Colors.grey} size={15} />
+              <CustomText style={tw`ml-1 text-[12px]`}>Reply</CustomText>
             </RowContainer>
           </TouchableOpacity>
           <RowContainer>
             <TouchableOpacity
               onPress={toggleReplyFieldVisibility}
               style={tw` ml-5`}>
-              <Icon icon={'comment-outline'} color={Colors.grey} size={13} />
+              <Icon icon={'comment-outline'} color={Colors.grey} size={15} />
             </TouchableOpacity>
-            <CustomText style={tw`ml-1 text-[10px]`}>
+            <CustomText style={tw`ml-1 text-[12px]`}>
               {commentData?.replies?.length}
             </CustomText>
           </RowContainer>
@@ -229,14 +230,18 @@ const CommentCards: FunctionComponent<{
                 renderItem={commentsRenderItem}
                 estimatedItemSize={50}
                 keyExtractor={reply => reply.commentId}
+                showsVerticalScrollIndicator={false}
               />
             </Animated.View>
             <RowContainer
-              style={tw`border border-grey justify-between mt-4 px-2 h-8 rounded-lg `}>
+              style={tw`border border-grey justify-between ${
+                isLastItem ? 'mb-9' : 'mb-0'
+              } mt-4 px-2 h-10 rounded-lg `}>
               <TextInput
                 value={commentReply}
                 onChangeText={text => setCommentReply(text)}
-                style={tw`h-8 text-2xs w-[85%] rounded-lg text-white`}
+                style={tw`h-8 text-xs w-[85%] rounded-lg text-white 
+                `}
                 placeholderTextColor={'white'}
                 placeholder="your response"
               />
@@ -244,7 +249,9 @@ const CommentCards: FunctionComponent<{
                 {isUploadingComment ? (
                   <ActivityIndicator />
                 ) : (
-                  <TouchableOpacity onPress={replyComment}>
+                  <TouchableOpacity
+                    disabled={commentReply.length === 0}
+                    onPress={replyComment}>
                     <SendIcon height={15} width={15} />
                   </TouchableOpacity>
                 )}
