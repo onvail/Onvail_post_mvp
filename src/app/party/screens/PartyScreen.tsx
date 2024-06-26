@@ -71,13 +71,14 @@ import Animated, {
 import GuestsList from '../components/GuestsList';
 import {Colors} from 'src/app/styles/colors';
 import Modal from 'react-native-modal/dist/modal';
-import {endCall, leaveCall, localStream} from 'src/utils/webrtc';
+import useWebrtc from 'src/app/hooks/useWebrtc';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
   const {user} = useUser();
+  const {endCall, leaveCall, localStream} = useWebrtc(party?._id);
   const utcTimeStamp = moment().tz('UTC');
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
@@ -176,7 +177,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     } finally {
       setIsLeavingParty(false);
     }
-  }, [navigation, partyId, user]);
+  }, [navigation, partyId, user, leaveCall]);
 
   const leavePartyHandler = useCallback(async () => {
     await leaveParty();
@@ -334,7 +335,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     setIsEndingParty(true);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
-      await endCall(partyId);
+      await endCall();
       await updateDoc(partyDocRef, {
         participants: arrayRemove(user),
       });

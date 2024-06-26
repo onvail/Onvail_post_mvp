@@ -33,7 +33,7 @@ import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
 import {leaveParty} from 'src/actions/parties';
 import {arrayUnion, doc, onSnapshot, updateDoc} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
-import {beginParty, joinCall, setupMediaStream} from 'src/utils/webrtc';
+import useWebrtc from 'src/app/hooks/useWebrtc';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -60,9 +60,11 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const [partyTrackWithDuration, setPartyTrackWithDuration] =
     useState<PartiesResponse>(party);
 
-  useEffect(() => {
-    setupMediaStream();
-  }, []);
+  const {beginParty, joinCall} = useWebrtc(party?._id);
+
+  // useEffect(() => {
+  //   setupMediaStream();
+  // }, []);
 
   const handleSongsDuration = useCallback(async () => {
     const sound = new Audio.Sound();
@@ -135,7 +137,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
       await updateDoc(partyDocRef, {
         participants: arrayUnion(user),
       });
-      beginParty(party?._id);
+      beginParty();
       await api.patch({
         url: `parties/start-party/${party?._id}`,
         requiresToken: true,
@@ -157,7 +159,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
       await updateDoc(partyDocRef, {
         participants: arrayUnion(user),
       });
-      const canJoinCall = await joinCall(party?._id);
+      const canJoinCall = await joinCall();
       if (!canJoinCall) {
         return;
       } else {

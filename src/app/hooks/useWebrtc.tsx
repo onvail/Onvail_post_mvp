@@ -68,6 +68,9 @@ const peerConstraints = {
  *   - `leaveCall`: A function that leaves the current WebRTC call.
  *   - `muteAll`: A function that mutes the remote audio.
  */
+
+let PEERCONNECTION: RTCPeerConnection | null;
+
 const useWebrtc = (partyId: string) => {
   const [isConnected, setIsConnected] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
@@ -95,8 +98,6 @@ const useWebrtc = (partyId: string) => {
       return null;
     }
   }, []);
-
-  console.log('peer connection global ref', peerConnectionRef.current);
 
   const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection(peerConstraints);
@@ -135,6 +136,7 @@ const useWebrtc = (partyId: string) => {
     });
 
     peerConnectionRef.current = pc;
+    PEERCONNECTION = pc;
     return pc;
   }, [firestore, partyId]);
 
@@ -143,7 +145,7 @@ const useWebrtc = (partyId: string) => {
    * This function is used to handle the asynchronous nature of ICE candidate gathering, ensuring that all candidates are added to the peer connection.
    */
   const addIceCandidatesToPeerConnection = useCallback(() => {
-    const pc = peerConnectionRef.current;
+    const pc = PEERCONNECTION;
     if (pc) {
       while (iceCandidatesQueue.current.length) {
         const candidate = iceCandidatesQueue.current.shift();
@@ -306,7 +308,7 @@ const useWebrtc = (partyId: string) => {
   ]);
 
   const endCall = useCallback(async () => {
-    const pc = peerConnectionRef.current;
+    const pc = PEERCONNECTION;
     console.log('Ending call', pc);
     console.log('Closing peer connection', pc);
     if (pc) {
@@ -314,7 +316,7 @@ const useWebrtc = (partyId: string) => {
         transceiver.stop();
       });
       pc.close();
-      peerConnectionRef.current = null;
+      PEERCONNECTION = null;
     }
 
     if (localStreamRef.current) {
@@ -339,10 +341,10 @@ const useWebrtc = (partyId: string) => {
   }, [firestore, partyId]);
 
   const leaveCall = useCallback(async () => {
-    const pc = peerConnectionRef.current;
+    const pc = PEERCONNECTION;
     if (pc) {
       pc.close();
-      peerConnectionRef.current = null;
+      PEERCONNECTION = null;
     }
 
     if (localStreamRef.current) {
