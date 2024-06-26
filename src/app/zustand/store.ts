@@ -24,6 +24,13 @@ export interface SignUpStoreState {
   updateUserSignUpStore: (state: SignInProps) => void;
 }
 
+export interface MicStoreState {
+  isMuted: boolean;
+  setIsMuted: () => void;
+  isHost: boolean;
+  setIsHost: (state: boolean) => void;
+}
+
 export const useMusicStore = create<MusicStoreState>(set => ({
   tracks: [],
   addTracks: (newTrack: Track) =>
@@ -62,4 +69,11 @@ export const useUploadProgressStore = create<UploadProgressState>(set => ({
       return {musicProgress: newProgress};
     }),
   resetProgress: () => set({imageProgress: 0, musicProgress: []}),
+}));
+
+export const useMicStore = create<MicStoreState>(set => ({
+  isMuted: true,
+  setIsMuted: () => set(state => ({isMuted: !state.isMuted})),
+  isHost: false,
+  setIsHost: (isHost: boolean) => set(() => ({isHost})),
 }));
