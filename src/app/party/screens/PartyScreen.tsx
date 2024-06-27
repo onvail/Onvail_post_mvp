@@ -587,6 +587,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         item={item}
         isHost={party?.artist?._id === item?._id}
         toggleMute={toggleMute}
+        localStream={localStream}
       />
     );
   };
