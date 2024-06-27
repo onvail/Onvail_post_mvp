@@ -842,9 +842,11 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                 </View>
               </Animated.View>
               <View
-                style={tw`absolute border-t z-20 bg-black border-grey2 pt-2 ${
-                  selectedBottomSheetTab === 0 ? 'bottom-0' : '-bottom-12'
-                } w-full `}>
+                style={[
+                  tw`absolute border-t z-20 h-16 justify-center bg-black border-grey2  ${
+                    selectedBottomSheetTab === 0 ? 'bottom-0' : '-bottom-12'
+                  } w-full `,
+                ]}>
                 <RowContainer style={tw`justify-between mx-3 items-center`}>
                   <RowContainer style={tw`justify-between items-center w-1/4`}>
                     <Pressable
