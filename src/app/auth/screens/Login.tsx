@@ -58,7 +58,7 @@ const Login: FunctionComponent<Props> = ({navigation}) => {
       Toast.show({
         type: ALERT_TYPE.DANGER,
         title: 'Login error',
-        textBody: error?.response?.data?.message,
+        textBody: error?.response?.data?.message ?? 'Something went wrong',
         titleStyle: tw`font-poppinsRegular text-xs`,
         textBodyStyle: tw`font-poppinsRegular text-xs`,
       });
