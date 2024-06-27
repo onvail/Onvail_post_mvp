@@ -78,7 +78,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
   const {user} = useUser();
-  const {endCall, leaveCall, localStream} = useWebrtc(party?._id);
+  const {endCall, leaveCall, toggleMute, isMuted} = useWebrtc(party?._id);
   const utcTimeStamp = moment().tz('UTC');
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
@@ -95,7 +95,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const [comments, setComments] = useState<FireStoreComments[]>([]);
   const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
   const commentRef = useRef<string>('');
-  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isHandRaised, setIsHandRaised] = useState<boolean>(false);
   const [isEndPartyModalVisible, setIsEndPartyModalVisible] =
     useState<boolean>(false);
@@ -587,7 +586,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       <GuestsList
         item={item}
         isHost={party?.artist?._id === item?._id}
-        localStream={localStream}
+        toggleMute={toggleMute}
       />
     );
   };
@@ -848,7 +847,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                 <RowContainer style={tw`justify-between mx-3 items-center`}>
                   <RowContainer style={tw`justify-between items-center w-1/4`}>
                     <Pressable
-                      onPress={() => setIsMuted(prev => !prev)}
+                      onPress={toggleMute}
                       style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
                       <Icon
                         icon={isMuted ? 'microphone-off' : 'microphone-outline'}

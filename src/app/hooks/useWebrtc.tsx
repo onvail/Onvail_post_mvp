@@ -19,6 +19,7 @@ import {
 import {db} from '../../../firebaseConfig';
 import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
 import tw from 'src/lib/tailwind';
+import {useMicStore} from '../zustand/store';
 
 const peerConstraints = {
   iceServers: [
@@ -70,16 +71,21 @@ const peerConstraints = {
  */
 
 let PEERCONNECTION: RTCPeerConnection | null;
+let LOCAL_STREAM: MediaStream | null;
+let REMOTE_STREAM: MediaStream | null;
 
 const useWebrtc = (partyId: string) => {
   const [isConnected, setIsConnected] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
   const [callStarted, setCallStarted] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const firestore = getFirestore();
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const iceCandidatesQueue = useRef<RTCIceCandidate[]>([]);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
+
+  const toggleMicGlobalState = useMicStore(state => state.setIsMuted);
 
   /**
    * Sets up the local media stream.
@@ -92,6 +98,7 @@ const useWebrtc = (partyId: string) => {
       const mediaConstraints = {audio: true, video: false};
       const stream = await mediaDevices.getUserMedia(mediaConstraints);
       localStreamRef.current = stream;
+      LOCAL_STREAM = stream;
       return stream;
     } catch (error) {
       console.error('Error accessing media devices.', error);
@@ -319,11 +326,12 @@ const useWebrtc = (partyId: string) => {
       PEERCONNECTION = null;
     }
 
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
+    if (LOCAL_STREAM) {
+      LOCAL_STREAM.getTracks().forEach(track => {
         track.stop();
       });
       localStreamRef.current = null;
+      LOCAL_STREAM = null;
     }
 
     if (remoteStreamRef.current) {
@@ -347,12 +355,13 @@ const useWebrtc = (partyId: string) => {
       PEERCONNECTION = null;
     }
 
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
+    if (LOCAL_STREAM) {
+      LOCAL_STREAM.getTracks().forEach(track => {
         console.log('Stopping local track:', track);
         track.stop();
       });
       localStreamRef.current = null;
+      LOCAL_STREAM = null;
     }
 
     if (remoteStreamRef.current) {
@@ -367,15 +376,18 @@ const useWebrtc = (partyId: string) => {
     setCallEnded(true);
   }, []);
 
-  const muteAll = useCallback(async () => {
-    const audioTrack = remoteStreamRef.current?.getAudioTracks()[0];
-    if (audioTrack) {
-      audioTrack._muted = true;
-    }
-  }, [remoteStreamRef]);
-
   const localStream = localStreamRef.current;
   const remoteStream = remoteStreamRef.current;
+
+  const toggleMute = useCallback(async () => {
+    console.log('Toggling mute');
+    const audioTrack = LOCAL_STREAM?.getAudioTracks()[0];
+    console.log('Audio track:', audioTrack);
+    if (audioTrack) {
+      audioTrack.enabled = !audioTrack.enabled;
+      setIsMuted(audioTrack.enabled);
+    }
+  }, []);
 
   return {
     setupMediaStream,
@@ -388,7 +400,8 @@ const useWebrtc = (partyId: string) => {
     callEnded,
     callStarted,
     leaveCall,
-    muteAll,
+    toggleMute,
+    isMuted,
   };
 };
 
