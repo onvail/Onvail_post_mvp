@@ -42,6 +42,10 @@ import EmailBackgroundGradient from 'src/assets/svg/EmailBackgroundGradient.svg'
 import ShareIcon from 'src/assets/svg/ShareIcon.svg';
 import PartyWaitIcon from 'src/assets/svg/partywait.svg';
 import EarpieceIcon from 'src/assets/svg/earpiece.svg';
+import MicUnmuteIcon from 'src/assets/svg/mic-unmute.svg';
+import MicMuteIcon from 'src/assets/svg/mic-mute.svg';
+import HandRaisedIcon from 'src/assets/svg/hand-raised.svg';
+import HandDownIcon from 'src/assets/svg/hand-down.svg';
 
 type GeneralType =
   | 'Home'
@@ -86,6 +90,10 @@ type GeneralType =
   | 'Ticksm'
   | 'ShareIcon'
   | 'PartyWaitIcon'
+  | 'MicMuteIcon'
+  | 'MicUnmuteIcon'
+  | 'HandRaisedIcon'
+  | 'HandDownIcon'
   | 'EarpieceIcon';
 
 export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
@@ -132,4 +140,8 @@ export const generalIcon: Record<GeneralType, React.FC<SvgProps>> = {
   ['Ticksm']: Ticksm,
   ['PartyWaitIcon']: PartyWaitIcon,
   ['EarpieceIcon']: EarpieceIcon,
+  ['MicMuteIcon']: MicMuteIcon,
+  ['MicUnmuteIcon']: MicUnmuteIcon,
+  ['HandRaisedIcon']: HandRaisedIcon,
+  ['HandDownIcon']: HandDownIcon,
 };
