@@ -71,7 +71,7 @@ const peerConstraints = {
 
 let PEERCONNECTION: RTCPeerConnection | null;
 let LOCAL_STREAM: MediaStream | null;
-let REMOTE_STREAM: MediaStream | null;
+// let REMOTE_STREAM: MediaStream | null;
 
 const useWebrtc = (partyId: string) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -96,6 +96,7 @@ const useWebrtc = (partyId: string) => {
       const stream = await mediaDevices.getUserMedia(mediaConstraints);
       if (stream) {
         stream.getAudioTracks()[0].enabled = false;
+        stream.getAudioTracks()[0]._setVolume(10);
       }
       localStreamRef.current = stream;
       LOCAL_STREAM = stream;
