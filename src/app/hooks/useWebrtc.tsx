@@ -19,7 +19,6 @@ import {
 import {db} from '../../../firebaseConfig';
 import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
 import tw from 'src/lib/tailwind';
-import {useMicStore} from '../zustand/store';
 
 const peerConstraints = {
   iceServers: [
@@ -381,9 +380,7 @@ const useWebrtc = (partyId: string) => {
   const remoteStream = remoteStreamRef.current;
 
   const toggleMute = useCallback(async () => {
-    console.log('Toggling mute');
     const audioTrack = LOCAL_STREAM?.getAudioTracks()[0];
-    console.log('Audio track:', audioTrack);
     if (audioTrack) {
       audioTrack.enabled = !audioTrack.enabled;
       setIsMuted(audioTrack.enabled);
