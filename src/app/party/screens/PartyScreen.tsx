@@ -78,7 +78,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
   const {user} = useUser();
-  const {endCall, leaveCall, toggleMute, isMuted} = useWebrtc(party?._id);
+  const {endCall, leaveCall, toggleMute, localStream} = useWebrtc(party?._id);
   const utcTimeStamp = moment().tz('UTC');
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
@@ -850,8 +850,16 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                       onPress={toggleMute}
                       style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
                       <Icon
-                        icon={isMuted ? 'microphone-off' : 'microphone-outline'}
-                        color={isMuted ? 'red' : Colors.purple11}
+                        icon={
+                          !localStream?.getAudioTracks()?.[0].enabled
+                            ? 'microphone-off'
+                            : 'microphone-outline'
+                        }
+                        color={
+                          !localStream?.getAudioTracks()?.[0].enabled
+                            ? 'red'
+                            : Colors.purple11
+                        }
                         size={22}
                       />
                     </Pressable>
