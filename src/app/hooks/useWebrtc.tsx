@@ -78,14 +78,12 @@ const useWebrtc = (partyId: string) => {
   const [isConnected, setIsConnected] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
   const [callStarted, setCallStarted] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const firestore = getFirestore();
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const iceCandidatesQueue = useRef<RTCIceCandidate[]>([]);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
-
-  const toggleMicGlobalState = useMicStore(state => state.setIsMuted);
 
   /**
    * Sets up the local media stream.
@@ -97,6 +95,9 @@ const useWebrtc = (partyId: string) => {
     try {
       const mediaConstraints = {audio: true, video: false};
       const stream = await mediaDevices.getUserMedia(mediaConstraints);
+      if (stream) {
+        stream.getAudioTracks()[0].enabled = false;
+      }
       localStreamRef.current = stream;
       LOCAL_STREAM = stream;
       return stream;
@@ -376,7 +377,7 @@ const useWebrtc = (partyId: string) => {
     setCallEnded(true);
   }, []);
 
-  const localStream = localStreamRef.current;
+  const localStream = LOCAL_STREAM;
   const remoteStream = remoteStreamRef.current;
 
   const toggleMute = useCallback(async () => {
