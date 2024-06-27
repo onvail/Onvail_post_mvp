@@ -69,7 +69,6 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import GuestsList from '../components/GuestsList';
-import {Colors} from 'src/app/styles/colors';
 import Modal from 'react-native-modal/dist/modal';
 import useWebrtc from 'src/app/hooks/useWebrtc';
 
@@ -85,6 +84,11 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const PauseIcon = generalIcon.PauseIcon;
   const PlayIcon = generalIcon.PlayIcon;
   const SendIcon = generalIcon.SendIcon;
+  const MicMuteIcon = generalIcon.MicMuteIcon;
+  const MicUnmuteIcon = generalIcon.MicUnmuteIcon;
+  const HandRaisedIcon = generalIcon.HandRaisedIcon;
+  const HandDownIcon = generalIcon.HandDownIcon;
+
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
   const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
   const [selectedBottomSheetTab, setSelectedBottomSheetTab] =
@@ -853,32 +857,16 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                     <Pressable
                       onPress={toggleMute}
                       style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
-                      <Icon
-                        icon={
-                          !localStream?.getAudioTracks()?.[0].enabled
-                            ? 'microphone-off'
-                            : 'microphone-outline'
-                        }
-                        color={
-                          !localStream?.getAudioTracks()?.[0].enabled
-                            ? 'red'
-                            : Colors.purple11
-                        }
-                        size={22}
-                      />
+                      {!localStream?.getAudioTracks()?.[0].enabled ? (
+                        <MicMuteIcon />
+                      ) : (
+                        <MicUnmuteIcon />
+                      )}
                     </Pressable>
                     <Pressable
                       onPress={() => setIsHandRaised(prev => !prev)}
                       style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
-                      <Icon
-                        icon={
-                          isHandRaised
-                            ? 'hand-back-left'
-                            : 'hand-back-left-outline'
-                        }
-                        color={isHandRaised ? 'yellow' : Colors.purple11}
-                        size={22}
-                      />
+                      {isHandRaised ? <HandRaisedIcon /> : <HandDownIcon />}
                     </Pressable>
                   </RowContainer>
                   {selectedBottomSheetTab !== 0 && (
@@ -894,7 +882,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                       </Pressable>
                       <Pressable
                         onPress={() => setSelectedBottomSheetTab(0)}
-                        style={tw`  items-center justify-center rounded-full`}>
+                        style={tw`items-center justify-center rounded-full`}>
                         <Icon icon={'message-outline'} color="grey" size={25} />
                       </Pressable>
                     </RowContainer>
