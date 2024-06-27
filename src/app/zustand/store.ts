@@ -26,7 +26,7 @@ export interface SignUpStoreState {
 
 export interface MicStoreState {
   isMuted: boolean;
-  setIsMuted: () => void;
+  setIsMuted: (value: boolean) => void;
   isHost: boolean;
   setIsHost: (state: boolean) => void;
 }
@@ -72,8 +72,8 @@ export const useUploadProgressStore = create<UploadProgressState>(set => ({
 }));
 
 export const useMicStore = create<MicStoreState>(set => ({
-  isMuted: true,
-  setIsMuted: () => set(state => ({isMuted: !state.isMuted})),
+  isMuted: false,
+  setIsMuted: value => set(() => ({isMuted: value})),
   isHost: false,
   setIsHost: (isHost: boolean) => set(() => ({isHost})),
 }));
