@@ -38,7 +38,7 @@ const CommentCards: FunctionComponent<{
   item: FireStoreComments;
   partyId: string;
   isLastItem: boolean;
-}> = ({item, partyId, isLastItem}) => {
+}> = ({item, partyId}) => {
   const SendIcon = generalIcon.SendIcon;
   const [commentData, setCommentData] = useState<FireStoreComments>(item);
   const [isLiked, setIsLiked] = useState<boolean>(false);
@@ -231,13 +231,10 @@ const CommentCards: FunctionComponent<{
                 estimatedItemSize={50}
                 keyExtractor={reply => reply.commentId}
                 showsVerticalScrollIndicator={false}
-                bounces={false}
               />
             </Animated.View>
             <RowContainer
-              style={tw`border border-grey justify-between ${
-                isLastItem ? 'mb-15' : 'mb-0'
-              } mt-2 px-2 h-10 rounded-lg `}>
+              style={tw`border border-grey justify-between mt-2 px-2 h-10 rounded-lg `}>
               <TextInput
                 value={commentReply}
                 onChangeText={text => setCommentReply(text)}

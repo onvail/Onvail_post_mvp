@@ -825,6 +825,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                           data={comments}
                           renderScrollComponent={ScrollView}
                           showsVerticalScrollIndicator={false}
+                          contentContainerStyle={tw`pb-20`}
                         />
                       )}
                     </View>
