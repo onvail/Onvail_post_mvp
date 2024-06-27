@@ -231,11 +231,12 @@ const CommentCards: FunctionComponent<{
                 estimatedItemSize={50}
                 keyExtractor={reply => reply.commentId}
                 showsVerticalScrollIndicator={false}
+                bounces={false}
               />
             </Animated.View>
             <RowContainer
               style={tw`border border-grey justify-between ${
-                isLastItem ? 'mb-9' : 'mb-0'
+                isLastItem ? 'mb-15' : 'mb-0'
               } mt-2 px-2 h-10 rounded-lg `}>
               <TextInput
                 value={commentReply}
