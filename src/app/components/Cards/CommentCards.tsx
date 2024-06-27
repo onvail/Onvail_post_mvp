@@ -170,15 +170,15 @@ const CommentCards: FunctionComponent<{
           <Avatar.Text
             label={commentData?.name?.substring(0, 1) ?? ''}
             size={27}
-            style={tw`bg-yellow1 `}
+            style={tw`bg-yellow1 mt-3 -mr-2`}
             labelStyle={tw`font-poppinsBold text-base text-darkGreen`}
             color={Colors.white}
           />
           <View style={tw`w-[82%]`}>
-            <CustomText style={tw`text-[12px] ml-5 w-full`}>
+            <CustomText style={tw`text-[10px] text-left ml-5 w-full`}>
               @{commentData?.userStageName}
             </CustomText>
-            <CustomText style={tw`text-[11px] w-full ml-5`}>
+            <CustomText style={tw`text-[11px] text-left w-full ml-5`}>
               {commentData?.text}
             </CustomText>
           </View>
@@ -191,13 +191,13 @@ const CommentCards: FunctionComponent<{
           />
         </TouchableOpacity>
       </RowContainer>
-      <View style={tw`ml-12 flex-1 min-h-6`}>
-        <RowContainer style={tw`flex-1 mt-1`}>
+      <View style={tw`ml-10 flex-1`}>
+        <RowContainer style={tw`flex-1`}>
           <RowContainer>
             <TouchableOpacity onPress={() => handleLike()}>
               <Icon icon={'heart'} color={Colors.grey} size={15} />
             </TouchableOpacity>
-            <CustomText style={tw`ml-1 text-[12px]`}>
+            <CustomText style={tw`ml-1 text-[10px]`}>
               {commentData?.likes?.length > 0
                 ? commentData?.likes?.length
                 : null}
@@ -208,7 +208,7 @@ const CommentCards: FunctionComponent<{
             style={tw` ml-5`}>
             <RowContainer>
               <Icon icon={'reply'} color={Colors.grey} size={15} />
-              <CustomText style={tw`ml-1 text-[12px]`}>Reply</CustomText>
+              <CustomText style={tw`ml-1 text-[10px]`}>Reply</CustomText>
             </RowContainer>
           </TouchableOpacity>
           <RowContainer>
@@ -217,7 +217,7 @@ const CommentCards: FunctionComponent<{
               style={tw` ml-5`}>
               <Icon icon={'comment-outline'} color={Colors.grey} size={15} />
             </TouchableOpacity>
-            <CustomText style={tw`ml-1 text-[12px]`}>
+            <CustomText style={tw`ml-1 text-[10px]`}>
               {commentData?.replies?.length}
             </CustomText>
           </RowContainer>
@@ -236,7 +236,7 @@ const CommentCards: FunctionComponent<{
             <RowContainer
               style={tw`border border-grey justify-between ${
                 isLastItem ? 'mb-9' : 'mb-0'
-              } mt-4 px-2 h-10 rounded-lg `}>
+              } mt-2 px-2 h-10 rounded-lg `}>
               <TextInput
                 value={commentReply}
                 onChangeText={text => setCommentReply(text)}
