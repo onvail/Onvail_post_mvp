@@ -71,6 +71,8 @@ const peerConstraints = {
 
 let PEERCONNECTION: RTCPeerConnection | null;
 let LOCAL_STREAM: MediaStream | null;
+let unsubscribeSnapshot: any;
+
 // let REMOTE_STREAM: MediaStream | null;
 
 const useWebrtc = (partyId: string) => {
@@ -133,12 +135,19 @@ const useWebrtc = (partyId: string) => {
     pc.addEventListener('icecandidate', async event => {
       if (event.candidate) {
         const callDoc = doc(collection(firestore, 'calls'), partyId);
-        await updateDoc(callDoc, {
-          candidates: arrayUnion(event.candidate.toJSON()),
-        });
+        try {
+          await updateDoc(callDoc, {
+            candidates: arrayUnion(event.candidate.toJSON()),
+          });
+          console.log(
+            'ICE candidate sent to Firestore:',
+            event.candidate.toJSON(),
+          );
+        } catch (error) {
+          console.error('Failed to send ICE candidate to Firestore:', error);
+        }
       }
     });
-
     pc.addEventListener('track', event => {
       remoteStreamRef.current = new MediaStream([event.track!]);
     });
@@ -148,30 +157,20 @@ const useWebrtc = (partyId: string) => {
     return pc;
   }, [firestore, partyId]);
 
-  /**
-   * Retrieves the current WebRTC peer connection from the `peerConnectionRef` reference and adds any pending ICE candidates to the connection.
-   * This function is used to handle the asynchronous nature of ICE candidate gathering, ensuring that all candidates are added to the peer connection.
-   */
   const addIceCandidatesToPeerConnection = useCallback(() => {
     const pc = PEERCONNECTION;
     if (pc) {
       while (iceCandidatesQueue.current.length) {
         const candidate = iceCandidatesQueue.current.shift();
         pc.addIceCandidate(candidate).catch(error => {
-          console.error('Failed to add ICE candidate:', error);
+          console.error('Failed to add ICE candidate as the creator', error);
         });
       }
     }
   }, []);
 
-  /**
-   *  Initiates a new WebRTC call.
-   *  This function sets up the local media stream, creates a new peer connection, adds the local stream to the peer connection, and sends the offer to the remote peer.
-   * @returns {void}
-   */
   const beginParty = useCallback(async () => {
     const pc = createPeerConnection();
-    console.log('peer connection when beginning part', pc);
     const stream = await setupMediaStream();
 
     if (stream) {
@@ -193,7 +192,7 @@ const useWebrtc = (partyId: string) => {
       callEnded: false,
     });
 
-    onSnapshot(callDoc, snapshot => {
+    unsubscribeSnapshot = onSnapshot(callDoc, snapshot => {
       const data = snapshot.data();
       if (data?.callEnded) {
         setCallEnded(true);
@@ -209,7 +208,10 @@ const useWebrtc = (partyId: string) => {
           const candidate = new RTCIceCandidate(candidateData);
           if (pc.remoteDescription) {
             pc.addIceCandidate(candidate).catch(error => {
-              console.error('Failed to add ICE candidate:', error);
+              console.error(
+                'Failed to add ICE candidate when beginning party:',
+                error,
+              );
             });
           } else {
             iceCandidatesQueue.current.push(candidate);
@@ -217,7 +219,6 @@ const useWebrtc = (partyId: string) => {
         });
       }
     });
-    console.log('peer connection when beginning part', pc);
   }, [
     createPeerConnection,
     setupMediaStream,
@@ -273,6 +274,7 @@ const useWebrtc = (partyId: string) => {
     }
     if (callData?.offer && pc.signalingState === 'stable') {
       const offerDescription = new RTCSessionDescription(callData.offer);
+
       await pc
         .setRemoteDescription(offerDescription)
         .then(() => {
@@ -284,22 +286,33 @@ const useWebrtc = (partyId: string) => {
             addIceCandidatesToPeerConnection();
           });
         })
-        .catch(error => console.error('Failed to set remote offer', error));
+        .catch(error =>
+          console.error('Failed to set remote offer in join call', error),
+        );
     }
 
-    onSnapshot(callDoc, snapshot => {
+    unsubscribeSnapshot = onSnapshot(callDoc, snapshot => {
       const data = snapshot.data();
       if (data?.callEnded) {
         setCallEnded(true);
       }
       if (data?.candidates) {
+        console.log('ICE candidates received from Firestore:', data.candidates);
         data.candidates.forEach((candidateData: any) => {
           const candidate = new RTCIceCandidate(candidateData);
           if (pc.remoteDescription) {
+            console.log('Adding ICE candidate:', candidate);
             pc.addIceCandidate(candidate).catch(error => {
-              console.error('Failed to add ICE candidate:', error);
+              console.error(
+                'Failed to add ICE candidate when joining the call',
+                error,
+              );
             });
           } else {
+            console.warn(
+              'Remote description not set yet, queuing ICE candidate:',
+              candidate,
+            );
             iceCandidatesQueue.current.push(candidate);
           }
         });
@@ -317,8 +330,6 @@ const useWebrtc = (partyId: string) => {
 
   const endCall = useCallback(async () => {
     const pc = PEERCONNECTION;
-    console.log('Ending call', pc);
-    console.log('Closing peer connection', pc);
     if (pc) {
       pc.getTransceivers().forEach(transceiver => {
         transceiver.stop();
@@ -344,6 +355,11 @@ const useWebrtc = (partyId: string) => {
 
     const callDoc = doc(collection(firestore, 'calls'), partyId);
     await updateDoc(callDoc, {callEnded: true, callStarted: false});
+    console.log('snapshot', unsubscribeSnapshot);
+
+    if (unsubscribeSnapshot) {
+      unsubscribeSnapshot();
+    }
 
     setIsConnected(false);
     setCallEnded(true);
@@ -358,7 +374,6 @@ const useWebrtc = (partyId: string) => {
 
     if (LOCAL_STREAM) {
       LOCAL_STREAM.getTracks().forEach(track => {
-        console.log('Stopping local track:', track);
         track.stop();
       });
       localStreamRef.current = null;
@@ -367,10 +382,13 @@ const useWebrtc = (partyId: string) => {
 
     if (remoteStreamRef.current) {
       remoteStreamRef.current.getTracks().forEach(track => {
-        console.log('Stopping remote track:', track);
         track.stop();
       });
       remoteStreamRef.current = null;
+    }
+
+    if (unsubscribeSnapshot) {
+      unsubscribeSnapshot();
     }
 
     setIsConnected(false);
@@ -380,7 +398,7 @@ const useWebrtc = (partyId: string) => {
   const localStream = LOCAL_STREAM;
   const remoteStream = remoteStreamRef.current;
 
-  const toggleMute = useCallback(async () => {
+  const toggleMute = useCallback(() => {
     const audioTrack = LOCAL_STREAM?.getAudioTracks()[0];
     if (audioTrack) {
       audioTrack.enabled = !audioTrack.enabled;
