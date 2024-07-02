@@ -6,20 +6,19 @@ import tw from 'lib/tailwind';
 import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import ErrorText from 'src/app/components/Text/ErrorText';
-import CustomCalendar from 'src/app/components/Calendar/CustomCalendar';
 import RowContainer from 'src/app/components/View/RowContainer';
 import Icon from 'src/app/components/Icons/Icon';
 import FormSelector from 'src/app/party/components/FormSelector';
 import {SignUpStoreState, useSignUpStore} from 'src/app/zustand/store';
 import AuthScreenContainer from 'src/app/components/Screens/AuthScreenContainer';
+import DatePicker from 'react-native-date-picker';
+import moment from 'moment-timezone';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 const DateOfBirth: FunctionComponent<Props> = ({navigation}) => {
-  const [
-    isApplicationClosingDatePickerVisible,
-    setIsApplicationClosingDatePickerVisible,
-  ] = useState<boolean>(false);
+  const [date, setDate] = useState(new Date());
+  const [open, setOpen] = useState(false);
 
   const defaultValues: {dateOfBirth: string} = {
     dateOfBirth: '',
@@ -70,14 +69,20 @@ const DateOfBirth: FunctionComponent<Props> = ({navigation}) => {
               required: 'Date of birth required',
             }}
             render={({field: {onChange}}) => (
-              <CustomCalendar
-                isCalendarVisible={isApplicationClosingDatePickerVisible}
-                onBackDropPress={() =>
-                  setIsApplicationClosingDatePickerVisible(false)
-                }
-                onDateSelected={date => {
-                  onChange(date);
-                  setIsApplicationClosingDatePickerVisible(false);
+              <DatePicker
+                modal
+                theme="dark"
+                mode="date"
+                open={open}
+                title={null}
+                date={date}
+                onConfirm={calendarDate => {
+                  setOpen(false);
+                  setDate(calendarDate);
+                  onChange(calendarDate);
+                }}
+                onCancel={() => {
+                  setOpen(false);
                 }}
               />
             )}
@@ -90,11 +95,15 @@ const DateOfBirth: FunctionComponent<Props> = ({navigation}) => {
             }}
             render={({field: {value}}) => (
               <FormSelector
-                description="Date of birth"
+                description={
+                  value
+                    ? moment(value).format('DD, MMMM YYYY')
+                    : 'Date of birth'
+                }
                 instruction="Today"
                 icon="calendar-month"
                 onPress={() => {
-                  setIsApplicationClosingDatePickerVisible(true);
+                  setOpen(true);
                 }}
                 value={value}
               />

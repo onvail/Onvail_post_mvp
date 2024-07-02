@@ -38,36 +38,85 @@ import TrackPlayer, {State, Track} from 'react-native-track-player';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
-import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
-import useUser from 'src/app/hooks/useUserInfo';
+import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
+import useUser, {User} from 'src/app/hooks/useUserInfo';
 import socket from 'src/utils/socket';
 import {getPlaybackState} from 'react-native-track-player/lib/trackPlayer';
 import moment from 'moment-timezone';
 import {FireStoreComments, createFireStoreComments} from 'src/actions/parties';
-import {collection, onSnapshot, orderBy, query} from 'firebase/firestore';
+import {
+  arrayRemove,
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  updateDoc,
+} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
-import {ScrollView} from 'react-native-gesture-handler';
+import {
+  Gesture,
+  GestureDetector,
+  ScrollView,
+} from 'react-native-gesture-handler';
 import {BottomSheetFooter, BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import GuestsList from '../components/GuestsList';
+import Modal from 'react-native-modal/dist/modal';
+import useWebrtc from 'src/app/hooks/useWebrtc';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
   const {user} = useUser();
+  const {endCall, leaveCall, toggleMute, localStream} = useWebrtc(party?._id);
   const utcTimeStamp = moment().tz('UTC');
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
   const PauseIcon = generalIcon.PauseIcon;
   const PlayIcon = generalIcon.PlayIcon;
   const SendIcon = generalIcon.SendIcon;
+  const MicMuteIcon = generalIcon.MicMuteIcon;
+  const MicUnmuteIcon = generalIcon.MicUnmuteIcon;
+  const HandRaisedIcon = generalIcon.HandRaisedIcon;
+  const HandDownIcon = generalIcon.HandDownIcon;
+
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
   const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
+  const [selectedBottomSheetTab, setSelectedBottomSheetTab] =
+    useState<number>(0);
+  const [guestList, setGuestList] = useState<User[]>([]);
 
   const [volume, setVolume] = useState<number>(0.5);
   const [comments, setComments] = useState<FireStoreComments[]>([]);
   const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
   const commentRef = useRef<string>('');
+  const [isHandRaised, setIsHandRaised] = useState<boolean>(false);
+  const [isEndPartyModalVisible, setIsEndPartyModalVisible] =
+    useState<boolean>(false);
+  const [isLeavePartyModalVisible, setIsLeavePartyModalVisible] =
+    useState<boolean>(false);
+  const [isEndingParty, setIsEndingParty] = useState<boolean>(false);
+  const [isLeavingParty, setIsLeavingParty] = useState<boolean>(false);
+  const partyId = party?._id;
+
+  // Initialize the animated value
+  const translateX = useSharedValue(0);
+
+  // Animated style
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{translateX: translateX.value}],
+    };
+  });
 
   const screenColors = {
     background:
@@ -105,65 +154,131 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }));
   }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
 
-  const leavePartyHandler = () => {
-    Dialog.show({
-      type: ALERT_TYPE.WARNING,
-      title: 'Leave party',
-      textBody: 'Are you sure you want to leave this party?',
-      button: 'continue',
-      onPressButton: async () => {
-        await leaveParty();
-        await TrackPlayer.stop();
-        await TrackPlayer.reset();
-        Dialog.hide();
-      },
-    });
-  };
-
-  const endPartyHandler = () => {
-    Dialog.show({
-      type: ALERT_TYPE.WARNING,
-      title: 'End party',
-      textBody: 'Are you sure you want to end this party?',
-      button: 'continue',
-      onPressButton: async () => {
-        endParty();
-        await TrackPlayer.stop();
-        await TrackPlayer.reset();
-        Dialog.hide();
-      },
-    });
-  };
-
-  const leaveParty = async () => {
+  const leaveParty = useCallback(async () => {
+    setIsLeavingParty(true);
     try {
+      await leaveCall();
+      socket.emit('leave_party', {
+        party: partyId,
+        user,
+      });
+      const partyDocRef = doc(db, 'party', partyId);
+      await updateDoc(partyDocRef, {
+        participants: arrayRemove(user),
+      });
       await api.post({
-        url: `parties/leave/${party?._id}`,
+        url: `parties/leave/${partyId}`,
         requiresToken: true,
         authorization: true,
       });
+
       navigation.navigate('BottomNavigator', {
         screen: 'Home',
       });
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLeavingParty(false);
     }
+  }, [navigation, partyId, user, leaveCall]);
+
+  const leavePartyHandler = useCallback(async () => {
+    await leaveParty();
+    setIsLeavePartyModalVisible(false);
+    await TrackPlayer.stop();
+    await TrackPlayer.reset();
+  }, [leaveParty]);
+
+  const endPartyHandler = async () => {
+    // await endCall();
+    await endParty();
+    setIsEndPartyModalVisible(false);
+    await TrackPlayer.stop();
+    await TrackPlayer.reset();
   };
+
+  const fetchPartyGuests = useCallback(async () => {
+    try {
+      const partyDocRef = doc(db, 'party', partyId);
+      const unsubscribe = onSnapshot(partyDocRef, doc => {
+        const data = doc.data();
+        let userList: User[] =
+          data?.participants?.map((allusers: User) => allusers) ?? [];
+        setGuestList(userList);
+      });
+      return () => unsubscribe();
+    } catch (error) {
+      console.log(error);
+    }
+  }, [partyId]);
+
+  useEffect(() => {
+    fetchPartyGuests();
+  }, [fetchPartyGuests]);
+
+  useEffect(() => {
+    const handlePartyStatus = async () => {
+      if (!isHost) {
+        const callDoc = doc(db, 'calls', partyId);
+
+        const unsubscribe = onSnapshot(callDoc, async snapshot => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            if (data) {
+              if (data.callEnded === true) {
+                await TrackPlayer.stop();
+                await TrackPlayer.reset();
+                await leaveParty();
+                Toast.show({
+                  type: ALERT_TYPE.INFO,
+                  title: 'Party ended!',
+                  textBody: 'The host ended the party',
+                  titleStyle: tw`font-poppinsRegular text-xs`,
+                  textBodyStyle: tw`font-poppinsRegular text-xs`,
+                });
+              }
+            }
+          } else {
+            console.log('Document does not exist');
+          }
+        });
+
+        // Clean up the subscription on unmount
+        return () => unsubscribe();
+      }
+    };
+    handlePartyStatus();
+  }, [navigation, partyId, leaveParty, isHost]);
 
   useEffect(() => {
     if (party?._id) {
       const commentCollection = collection(db, `party/${party._id}/comments`);
       const q = query(commentCollection, orderBy('timestamp', 'desc'));
-      const unsubscribe = onSnapshot(q, querySnapshot => {
-        const fetchedComments = querySnapshot.docs.map(
-          doc =>
-            ({
+      const unsubscribe = onSnapshot(q, async querySnapshot => {
+        const fetchedComments = await Promise.all(
+          querySnapshot.docs.map(async doc => {
+            const commentData = {
               ...doc.data(),
               commentId: doc.id,
-            } as FireStoreComments),
-        );
-        console.log(fetchedComments[10]?.timestamp);
+            };
 
+            // Fetch replies for each comment
+            const repliesCollection = collection(
+              db,
+              `party/${party?._id}/comments/${doc.id}/replies`,
+            );
+            const repliesSnapshot = await getDocs(repliesCollection);
+            const replies = repliesSnapshot.docs.map(replyDoc => ({
+              ...replyDoc.data(),
+              commentId: replyDoc.id,
+            }));
+
+            return {
+              ...commentData,
+              replies,
+            };
+          }),
+        );
         setComments(fetchedComments);
       });
 
@@ -176,7 +291,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     setIsUploadingComment(true);
     try {
       const comment = commentRef.current;
-      const response = await api.post({
+      await api.post({
         url: `parties/comment-party/${party?._id}`,
         requiresToken: true,
         authorization: true,
@@ -185,20 +300,48 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         },
       });
       commentRef.current = '';
-      createFireStoreComments(party?._id, user?._id, comment, user?.image);
-      console.log(response.data);
+      createFireStoreComments(
+        party?._id,
+        user?._id,
+        comment,
+        user?.image,
+        user?.stageName,
+        user?.name,
+      );
     } catch (error) {
       console.log(error);
     }
     setIsUploadingComment(false);
-  }, [party?._id, user?._id, user?.image, commentRef]);
+  }, [
+    party?._id,
+    user?._id,
+    user?.image,
+    user?.stageName,
+    user?.name,
+    commentRef,
+  ]);
 
-  const commentsRenderItem: ListRenderItem<FireStoreComments> = ({item}) => {
-    return <CommentCards item={item} partyId={party?._id} />;
+  const commentsRenderItem: ListRenderItem<FireStoreComments> = ({
+    item,
+    index,
+  }) => {
+    return (
+      <CommentCards
+        item={item}
+        partyId={party?._id}
+        isLastItem={index + 1 === comments.length}
+      />
+    );
   };
 
   const endParty = async () => {
+    setIsEndingParty(true);
     try {
+      const partyDocRef = doc(db, 'party', party?._id);
+      await endCall();
+      await updateDoc(partyDocRef, {
+        participants: arrayRemove(user),
+      });
       await api.post({
         url: `parties/leave/${party?._id}`,
         requiresToken: true,
@@ -209,6 +352,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       });
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsEndingParty(false);
     }
   };
 
@@ -277,7 +422,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     });
   };
 
-  const renderItem: ListRenderItem<Track> = ({item, index}) => {
+  const trackRenderItem: ListRenderItem<Track> = ({item, index}) => {
     const {artist, title, url, id, duration} = item;
     return (
       <MusicList
@@ -319,15 +464,20 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [allTracks, isHost]);
 
+  interface SocketData {
+    cmd: string;
+    timeStamp: string;
+    party: string;
+    user?: any;
+  }
+
   const handleSocketEvents = useCallback(
-    async (data: {cmd: string; timeStamp: string; party: string}) => {
+    async (data: SocketData) => {
       const currentTime = moment().tz('UTC');
       const eventTime = moment.tz(data.timeStamp, 'UTC');
       const timeDifference = moment(currentTime).diff(eventTime) / 1000;
-      console.log('timeDifference', timeDifference);
 
       const playBackState = await getPlaybackState();
-
       if (isHost) {
         return;
       }
@@ -348,7 +498,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           await TrackPlayer.seekTo(timeDifference);
           break;
         case 'forward':
-          await TrackPlayer.skipToNext();
           await TrackPlayer.seekTo(timeDifference);
           break;
         default:
@@ -358,46 +507,132 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     [isHost],
   );
 
+  // const handleSocketEventsForEveryone = useCallback(
+  //   async (data: SocketData) => {
+  //     console.log(data);
+  //     switch (data.cmd) {
+  //       case 'user_joined':
+  //         return console.log('user joined', user);
+  //       case 'user_left':
+  //         console.log('user left', user);
+  //         break;
+  //       default:
+  //         break;
+  //     }
+  //   },
+  //   [user],
+  // );
+
   useEffect(() => {
     mountTrackForGuests();
     socket.on('receive', handleSocketEvents);
+    // socket.on('receive', handleSocketEventsForEveryone);
 
     return () => {
       TrackPlayer.stop();
       TrackPlayer.reset();
       socket.off('receive', handleSocketEvents);
+      // socket.off('receive', handleSocketEventsForEveryone);
     };
-  }, [isHost, mountTrackForGuests, handleSocketEvents]);
+  }, [
+    isHost,
+    mountTrackForGuests,
+    handleSocketEvents,
+    // handleSocketEventsForEveryone,
+  ]);
 
   const handleCommentChange = (text: string) => {
     commentRef.current = text;
   };
 
+  useEffect(() => {
+    if (!isHost) {
+      socket.emit('join_party', {
+        party: party._id,
+        user,
+      });
+    }
+  }, [isHost, party?._id, user]);
+
+  const updateTab = (direction: number) => {
+    setSelectedBottomSheetTab(prev => {
+      let nextTab = prev + direction;
+      if (nextTab < 0) {
+        nextTab = 0;
+      }
+      if (nextTab > 2) {
+        nextTab = 2;
+      }
+      return nextTab;
+    });
+  };
+
+  const screenWidth = Dimensions.get('window').width;
+
+  const swipeGesture = Gesture.Pan()
+    .onUpdate(event => {
+      translateX.value = event.translationX;
+    })
+    .onEnd(event => {
+      if (event.translationX < -screenWidth / 3) {
+        runOnJS(updateTab)(1);
+      } else if (event.translationX > screenWidth / 3) {
+        runOnJS(updateTab)(-1);
+      }
+      translateX.value = withSpring(0, {
+        damping: 20,
+        stiffness: 90,
+      });
+    });
+
+  const guestRenderItem: ListRenderItem<User> = ({item}) => {
+    return (
+      <GuestsList
+        item={item}
+        isHost={party?.artist?._id === item?._id}
+        toggleMute={toggleMute}
+        localStream={localStream}
+      />
+    );
+  };
+
   const renderBottomFooter = useCallback(
     (props: any) => (
-      <BottomSheetFooter {...props} bottomInset={24}>
-        <View
-          style={[
-            tw`bg-inherit m-4  h-14 rounded-md border-grey4 flex-row px-3 items-center border `,
-            {
-              backgroundColor: screenColors.accent,
-            },
-          ]}>
-          <BottomSheetTextInput
-            placeholder="Add comment"
-            style={tw`text-white text-sm w-[90%] font-poppinsRegular`}
-            placeholderTextColor={'white'}
-            onChangeText={handleCommentChange} // Use the new handler
-          />
-          <Pressable
-            disabled={isUploadingComment}
-            onPress={() => commentOnParty()}>
-            {isUploadingComment ? <ActivityIndicator /> : <SendIcon />}
-          </Pressable>
-        </View>
-      </BottomSheetFooter>
+      <>
+        {selectedBottomSheetTab === 0 ? (
+          <BottomSheetFooter {...props} bottomInset={24}>
+            <View
+              style={[
+                tw`bg-inherit m-4 mt-3  h-10 rounded-full border-grey4 flex-row px-3 items-center border `,
+                {
+                  backgroundColor: screenColors.accent,
+                },
+              ]}>
+              <BottomSheetTextInput
+                placeholder="Add comment"
+                style={tw`text-white text-xs w-[90%]  font-poppinsRegular`}
+                placeholderTextColor={'white'}
+                onChangeText={handleCommentChange} // Use the new handler
+              />
+              <Pressable
+                disabled={isUploadingComment}
+                onPress={() => commentOnParty()}>
+                {isUploadingComment ? <ActivityIndicator /> : <SendIcon />}
+              </Pressable>
+            </View>
+          </BottomSheetFooter>
+        ) : (
+          <></>
+        )}
+      </>
     ),
-    [isUploadingComment, screenColors?.accent, SendIcon, commentOnParty],
+    [
+      isUploadingComment,
+      screenColors?.accent,
+      SendIcon,
+      commentOnParty,
+      selectedBottomSheetTab,
+    ],
   );
 
   const snapPoints = useMemo(() => ['20%', '50%', '75%'], []);
@@ -413,7 +648,11 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           style={tw` ${
             Platform.OS === 'android' ? 'mt-6' : 'mt-0'
           } h-10 w-20 items-center  justify-center self-end`}
-          onPress={() => (isHost ? endPartyHandler() : leavePartyHandler())}>
+          onPress={() =>
+            isHost
+              ? setIsEndPartyModalVisible(true)
+              : setIsLeavePartyModalVisible(true)
+          }>
           <CustomText
             // eslint-disable-next-line react-native/no-inline-styles
             style={{
@@ -468,7 +707,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         </View>
         <FlashList
           data={allTracks}
-          renderItem={renderItem}
+          renderItem={trackRenderItem}
           keyExtractor={item => item?.id}
           estimatedItemSize={20}
           estimatedListSize={{
@@ -478,36 +717,180 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           showsVerticalScrollIndicator={false}
         />
       </SafeAreaView>
+      <Modal
+        style={tw`flex-1 justify-center items-center`}
+        backdropOpacity={0.9}
+        onBackdropPress={() => setIsLeavePartyModalVisible(false)}
+        isVisible={isLeavePartyModalVisible}>
+        <View
+          style={tw` bg-white w-[80%] h-1/7 p-3 rounded-lg items-center justify-center`}>
+          <CustomText style={tw`text-grey6 font-poppinsBold`}>
+            Are you sure you want to leave the party?
+          </CustomText>
+          <RowContainer style={tw`mt-3 `}>
+            <Pressable
+              onPress={() => setIsLeavePartyModalVisible(false)}
+              style={tw`border w-15 items-center h-7 justify-center rounded-full border-grey4`}>
+              <CustomText style={tw`text-grey7 text-xs font-poppinsRegular`}>
+                Stay
+              </CustomText>
+            </Pressable>
+            <Pressable
+              onPress={() => leavePartyHandler()}
+              style={tw` w-15 items-center h-7 justify-center  ml-4 rounded-full bg-purple`}>
+              {isLeavingParty ? (
+                <ActivityIndicator />
+              ) : (
+                <CustomText style={tw`text-white text-xs font-poppinsRegular`}>
+                  Leave
+                </CustomText>
+              )}
+            </Pressable>
+          </RowContainer>
+        </View>
+      </Modal>
+
+      <Modal
+        style={tw`flex-1 justify-center items-center`}
+        backdropOpacity={0.9}
+        onBackdropPress={() => setIsEndPartyModalVisible(false)}
+        isVisible={isEndPartyModalVisible}>
+        <View
+          style={tw` bg-white w-[80%] h-1/7 p-3 rounded-lg items-center justify-center`}>
+          <CustomText style={tw`text-grey6 font-poppinsBold`}>
+            Are you sure you want to end the party?
+          </CustomText>
+          <RowContainer style={tw`mt-3 `}>
+            <Pressable
+              onPress={() => setIsEndPartyModalVisible(false)}
+              style={tw`border w-15 items-center h-7 justify-center rounded-full border-grey4`}>
+              <CustomText style={tw`text-grey7 text-xs font-poppinsRegular`}>
+                Stay
+              </CustomText>
+            </Pressable>
+            <Pressable
+              disabled={isEndingParty}
+              onPress={() => endPartyHandler()}
+              style={tw` w-15 items-center h-7 justify-center  ml-4 rounded-full bg-purple`}>
+              {isEndingParty ? (
+                <ActivityIndicator color={'white'} />
+              ) : (
+                <CustomText style={tw`text-white text-xs font-poppinsRegular`}>
+                  End
+                </CustomText>
+              )}
+            </Pressable>
+          </RowContainer>
+        </View>
+      </Modal>
+
       <CustomBottomSheet
         ref={bottomSheetRef}
         customSnapPoints={snapPoints}
         backgroundColor={screenColors?.accent}
         footerComponent={renderBottomFooter}
         visibilityHandler={() => {}}>
-        <View style={tw`relative h-[40px] flex-1 px-3 mb-6`}>
-          <View style={styles.commentFlatList}>
-            {comments.length === 0 ? (
-              <View style={tw`justify-center items-center mt-30`}>
-                <LottieView
-                  source={require('../../../assets/comments.json')}
-                  style={tw`h-50 w-50`}
-                  autoPlay={true}
-                  loop={true}
-                />
-                <CustomText style={tw`text-center text-base mt-5`}>
-                  Be the frist to say something
-                </CustomText>
-              </View>
-            ) : (
-              <FlashList
-                renderItem={commentsRenderItem}
-                estimatedItemSize={200}
-                data={comments}
-                renderScrollComponent={ScrollView}
-                showsVerticalScrollIndicator={false}
+        <View style={tw`relative h-[40px] flex-1  mb-6`}>
+          <RowContainer style={tw`items-center mb-3 mt-5 px-3 justify-center`}>
+            {Array.from({length: 3}, (_, key) => (
+              <Pressable
+                key={key}
+                onPress={() => {
+                  setSelectedBottomSheetTab(key);
+                }}
+                style={tw`h-1 w-6 rounded-lg bg-${
+                  selectedBottomSheetTab === key ? 'white' : 'grey2'
+                } mr-1`}
               />
-            )}
-          </View>
+            ))}
+          </RowContainer>
+          <GestureDetector gesture={swipeGesture}>
+            <View style={tw`relative w-full`}>
+              <Animated.View style={[styles.tabsContainer, animatedStyle]}>
+                <View style={styles.tabContent}>
+                  {selectedBottomSheetTab === 0 && (
+                    <View style={tw`flex-1 px-3`}>
+                      {comments.length === 0 ? (
+                        <View style={tw`justify-center items-center  mt-30`}>
+                          <LottieView
+                            source={require('../../../assets/comments.json')}
+                            style={tw`h-50 w-50`}
+                            autoPlay={true}
+                            loop={true}
+                          />
+                          <CustomText style={tw`text-center text-base mt-5`}>
+                            Be the frist to say something
+                          </CustomText>
+                        </View>
+                      ) : (
+                        <FlashList
+                          renderItem={commentsRenderItem}
+                          estimatedItemSize={200}
+                          data={comments}
+                          renderScrollComponent={ScrollView}
+                          showsVerticalScrollIndicator={false}
+                          contentContainerStyle={tw`pb-20`}
+                        />
+                      )}
+                    </View>
+                  )}
+                  {selectedBottomSheetTab === 1 && (
+                    <FlashList
+                      data={guestList}
+                      renderItem={guestRenderItem}
+                      estimatedItemSize={200}
+                      numColumns={4}
+                      horizontal={false}
+                    />
+                  )}
+                  {selectedBottomSheetTab === 2 && <></>}
+                </View>
+              </Animated.View>
+              <View
+                style={[
+                  tw`absolute border-t z-20 h-16 justify-center bg-black border-grey2  ${
+                    selectedBottomSheetTab === 0 ? 'bottom-0' : '-bottom-12'
+                  } w-full `,
+                ]}>
+                <RowContainer style={tw`justify-between mx-3 items-center`}>
+                  <RowContainer style={tw`justify-between items-center w-1/4`}>
+                    <Pressable
+                      onPress={toggleMute}
+                      style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
+                      {!localStream?.getAudioTracks()?.[0].enabled ? (
+                        <MicMuteIcon />
+                      ) : (
+                        <MicUnmuteIcon />
+                      )}
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setIsHandRaised(prev => !prev)}
+                      style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
+                      {isHandRaised ? <HandRaisedIcon /> : <HandDownIcon />}
+                    </Pressable>
+                  </RowContainer>
+                  {selectedBottomSheetTab !== 0 && (
+                    <RowContainer
+                      style={tw`justify-between items-center w-1/3`}>
+                      <Pressable
+                        style={tw`  items-center justify-center rounded-full`}>
+                        <Icon icon={'gift-outline'} color="grey" size={20} />
+                      </Pressable>
+                      <Pressable
+                        style={tw`  items-center justify-center rounded-full`}>
+                        <Icon icon={'heart-outline'} color="grey" size={20} />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => setSelectedBottomSheetTab(0)}
+                        style={tw`items-center justify-center rounded-full`}>
+                        <Icon icon={'message-outline'} color="grey" size={25} />
+                      </Pressable>
+                    </RowContainer>
+                  )}
+                </RowContainer>
+              </View>
+            </View>
+          </GestureDetector>
         </View>
       </CustomBottomSheet>
     </LinearGradient>
@@ -515,15 +898,17 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 };
 
 const styles = StyleSheet.create({
-  commentFlatList: {
-    height: Dimensions.get('screen').height / 2,
-    width: Dimensions.get('screen').width / 1.1,
-    marginBottom: 4,
+  tabsContainer: {
+    zIndex: 0,
+    flexDirection: 'row',
+    paddingHorizontal: 3,
+    width: Dimensions.get('window').width * 3, // Adjust width for three tabs
   },
-  container: {
-    flex: 1,
-    padding: 24,
-    backgroundColor: 'grey',
+
+  tabContent: {
+    zIndex: 0,
+    width: Dimensions.get('window').width, // Width of each tab content
+    height: Dimensions.get('window').height / 2, // Adjust height as needed
   },
 });
 

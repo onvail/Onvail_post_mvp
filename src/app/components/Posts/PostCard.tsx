@@ -4,9 +4,16 @@ import React, {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
-import {ActivityIndicator, TouchableOpacity, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Dimensions,
+  TouchableOpacity,
+  View,
+  Animated,
+} from 'react-native';
 import UserHeader from './UserHeader';
 import CustomImage from 'components/Image/CustomImage';
 import tw from 'src/lib/tailwind';
@@ -18,12 +25,15 @@ import MiniMusicPlayer from './MiniMusicPlayer';
 import {PartiesResponse} from 'src/types/partyTypes';
 import Icon from '../Icons/Icon';
 import api from 'src/api/api';
-import useUser from 'src/app/hooks/useUserInfo';
+import useUser, {User} from 'src/app/hooks/useUserInfo';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {getColors} from 'react-native-image-colors';
 import {ColorScheme} from 'src/app/navigator/types/MainStackParamList';
-import socket from 'src/utils/socket';
 import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
+import {leaveParty} from 'src/actions/parties';
+import {arrayUnion, doc, onSnapshot, updateDoc} from 'firebase/firestore';
+import {db} from '../../../../firebaseConfig';
+import useWebrtc from 'src/app/hooks/useWebrtc';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -49,6 +59,12 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   );
   const [partyTrackWithDuration, setPartyTrackWithDuration] =
     useState<PartiesResponse>(party);
+
+  const {beginParty, joinCall} = useWebrtc(party?._id);
+
+  // useEffect(() => {
+  //   setupMediaStream();
+  // }, []);
 
   const handleSongsDuration = useCallback(async () => {
     const sound = new Audio.Sound();
@@ -117,6 +133,11 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const startParty = async () => {
     setIsLoading(true);
     try {
+      const partyDocRef = doc(db, 'party', party?._id);
+      await updateDoc(partyDocRef, {
+        participants: arrayUnion(user),
+      });
+      beginParty();
       await api.patch({
         url: `parties/start-party/${party?._id}`,
         requiresToken: true,
@@ -132,17 +153,23 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
 
   const joinParty = async () => {
     setIsLoading(true);
+    leaveParty(party?._id, user);
     try {
-      socket.emit('join_party', {
-        party: party._id,
-        user,
+      const partyDocRef = doc(db, 'party', party?._id);
+      await updateDoc(partyDocRef, {
+        participants: arrayUnion(user),
       });
-      await api.post({
-        url: `parties/join-party/${party?._id}`,
-        requiresToken: true,
-        authorization: true,
-      });
-      handleJoinPartyBtnPress(party, albumBackgroundColor);
+      const canJoinCall = await joinCall();
+      if (!canJoinCall) {
+        return;
+      } else {
+        await api.post({
+          url: `parties/join-party/${party?._id}`,
+          requiresToken: true,
+          authorization: true,
+        });
+        handleJoinPartyBtnPress(party, albumBackgroundColor);
+      }
     } catch (error) {
       console.log(error);
     } finally {
@@ -221,12 +248,61 @@ const PostItem: FunctionComponent<{
     },
   });
 
+  const partyId = item?._id;
+
   const canFollowUser = item?.artist?._id !== userId;
   const isFollowing = item?.artist?.followers?.includes(userId);
   const isLiked = item?.likes?.some(likes => likes?._id === userId);
+  const {height} = Dimensions.get('window');
+  const ITEM_SIZE = height * 0.62;
+
+  const [guestList, setGuestList] = useState<User[]>([]);
+  const [partyStarted, setPartyStarted] = useState<boolean>(false);
+
+  useEffect(() => {
+    const callDoc = doc(db, 'calls', partyId);
+
+    const unsubscribe = onSnapshot(callDoc, snapshot => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data) {
+          setPartyStarted(data.callStarted ?? false);
+        }
+      } else {
+        console.log('Document does not exist');
+        setPartyStarted(false);
+      }
+    });
+
+    // Clean up the subscription on unmount
+    return () => unsubscribe();
+  }, [partyId]);
+
+  const fetchPartyGuests = useCallback(async () => {
+    try {
+      const partyDocRef = doc(db, 'party', partyId);
+      const unsubscribe = onSnapshot(partyDocRef, doc => {
+        const data = doc.data();
+        let userList: User[] =
+          data?.participants?.map((allusers: User) => allusers) ?? [];
+        setGuestList(userList);
+      });
+      return () => unsubscribe();
+    } catch (error) {
+      console.log(error);
+    }
+  }, [partyId]);
+
+  useEffect(() => {
+    fetchPartyGuests();
+  }, [fetchPartyGuests]);
 
   return (
-    <View style={tw`mb-4 border-b-[0.2px] border-grey2 pb-7`}>
+    <View
+      style={[
+        tw`mb-4 border-b-[0.2px] border-grey2 pb-7`,
+        {height: ITEM_SIZE},
+      ]}>
       <UserHeader
         name={item?.artist?.name}
         uri={item?.artist?.image}
@@ -235,21 +311,25 @@ const PostItem: FunctionComponent<{
         isFollowing={isFollowing}
       />
       <View style={tw`self-center relative rounded-lg mx-8 mt-2 w-[95%]`}>
-        <RowContainer
-          style={tw`flex-row justify-between items-center w-full absolute  px-3 top-2 left-0 z-20`}>
-          <View
-            style={tw`bg-[#D92A2A] rounded-20 h-12 w-22 items-center justify-center`}>
-            <CustomText style={tw`text-xs`}>Live</CustomText>
-          </View>
+        {partyStarted && (
           <RowContainer
-            style={tw`bg-primary opacity-70 rounded-20 h-12 w-22 justify-center`}>
-            <PartyJoinersIcon />
-            <CustomText style={tw`text-xs text-white ml-1`}>21k</CustomText>
+            style={tw`flex-row justify-between items-center w-full absolute  px-3 top-2 left-0 z-20`}>
+            <View
+              style={tw`bg-[#D92A2A] rounded-20 h-12 w-22 items-center justify-center`}>
+              <CustomText style={tw`text-xs`}>Live</CustomText>
+            </View>
+            <RowContainer
+              style={tw`bg-primary opacity-70 rounded-20 h-12 w-22 justify-center`}>
+              <PartyJoinersIcon />
+              <CustomText style={tw`text-xs text-white ml-1`}>
+                {guestList.length}
+              </CustomText>
+            </RowContainer>
           </RowContainer>
-        </RowContainer>
+        )}
         <CustomImage
           uri={item?.albumPicture ?? ''}
-          style={tw`h-100 w-[100%] rounded-4`}
+          style={[tw`h-100 w-[100%] rounded-4`]}
           resizeMode="cover"
         />
         <RowContainer
@@ -338,16 +418,43 @@ const PostCard: FunctionComponent<PostCardProps> = ({
   data = [],
 }) => {
   const {user} = useUser();
+  const {height} = Dimensions.get('window');
 
-  const renderItem: ListRenderItem<PartiesResponse> = ({item}) => (
-    <PostItem
-      item={item}
-      handleJoinPartyBtnPress={(partyItem, albumBackgroundColor) =>
-        handleJoinPartyBtnPress(partyItem, albumBackgroundColor)
-      }
-      userId={user?._id ?? ''}
-    />
-  );
+  const ITEM_SIZE = height * 0.62;
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const renderItem: ListRenderItem<PartiesResponse | any> = ({item, index}) => {
+    const opacityInputRange = [
+      -1,
+      0,
+      index * ITEM_SIZE,
+      (index + 1.3) * ITEM_SIZE,
+    ];
+
+    const opacity = scrollY.interpolate({
+      inputRange: opacityInputRange,
+      outputRange: [1, 1, 1, 0],
+      // outputRange: [0.8, 1, 0.8],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View
+        style={{
+          opacity,
+        }}>
+        <PostItem
+          item={item}
+          handleJoinPartyBtnPress={(partyItem, albumBackgroundColor) =>
+            handleJoinPartyBtnPress(partyItem, albumBackgroundColor)
+          }
+          userId={user?._id ?? ''}
+        />
+      </Animated.View>
+    );
+  };
+
+  const AnimatedFlashList = Animated.createAnimatedComponent(FlashList);
 
   // NOTE:
   // The custom navbar gets a background color placed behind the Onvail button when a margin-bottom is used to push the last-item to a visible position.
@@ -356,10 +463,23 @@ const PostCard: FunctionComponent<PostCardProps> = ({
   const reversedItems = Array.isArray(data) ? [...data].reverse() : [];
 
   return (
-    <FlashList
+    <AnimatedFlashList
       data={reversedItems}
       renderItem={renderItem}
+      // snapToInterval={ITEM_SIZE}
       estimatedItemSize={300}
+      bounces={false}
+      onScroll={Animated.event(
+        [
+          {
+            nativeEvent: {contentOffset: {y: scrollY}},
+          },
+        ],
+        {
+          useNativeDriver: true,
+        },
+      )}
+      scrollEventThrottle={16}
       showsHorizontalScrollIndicator={false}
       ListFooterComponent={renderFooterComponent}
     />

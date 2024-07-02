@@ -14,6 +14,7 @@ module.exports = {
         purple8: '#AD6EFF',
         purple9: '#A35CFF',
         purple10: '#9747FF',
+        purple11: '#A18BC2',
         grey: '#FEFEFE',
         grey2: '#717171',
         grey3: '#333333',
@@ -31,6 +32,7 @@ module.exports = {
         orange4: '#FF7F7F',
         orange5: '#FF7575',
         orange6: '#FF5F5F',
+        yellow1: '#FFDDB5',
       },
       fontFamily: {
         poppinsBlack: ['Poppins-Black'],

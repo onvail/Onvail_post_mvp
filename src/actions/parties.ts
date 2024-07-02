@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import api from 'src/api/api';
 import {db} from '../../firebaseConfig';
+import socket from 'src/utils/socket';
 
 export const fetchParties = async () => {
   try {
@@ -47,8 +48,12 @@ export const fetchPosts = async () => {
   }
 };
 
-export const leaveParty = async (partyId: string) => {
+export const leaveParty = async (partyId: string, user: any) => {
   try {
+    socket.emit('leave_party', {
+      party: partyId,
+      user,
+    });
     await api.post({
       url: `parties/leave/${partyId}`,
       requiresToken: true,
@@ -83,13 +88,20 @@ export const createFireStoreParties = async (data: {
   }
 };
 
-export type FireStoreComments = {
+export type Comments = {
   commentId: string;
   userId: string;
   text: string;
   imageUri: string;
   likes: string[];
   timestamp: string;
+  userStageName: string;
+  name: string;
+  parentCommentId?: string;
+};
+
+export type FireStoreComments = Comments & {
+  replies: Comments[];
 };
 
 export const createFireStoreComments = async (
@@ -97,9 +109,14 @@ export const createFireStoreComments = async (
   userId: string,
   text: string,
   imageUri: string,
+  userStageName: string,
+  name: string,
+  parentCommentId: string | null = null,
 ) => {
   // Reference to the specific party's comments subcollection
-  const commentCollection = collection(db, `party/${partyId}/comments`);
+  const commentCollection = parentCommentId
+    ? collection(db, `party/${partyId}/comments/${parentCommentId}/replies`)
+    : collection(db, `party/${partyId}/comments`);
 
   // Creating the comment object
   const comment = {
@@ -108,7 +125,10 @@ export const createFireStoreComments = async (
     timestamp: Timestamp.fromDate(new Date()),
     text,
     imageUri,
+    userStageName,
+    name,
     likes: [],
+    parentCommentId,
   };
 
   // Adding the comment to the subcollection

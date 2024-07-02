@@ -104,6 +104,7 @@ PODS:
   - hermes-engine/Pre-built (0.73.5)
   - ImageColors (2.4.0):
     - ExpoModulesCore
+  - JitsiWebRTC (124.0.0)
   - libevent (2.1.12)
   - libwebp (1.3.2):
     - libwebp/demux (= 1.3.2)
@@ -1005,6 +1006,8 @@ PODS:
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
+  - react-native-date-picker (5.0.4):
+    - React-Core
   - react-native-document-picker (9.1.1):
     - React-Core
   - react-native-image-picker (7.1.2):
@@ -1024,6 +1027,9 @@ PODS:
     - React-Core
   - react-native-volume-manager (1.10.0):
     - Mute
+    - React-Core
+  - react-native-webrtc (124.0.0):
+    - JitsiWebRTC (~> 124.0.0)
     - React-Core
   - React-nativeconfig (0.73.5)
   - React-NativeModulesApple (0.73.5):
@@ -1227,7 +1233,7 @@ PODS:
     - TOCropViewController
   - RNKeychain (8.2.0):
     - React-Core
-  - RNReanimated (3.8.1):
+  - RNReanimated (3.12.0):
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
@@ -1297,6 +1303,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - "react-native-cameraroll (from `../node_modules/@react-native-camera-roll/camera-roll`)"
+  - react-native-date-picker (from `../node_modules/react-native-date-picker`)
   - react-native-document-picker (from `../node_modules/react-native-document-picker`)
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -1304,6 +1311,7 @@ DEPENDENCIES:
   - react-native-track-player (from `../node_modules/react-native-track-player`)
   - react-native-view-shot (from `../node_modules/react-native-view-shot`)
   - react-native-volume-manager (from `../node_modules/react-native-volume-manager`)
+  - react-native-webrtc (from `../node_modules/react-native-webrtc`)
   - React-nativeconfig (from `../node_modules/react-native/ReactCommon`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -1351,6 +1359,7 @@ SPEC REPOS:
     - fmt
     - GoogleDataTransport
     - GoogleUtilities
+    - JitsiWebRTC
     - libevent
     - libwebp
     - lottie-ios
@@ -1445,6 +1454,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   react-native-cameraroll:
     :path: "../node_modules/@react-native-camera-roll/camera-roll"
+  react-native-date-picker:
+    :path: "../node_modules/react-native-date-picker"
   react-native-document-picker:
     :path: "../node_modules/react-native-document-picker"
   react-native-image-picker:
@@ -1459,6 +1470,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-view-shot"
   react-native-volume-manager:
     :path: "../node_modules/react-native-volume-manager"
+  react-native-webrtc:
+    :path: "../node_modules/react-native-webrtc"
   React-nativeconfig:
     :path: "../node_modules/react-native/ReactCommon"
   React-NativeModulesApple:
@@ -1557,6 +1570,7 @@ SPEC CHECKSUMS:
   GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
   hermes-engine: 1d1835b2cc54c381909d94d1b3c8e0a2f1a94a0e
   ImageColors: 88be684570585c07ae2750bff34eb7b78bfc53b4
+  JitsiWebRTC: 37fb2fb70d42cac58c06948527a5f9e1b3f50812
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   lottie-ios: e047b1d2e6239b787cc5e9755b988869cf190494
@@ -1586,6 +1600,7 @@ SPEC CHECKSUMS:
   React-logger: 0331362115f0f5b392bd7ed14636d1a3ea612479
   React-Mapbuffer: 30d796a057e4e077d44b4c2ba17869fb8c1064eb
   react-native-cameraroll: a9363c064cc32bd79f950205d75c2edfa30e08d9
+  react-native-date-picker: 6891317e850deae5b53d51355226e07a495aba61
   react-native-document-picker: 3599b238843369026201d2ef466df53f77ae0452
   react-native-image-picker: 7c3a279e7a518628910f2ea02917bd3b90049465
   react-native-safe-area-context: dcab599c527c2d7de2d76507a523d20a0b83823d
@@ -1593,6 +1608,7 @@ SPEC CHECKSUMS:
   react-native-track-player: 97d76dbbd35f27cc709e5f04540615e54264b3f9
   react-native-view-shot: 6b7ed61d77d88580fed10954d45fad0eb2d47688
   react-native-volume-manager: 3c7d8047841b6831730dea7bf25250522388b4f4
+  react-native-webrtc: ae5f9793fc58138ecb5bdf0afe7cfdb3f09888ed
   React-nativeconfig: 78e2b14c0ee479449845b67bbe103343257cbcc0
   React-NativeModulesApple: 4fce13d416890352a7a9621427459fe738c4e79a
   React-perflogger: 0dd9f1725d55f8264b81efadd373fe1d9cca7dc2
@@ -1623,7 +1639,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: 2e3251b41d462552997c61afd680220d019fea65
   RNImageCropPicker: e7ab6fb43d2fc3e84651e786ef4a080d63b0ed3d
   RNKeychain: bfe3d12bf4620fe488771c414530bf16e88f3678
-  RNReanimated: de95bb2cf26ccfa2b6fdf7e1a57158fb5c9d9515
+  RNReanimated: c0ef6d8727123e5b0b081c0004b84db4fb290b85
   RNScreens: a4d9ce8f68f833f4e42410140eafd88e38bba163
   RNSVG: 50cf2c7018e57cf5d3522d98d0a3a4dd6bf9d093
   SDWebImage: a7f831e1a65eb5e285e3fb046a23fcfbf08e696d

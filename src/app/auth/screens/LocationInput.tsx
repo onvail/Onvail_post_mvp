@@ -1,9 +1,13 @@
-import React, {FunctionComponent} from 'react';
+import React, {
+  FunctionComponent,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import {TouchableOpacity, View} from 'react-native';
 import {useForm, Controller} from 'react-hook-form';
 import CustomText from 'app/components/Text/CustomText';
 import tw from 'lib/tailwind';
-import CustomTextInput from 'app/components/TextInput/CustomTextInput';
 import {AuthStackParamList} from 'src/app/navigator/types/AuthStackParamList';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import ErrorText from 'src/app/components/Text/ErrorText';
@@ -11,19 +15,80 @@ import RowContainer from 'src/app/components/View/RowContainer';
 import Icon from 'src/app/components/Icons/Icon';
 import AuthScreenContainer from 'src/app/components/Screens/AuthScreenContainer';
 import {SignUpStoreState, useSignUpStore} from 'src/app/zustand/store';
+import CustomDropDown from 'src/app/components/Dropdown/CustomDropDown';
+import {
+  Country,
+  City,
+  State,
+  ICountry,
+  IState,
+  ICity,
+} from 'country-state-city';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 type InitialValue = {
   country: string;
   city: string;
+  state: string;
 };
 
 const LocationInput: FunctionComponent<Props> = ({navigation}) => {
   const defaultValues: InitialValue = {
     country: '',
     city: '',
+    state: '',
   };
+
+  const [countriesAndStates, setCountriesAndStates] = useState<ICountry[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(null);
+  const [states, setStates] = useState<IState[]>([]);
+  const [selectedState, setSelectedState] = useState<IState | null>(null);
+  const [cities, setCities] = useState<ICity[]>([]);
+  const [_selectedCity, setSelectedCity] = useState<IState | null>(null);
+
+  const fetchAllCountries = async () => {
+    setCountriesAndStates(Country.getAllCountries());
+  };
+
+  const fetchStatesInCountry = useCallback(() => {
+    if (!selectedCountry) {
+      return;
+    }
+    try {
+      const response = State.getStatesOfCountry(selectedCountry.isoCode);
+      setStates(response);
+    } catch (error) {
+      console.log(error);
+    }
+  }, [selectedCountry]);
+
+  const fetchCitiesInAState = useCallback(async () => {
+    if (!selectedCountry || !selectedState) {
+      return;
+    }
+    try {
+      const response = City.getCitiesOfState(
+        selectedCountry.isoCode,
+        selectedState.isoCode,
+      );
+      setCities(response);
+    } catch (error) {
+      console.log(error);
+    }
+  }, [selectedCountry, selectedState]);
+
+  useEffect(() => {
+    fetchStatesInCountry();
+  }, [fetchStatesInCountry]);
+
+  useEffect(() => {
+    fetchAllCountries();
+  }, []);
+
+  useEffect(() => {
+    fetchCitiesInAState();
+  }, [fetchCitiesInAState, selectedState, setSelectedCountry]);
 
   const updateUserSignUpStore = useSignUpStore(
     (state: SignUpStoreState) => state.updateUserSignUpStore,
@@ -39,11 +104,25 @@ const LocationInput: FunctionComponent<Props> = ({navigation}) => {
     mode: 'all',
   });
 
-  const onSubmit = async ({country, city}: InitialValue) => {
+  const onSubmit = async ({country, city, state}: InitialValue) => {
+    // In Islands without states and cities, return countries as the state and city;
+    // In countries with states but not 'cities' e.g the United Kingdom, use the 'state' as the city;
+    // whenever a city is present use it.
+    const cityValue = () => {
+      if (selectedState) {
+        if (cities.length === 0) {
+          return state;
+        }
+        return city;
+      } else {
+        return country;
+      }
+    };
     updateUserSignUpStore({
       ...storeUser,
       country,
-      state: city,
+      state: selectedCountry && states.length === 0 ? country : state,
+      city: cityValue(),
     });
     navigation.navigate('RoleInput');
   };
@@ -71,34 +150,89 @@ const LocationInput: FunctionComponent<Props> = ({navigation}) => {
               required: 'Country is required',
             }}
             render={({field: {onChange, onBlur, value}}) => (
-              <CustomTextInput
-                placeholder="Country"
-                onChangeText={onChange}
+              <CustomDropDown
+                data={countriesAndStates ?? []}
+                search
+                onChange={item => {
+                  onChange(item.name);
+                  setSelectedCountry(item);
+                }}
+                labelField={'name'}
+                valueField={'name'}
+                maxHeight={250}
                 value={value}
                 onBlur={onBlur}
+                placeholder="Select country"
+                searchField={'name'}
+                searchPlaceholder="search for country"
+                inputSearchStyle={tw`rounded font-poppinsRegular text-sm`}
               />
             )}
             name="country"
           />
         </View>
-        <View>
-          <ErrorText>{errors?.city?.message}</ErrorText>
-          <Controller
-            control={control}
-            rules={{
-              required: 'City is required',
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <CustomTextInput
-                placeholder="City"
-                onChangeText={onChange}
-                value={value}
-                onBlur={onBlur}
-              />
-            )}
-            name="city"
-          />
-        </View>
+        {selectedCountry && states.length !== 0 && (
+          <View>
+            <ErrorText>{errors?.state?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'State/Province is required',
+              }}
+              render={({field: {onChange, onBlur, value}}) => (
+                <CustomDropDown
+                  data={states || []}
+                  search
+                  searchField={'name'}
+                  searchPlaceholder="search for state"
+                  inputSearchStyle={tw`rounded font-poppinsRegular text-sm`}
+                  onChange={item => {
+                    onChange(item.name);
+                    setSelectedState(item);
+                  }}
+                  labelField={'name'}
+                  valueField={'name'}
+                  maxHeight={250}
+                  value={value}
+                  onBlur={onBlur}
+                  placeholder="Select state/province"
+                />
+              )}
+              name="state"
+            />
+          </View>
+        )}
+        {selectedState && cities.length !== 0 && (
+          <View>
+            <ErrorText>{errors?.city?.message}</ErrorText>
+            <Controller
+              control={control}
+              rules={{
+                required: 'City is required',
+              }}
+              render={({field: {onChange, onBlur, value}}) => (
+                <CustomDropDown
+                  data={cities || []}
+                  onChange={item => {
+                    onChange(item.name);
+                    setSelectedCity(item.name);
+                  }}
+                  labelField={'name'}
+                  valueField={'name'}
+                  maxHeight={250}
+                  value={value}
+                  onBlur={onBlur}
+                  placeholder="City"
+                  search
+                  searchField={'name'}
+                  searchPlaceholder="search for city"
+                  inputSearchStyle={tw`rounded font-poppinsRegular text-sm`}
+                />
+              )}
+              name="city"
+            />
+          </View>
+        )}
       </View>
       <TouchableOpacity
         activeOpacity={0.8}
