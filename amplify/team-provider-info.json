@@ -1,0 +1,15 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-onvail-dev-8008a-authRole",
+      "UnauthRoleArn": "arn:aws:iam::339713099736:role/amplify-onvail-dev-8008a-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::339713099736:role/amplify-onvail-dev-8008a-authRole",
+      "Region": "eu-north-1",
+      "DeploymentBucketName": "amplify-onvail-dev-8008a-deployment",
+      "UnauthRoleName": "amplify-onvail-dev-8008a-unauthRole",
+      "StackName": "amplify-onvail-dev-8008a",
+      "StackId": "arn:aws:cloudformation:eu-north-1:339713099736:stack/amplify-onvail-dev-8008a/59199080-38ad-11ef-b44c-0a129992c9a5",
+      "AmplifyAppId": "d21b78lkv6b69v"
+    }
+  }
+}
