@@ -9,20 +9,22 @@ import Links from '../components/Links';
 import RoundedBtn from 'src/app/components/Buttons/RoundedBtn';
 import useImageService from 'src/app/hooks/useImageService';
 import CustomImage from 'src/app/components/Image/CustomImage';
-import {uploadToCloudinary} from 'src/utils/utilities';
 import api from 'src/api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import localStorageKeys from 'src/api/config/local-storage-keys';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {MainStackParamList} from 'src/app/navigator/types/MainStackParamList';
 import {Colors} from 'src/app/styles/colors';
+import {S3ImageUpload} from 'src/utils/aws';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Settings'>;
 
 const Settings: FunctionComponent<Props> = ({navigation}) => {
   const {user, updateUser} = useUser();
   const {tryPickImageFromDevice} = useImageService();
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | undefined>(
+    undefined,
+  );
   const [isImageUploading, setIsImageUploading] = useState<boolean>(false);
 
   const updateImage = async (url: string) => {
@@ -57,14 +59,13 @@ const Settings: FunctionComponent<Props> = ({navigation}) => {
         includeBase64: true,
         action: action,
       });
-      if (data) {
-        const response = await uploadToCloudinary({
-          uri: data?.file?.uri ?? '',
-          type: data?.file?.type ?? '',
-          name: data?.file?.name ?? '',
-        });
-        setProfileImage(response?.file_url);
-        updateImage(response?.file_url);
+      if (data?.file?.uri) {
+        const response = await S3ImageUpload(data.file.uri);
+        console.log('response', response);
+        setProfileImage(response?.Location);
+        if (response?.Location) {
+          await updateImage(response?.Location);
+        }
       }
       return data;
     } catch (error) {
