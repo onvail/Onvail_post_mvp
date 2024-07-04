@@ -10,7 +10,6 @@ const CustomImage: FunctionComponent<Props> = ({uri, ...props}) => {
     <FastImage
       source={{
         uri: uri,
-        headers: {Authorization: 'someAuthToken'},
         priority: FastImage.priority.normal,
       }}
       resizeMode={FastImage.resizeMode.contain}
