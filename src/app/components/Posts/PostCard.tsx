@@ -13,9 +13,9 @@ import {
   TouchableOpacity,
   View,
   Animated,
+  Image,
 } from 'react-native';
 import UserHeader from './UserHeader';
-import CustomImage from 'components/Image/CustomImage';
 import tw from 'src/lib/tailwind';
 import CustomText from 'components/Text/CustomText';
 import {FlashList, ListRenderItem} from '@shopify/flash-list';
@@ -61,10 +61,6 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
     useState<PartiesResponse>(party);
 
   const {beginParty, joinCall} = useWebrtc(party?._id);
-
-  // useEffect(() => {
-  //   setupMediaStream();
-  // }, []);
 
   const handleSongsDuration = useCallback(async () => {
     const sound = new Audio.Sound();
@@ -327,8 +323,8 @@ const PostItem: FunctionComponent<{
             </RowContainer>
           </RowContainer>
         )}
-        <CustomImage
-          uri={item?.albumPicture ?? ''}
+        <Image
+          source={{uri: item?.albumPicture}}
           style={[tw`h-100 w-[100%] rounded-4`]}
           resizeMode="cover"
         />

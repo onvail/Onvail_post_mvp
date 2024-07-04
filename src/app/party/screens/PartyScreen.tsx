@@ -35,7 +35,6 @@ import MusicList from '../components/MusicList';
 import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import {VolumeManager} from 'react-native-volume-manager';
 import TrackPlayer, {State, Track} from 'react-native-track-player';
-import CustomImage from 'src/app/components/Image/CustomImage';
 import {Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
 import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
@@ -71,6 +70,7 @@ import Animated, {
 import GuestsList from '../components/GuestsList';
 import Modal from 'react-native-modal/dist/modal';
 import useWebrtc from 'src/app/hooks/useWebrtc';
+import {Image} from 'react-native';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -591,7 +591,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         item={item}
         isHost={party?.artist?._id === item?._id}
         toggleMute={toggleMute}
-        localStream={localStream}
+        // localStream={localStream}
       />
     );
   };
@@ -663,8 +663,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           </CustomText>
         </TouchableOpacity>
         <View style={tw`mt-8 mb-3 items-center`}>
-          <CustomImage
-            uri={party.albumPicture}
+          <Image
+            source={{uri: party.albumPicture}}
             resizeMode="cover"
             style={tw`h-60 w-60 rounded-lg`}
           />
