@@ -70,7 +70,7 @@ import Animated, {
 import GuestsList from '../components/GuestsList';
 import Modal from 'react-native-modal/dist/modal';
 import useWebrtc from 'src/app/hooks/useWebrtc';
-import {Image} from 'react-native';
+import CustomImage from 'src/app/components/Image/CustomImage';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
@@ -663,8 +663,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           </CustomText>
         </TouchableOpacity>
         <View style={tw`mt-8 mb-3 items-center`}>
-          <Image
-            source={{uri: party.albumPicture}}
+          <CustomImage
+            uri={party.albumPicture}
             resizeMode="cover"
             style={tw`h-60 w-60 rounded-lg`}
           />

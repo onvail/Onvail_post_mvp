@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   View,
   Animated,
-  Image,
 } from 'react-native';
 import UserHeader from './UserHeader';
 import tw from 'src/lib/tailwind';
@@ -34,6 +33,7 @@ import {leaveParty} from 'src/actions/parties';
 import {arrayUnion, doc, onSnapshot, updateDoc} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
 import useWebrtc from 'src/app/hooks/useWebrtc';
+import CustomImage from '../Image/CustomImage';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -323,8 +323,8 @@ const PostItem: FunctionComponent<{
             </RowContainer>
           </RowContainer>
         )}
-        <Image
-          source={{uri: item?.albumPicture}}
+        <CustomImage
+          uri={item?.albumPicture}
           style={[tw`h-100 w-[100%] rounded-4`]}
           resizeMode="cover"
         />
