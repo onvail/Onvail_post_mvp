@@ -283,7 +283,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                         style={{height: 290, width: 360}}
                         onCapture={onCapture}
                         ref={ref}
-                        options={{format: 'jpg', quality: 0.9}}>
+                        options={{format: 'jpg', quality: 1.0}}>
                         <View style={tw`h-[100%] w-[100%]`}>
                           <DefaultImages
                             color={selectedColor}
