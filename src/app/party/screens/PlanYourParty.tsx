@@ -13,12 +13,7 @@ import {useForm, Controller} from 'react-hook-form';
 import useImageService, {ImageFromDevice} from 'src/app/hooks/useImageService';
 import CustomImage from 'src/app/components/Image/CustomImage';
 import useDocumentPicker from 'src/app/hooks/useDocumentPicker';
-import {
-  FileUploadItem,
-  handleMultipleUploads,
-  truncateText,
-  uploadToCloudinary,
-} from 'src/utils/utilities';
+import {truncateText} from 'src/utils/utilities';
 import ErrorText from 'src/app/components/Text/ErrorText';
 import VotingPoll from '../components/VotingPoll';
 import {toast, Toasts, ToastPosition} from '@backpackapp-io/react-native-toast';
@@ -33,6 +28,7 @@ import ProceedBtn from 'src/app/components/Buttons/ProceedBtn';
 import useUser from 'src/app/hooks/useUserInfo';
 import {createFireStoreParties} from 'src/actions/parties';
 import DatePicker from 'react-native-date-picker';
+import {S3ImageUpload, S3FileUpload} from 'src/utils/aws';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PlanYourParty'>;
 const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
@@ -176,39 +172,26 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
 
   const getImageUrl = async () => {
     try {
-      let fileUri;
+      let fileUri: string;
       if (selectedImageOption === 'uploadedImage') {
-        fileUri = selectedImage?.file.uri;
+        fileUri = selectedImage?.file.uri!;
       } else {
         fileUri = await captureDefaultImage();
       }
-      const response = await uploadToCloudinary({
-        uri: fileUri ?? '',
-        type: 'jpeg',
-        name: 'album-image',
-      });
-      return response?.file_url;
+      const response = await S3ImageUpload(fileUri);
+      return response?.Location;
     } catch (error) {
       console.log('error', error);
     }
   };
 
   const getMusicUrl = async () => {
-    const itemsForCloudinaryUpload: FileUploadItem[] =
-      musicFiles?.map(uploadItem => ({
-        uri: uploadItem.uri ?? '',
-        name: uploadItem.name ?? '',
-        type: uploadItem.type ?? '',
-      })) ?? [];
     try {
-      const response = await handleMultipleUploads(itemsForCloudinaryUpload);
-      if (response?.[0] !== undefined) {
-        return response.map(item => ({
-          name: item?.name,
-          file_url: item?.file_url,
-        }));
-      }
-      console.log('response', response);
+      const response = await S3FileUpload(musicFiles);
+      return response.map(item => ({
+        name: item?.fileName,
+        file_url: item?.Location,
+      }));
     } catch (error) {
       console.log('error', error);
     }
@@ -300,7 +283,7 @@ const PlanYourParty: FunctionComponent<Props> = ({navigation, route}) => {
                         style={{height: 290, width: 360}}
                         onCapture={onCapture}
                         ref={ref}
-                        options={{format: 'jpg', quality: 0.9}}>
+                        options={{format: 'jpg', quality: 1.0}}>
                         <View style={tw`h-[100%] w-[100%]`}>
                           <DefaultImages
                             color={selectedColor}

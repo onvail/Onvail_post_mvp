@@ -24,12 +24,14 @@ const selectImageFromGallery = async (
 ): Promise<Image> => {
   return await ImagePicker.openPicker({
     mediaType: 'photo',
-    width: 200,
-    height: 200,
+    width: 1000,
+    height: 1000,
     cropping: cropImage,
     cropperCircleOverlay: cropImage,
     includeBase64: includeBase64,
-    compressImageQuality: 0.8,
+    compressImageQuality: 1,
+    freeStyleCropEnabled: true,
+
     smartAlbums: [
       'UserLibrary',
       'RecentlyAdded',

@@ -15,7 +15,6 @@ import {
   Animated,
 } from 'react-native';
 import UserHeader from './UserHeader';
-import CustomImage from 'components/Image/CustomImage';
 import tw from 'src/lib/tailwind';
 import CustomText from 'components/Text/CustomText';
 import {FlashList, ListRenderItem} from '@shopify/flash-list';
@@ -34,6 +33,7 @@ import {leaveParty} from 'src/actions/parties';
 import {arrayUnion, doc, onSnapshot, updateDoc} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
 import useWebrtc from 'src/app/hooks/useWebrtc';
+import CustomImage from '../Image/CustomImage';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -61,10 +61,6 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
     useState<PartiesResponse>(party);
 
   const {beginParty, joinCall} = useWebrtc(party?._id);
-
-  // useEffect(() => {
-  //   setupMediaStream();
-  // }, []);
 
   const handleSongsDuration = useCallback(async () => {
     const sound = new Audio.Sound();
@@ -328,7 +324,7 @@ const PostItem: FunctionComponent<{
           </RowContainer>
         )}
         <CustomImage
-          uri={item?.albumPicture ?? ''}
+          uri={item?.albumPicture}
           style={[tw`h-100 w-[100%] rounded-4`]}
           resizeMode="cover"
         />
