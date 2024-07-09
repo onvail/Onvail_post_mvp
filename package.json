@@ -54,6 +54,7 @@
     "react-hook-form": "^7.51.2",
     "react-native": "0.73.5",
     "react-native-actions-sheet": "^0.9.3",
+    "react-native-agora": "^4.3.2",
     "react-native-alert-notification": "^0.4.0",
     "react-native-calendars": "^1.1304.1",
     "react-native-circular-progress": "^1.3.9",
