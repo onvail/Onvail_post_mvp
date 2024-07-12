@@ -69,15 +69,16 @@ import Animated, {
 } from 'react-native-reanimated';
 import GuestsList from '../components/GuestsList';
 import Modal from 'react-native-modal/dist/modal';
-import useWebrtc from 'src/app/hooks/useWebrtc';
 import CustomImage from 'src/app/components/Image/CustomImage';
+import {useAgora} from 'src/app/hooks/useAgora';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
   const {user} = useUser();
-  const {endCall, leaveCall, toggleMute, localStream} = useWebrtc(party?._id);
+  const {isMuted, toggleMute, toggleIsSpeakerEnabled, leave, isSpeakerEnabled} =
+    useAgora(party?._id);
   const utcTimeStamp = moment().tz('UTC');
   const HighLightLeft = generalIcon.HighLightLeft;
   const HighLightRight = generalIcon.HighLightRight;
@@ -157,7 +158,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const leaveParty = useCallback(async () => {
     setIsLeavingParty(true);
     try {
-      await leaveCall();
+      leave();
       socket.emit('leave_party', {
         party: partyId,
         user,
@@ -180,7 +181,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     } finally {
       setIsLeavingParty(false);
     }
-  }, [navigation, partyId, user, leaveCall]);
+  }, [navigation, partyId, user, leave]);
 
   const leavePartyHandler = useCallback(async () => {
     await leaveParty();
@@ -216,53 +217,48 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     fetchPartyGuests();
   }, [fetchPartyGuests]);
 
-  useEffect(() => {
-    const handlePartyStatus = async () => {
-      if (!isHost) {
-        const callDoc = doc(db, 'calls', partyId);
+  // useEffect(() => {
+  //   const handlePartyStatus = async () => {
+  //     if (!isHost) {
+  //       const callDoc = doc(db, 'calls', partyId);
 
-        const unsubscribe = onSnapshot(callDoc, async snapshot => {
-          if (snapshot.exists()) {
-            const data = snapshot.data();
-            if (data) {
-              if (data.callEnded === true) {
-                await TrackPlayer.stop();
-                await TrackPlayer.reset();
-                await leaveParty();
-                Toast.show({
-                  type: ALERT_TYPE.INFO,
-                  title: 'Party ended!',
-                  textBody: 'The host ended the party',
-                  titleStyle: tw`font-poppinsRegular text-xs`,
-                  textBodyStyle: tw`font-poppinsRegular text-xs`,
-                });
-              }
-            }
-          } else {
-            console.log('Document does not exist');
-          }
-        });
+  //       const unsubscribe = onSnapshot(callDoc, async snapshot => {
+  //         if (snapshot.exists()) {
+  //           const data = snapshot.data();
+  //           if (data) {
+  //             if (data.callEnded === true) {
+  //               await TrackPlayer.stop();
+  //               await TrackPlayer.reset();
+  //               await leaveParty();
+  //               Toast.show({
+  //                 type: ALERT_TYPE.INFO,
+  //                 title: 'Party ended!',
+  //                 textBody: 'The host ended the party',
+  //                 titleStyle: tw`font-poppinsRegular text-xs`,
+  //                 textBodyStyle: tw`font-poppinsRegular text-xs`,
+  //               });
+  //             }
+  //           }
+  //         } else {
+  //           console.log('Document does not exist');
+  //         }
+  //       });
 
-        // Clean up the subscription on unmount
-        return () => unsubscribe();
-      }
-    };
-    handlePartyStatus();
-  }, [navigation, partyId, leaveParty, isHost]);
+  //       // Clean up the subscription on unmount
+  //       return () => unsubscribe();
+  //     }
+  //   };
+  //   handlePartyStatus();
+  // }, [navigation, partyId, leaveParty, isHost]);
 
   useEffect(() => {
     if (party?._id) {
       const commentCollection = collection(db, `party/${party._id}/comments`);
       const q = query(commentCollection, orderBy('timestamp', 'desc'));
       const unsubscribe = onSnapshot(q, async querySnapshot => {
-        const fetchedComments = await Promise.all(
+        const fetchedComments: any = await Promise.all(
           querySnapshot.docs.map(async doc => {
-            const commentData = {
-              ...doc.data(),
-              commentId: doc.id,
-            };
-
-            // Fetch replies for each comment
+            const commentData = {...doc.data(), commentId: doc.id};
             const repliesCollection = collection(
               db,
               `party/${party?._id}/comments/${doc.id}/replies`,
@@ -272,11 +268,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
               ...replyDoc.data(),
               commentId: replyDoc.id,
             }));
-
-            return {
-              ...commentData,
-              replies,
-            };
+            return {...commentData, replies};
           }),
         );
         setComments(fetchedComments);
@@ -338,7 +330,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     setIsEndingParty(true);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
-      await endCall();
+      await leave();
       await updateDoc(partyDocRef, {
         participants: arrayRemove(user),
       });
@@ -585,16 +577,19 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       });
     });
 
-  const guestRenderItem: ListRenderItem<User> = ({item}) => {
-    return (
-      <GuestsList
-        item={item}
-        isHost={party?.artist?._id === item?._id}
-        toggleMute={toggleMute}
-        // localStream={localStream}
-      />
-    );
-  };
+  const guestRenderItem: ListRenderItem<User> = useCallback(
+    ({item}) => {
+      return (
+        <GuestsList
+          item={item}
+          isHost={party?.artist?._id === item?._id}
+          toggleMute={toggleMute}
+          isMuted={isMuted}
+        />
+      );
+    },
+    [isMuted, toggleMute, party?.artist?._id],
+  );
 
   const renderBottomFooter = useCallback(
     (props: any) => (
@@ -841,6 +836,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                       estimatedItemSize={200}
                       numColumns={4}
                       horizontal={false}
+                      extraData={isMuted}
                     />
                   )}
                   {selectedBottomSheetTab === 2 && <></>}
@@ -853,20 +849,25 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                   } w-full `,
                 ]}>
                 <RowContainer style={tw`justify-between mx-3 items-center`}>
-                  <RowContainer style={tw`justify-between items-center w-1/4`}>
+                  <RowContainer style={tw`justify-between items-center w-1/3`}>
                     <Pressable
                       onPress={toggleMute}
                       style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
-                      {!localStream?.getAudioTracks()?.[0].enabled ? (
-                        <MicMuteIcon />
-                      ) : (
-                        <MicUnmuteIcon />
-                      )}
+                      {isMuted ? <MicMuteIcon /> : <MicUnmuteIcon />}
                     </Pressable>
                     <Pressable
                       onPress={() => setIsHandRaised(prev => !prev)}
                       style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}>
                       {isHandRaised ? <HandRaisedIcon /> : <HandDownIcon />}
+                    </Pressable>
+                    <Pressable
+                      style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}
+                      onPress={toggleIsSpeakerEnabled}>
+                      <Icon
+                        icon={isSpeakerEnabled ? 'volume-high' : 'volume-low'}
+                        size={20}
+                        color={isSpeakerEnabled ? 'white' : 'grey'}
+                      />
                     </Pressable>
                   </RowContainer>
                   {selectedBottomSheetTab !== 0 && (
