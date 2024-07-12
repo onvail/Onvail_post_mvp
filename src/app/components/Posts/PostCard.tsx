@@ -34,6 +34,7 @@ import {arrayUnion, doc, onSnapshot, updateDoc} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
 import useWebrtc from 'src/app/hooks/useWebrtc';
 import CustomImage from '../Image/CustomImage';
+import {useAgora} from 'src/app/hooks/useAgora';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -61,6 +62,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
     useState<PartiesResponse>(party);
 
   const {beginParty, joinCall} = useWebrtc(party?._id);
+  const {join} = useAgora(party?._id);
 
   const handleSongsDuration = useCallback(async () => {
     const sound = new Audio.Sound();
@@ -133,7 +135,8 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
       await updateDoc(partyDocRef, {
         participants: arrayUnion(user),
       });
-      beginParty();
+      await join();
+      // beginParty();
       await api.patch({
         url: `parties/start-party/${party?._id}`,
         requiresToken: true,
@@ -155,17 +158,25 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
       await updateDoc(partyDocRef, {
         participants: arrayUnion(user),
       });
-      const canJoinCall = await joinCall();
-      if (!canJoinCall) {
-        return;
-      } else {
-        await api.post({
-          url: `parties/join-party/${party?._id}`,
-          requiresToken: true,
-          authorization: true,
-        });
-        handleJoinPartyBtnPress(party, albumBackgroundColor);
-      }
+      await join();
+      await api.post({
+        url: `parties/join-party/${party?._id}`,
+        requiresToken: true,
+        authorization: true,
+      });
+      handleJoinPartyBtnPress(party, albumBackgroundColor);
+      // const canJoinCall = await joinCall();
+      // if (!canJoinCall) {
+      //   return;
+      // } else {
+      //   await join();
+      //   await api.post({
+      //     url: `parties/join-party/${party?._id}`,
+      //     requiresToken: true,
+      //     authorization: true,
+      //   });
+      //   handleJoinPartyBtnPress(party, albumBackgroundColor);
+      // }
     } catch (error) {
       console.log(error);
     } finally {
