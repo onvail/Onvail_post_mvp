@@ -15,14 +15,13 @@ const appId = AGORA_APP_ID;
 
 export const useAgora = (channelName: string) => {
   const channel = 'onvail';
-  console.log('channelName', channelName);
 
   const agoraEngineRef = useRef<IRtcEngine | null>(null); // IRtcEngine instance
   const [isJoined, setIsJoined] = useState(false); // Whether the local user has joined the channel
   const [remoteUid, setRemoteUid] = useState(0); // Remote user UID
   const [message, setMessage] = useState(''); // User prompt message
   const [isMuted, setIsMuted] = useState(true); // Whether the local user is muted
-  const [isSpeakerEnabled, setIsSpeakerEnabled] = useState<boolean>(true); // Whether the local user is a speaker
+  const [isSpeakerEnabled, setIsSpeakerEnabled] = useState<boolean>(false); // Whether the local user is a speaker
 
   // Initialize the engine when starting the App
   useEffect(() => {
@@ -65,7 +64,6 @@ export const useAgora = (channelName: string) => {
       return;
     }
     try {
-      console.log('joining', agoraEngineRef);
       // Set the channel profile type to communication after joining the channel
       agoraEngineRef.current?.setChannelProfile(
         ChannelProfileType.ChannelProfileCommunication,
@@ -94,7 +92,6 @@ export const useAgora = (channelName: string) => {
 
   // Display message
   function showMessage(msg: string) {
-    console.log('msg', msg);
     setMessage(msg);
   }
 
@@ -126,5 +123,6 @@ export const useAgora = (channelName: string) => {
     toggleMute,
     isMuted,
     toggleIsSpeakerEnabled,
+    isSpeakerEnabled,
   };
 };
