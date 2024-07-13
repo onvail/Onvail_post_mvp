@@ -225,19 +225,17 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         const unsubscribe = onSnapshot(callDoc, async snapshot => {
           if (snapshot.exists()) {
             const data = snapshot.data();
-            if (data) {
-              if (data.is_started === false) {
-                await TrackPlayer.stop();
-                await TrackPlayer.reset();
-                await leaveParty();
-                Toast.show({
-                  type: ALERT_TYPE.INFO,
-                  title: 'Party ended!',
-                  textBody: 'The host ended the party',
-                  titleStyle: tw`font-poppinsRegular text-xs`,
-                  textBodyStyle: tw`font-poppinsRegular text-xs`,
-                });
-              }
+            if (data && data.is_started === false) {
+              await TrackPlayer.stop();
+              await TrackPlayer.reset();
+              await leaveParty();
+              Toast.show({
+                type: ALERT_TYPE.INFO,
+                title: 'Party ended!',
+                textBody: 'The host ended the party',
+                titleStyle: tw`font-poppinsRegular text-xs`,
+                textBodyStyle: tw`font-poppinsRegular text-xs`,
+              });
             }
           } else {
             console.log('Document does not exist');
