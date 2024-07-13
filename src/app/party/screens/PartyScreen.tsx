@@ -217,39 +217,39 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     fetchPartyGuests();
   }, [fetchPartyGuests]);
 
-  // useEffect(() => {
-  //   const handlePartyStatus = async () => {
-  //     if (!isHost) {
-  //       const callDoc = doc(db, 'calls', partyId);
+  useEffect(() => {
+    const handlePartyStatus = async () => {
+      if (!isHost) {
+        const callDoc = doc(db, 'party', partyId);
 
-  //       const unsubscribe = onSnapshot(callDoc, async snapshot => {
-  //         if (snapshot.exists()) {
-  //           const data = snapshot.data();
-  //           if (data) {
-  //             if (data.callEnded === true) {
-  //               await TrackPlayer.stop();
-  //               await TrackPlayer.reset();
-  //               await leaveParty();
-  //               Toast.show({
-  //                 type: ALERT_TYPE.INFO,
-  //                 title: 'Party ended!',
-  //                 textBody: 'The host ended the party',
-  //                 titleStyle: tw`font-poppinsRegular text-xs`,
-  //                 textBodyStyle: tw`font-poppinsRegular text-xs`,
-  //               });
-  //             }
-  //           }
-  //         } else {
-  //           console.log('Document does not exist');
-  //         }
-  //       });
+        const unsubscribe = onSnapshot(callDoc, async snapshot => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            if (data) {
+              if (data.is_started === false) {
+                await TrackPlayer.stop();
+                await TrackPlayer.reset();
+                await leaveParty();
+                Toast.show({
+                  type: ALERT_TYPE.INFO,
+                  title: 'Party ended!',
+                  textBody: 'The host ended the party',
+                  titleStyle: tw`font-poppinsRegular text-xs`,
+                  textBodyStyle: tw`font-poppinsRegular text-xs`,
+                });
+              }
+            }
+          } else {
+            console.log('Document does not exist');
+          }
+        });
 
-  //       // Clean up the subscription on unmount
-  //       return () => unsubscribe();
-  //     }
-  //   };
-  //   handlePartyStatus();
-  // }, [navigation, partyId, leaveParty, isHost]);
+        // Clean up the subscription on unmount
+        return () => unsubscribe();
+      }
+    };
+    handlePartyStatus();
+  }, [navigation, partyId, leaveParty, isHost]);
 
   useEffect(() => {
     if (party?._id) {
@@ -330,9 +330,10 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     setIsEndingParty(true);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
-      await leave();
+      leave();
       await updateDoc(partyDocRef, {
         participants: arrayRemove(user),
+        is_started: false,
       });
       await api.post({
         url: `parties/leave/${party?._id}`,
