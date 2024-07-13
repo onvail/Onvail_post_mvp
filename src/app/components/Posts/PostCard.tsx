@@ -29,12 +29,17 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {getColors} from 'react-native-image-colors';
 import {ColorScheme} from 'src/app/navigator/types/MainStackParamList';
 import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
-import {leaveParty} from 'src/actions/parties';
-import {arrayUnion, doc, onSnapshot, updateDoc} from 'firebase/firestore';
+import {
+  arrayUnion,
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
-import useWebrtc from 'src/app/hooks/useWebrtc';
 import CustomImage from '../Image/CustomImage';
 import {useAgora} from 'src/app/hooks/useAgora';
+import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -61,7 +66,6 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const [partyTrackWithDuration, setPartyTrackWithDuration] =
     useState<PartiesResponse>(party);
 
-  const {beginParty, joinCall} = useWebrtc(party?._id);
   const {join} = useAgora(party?._id);
 
   const handleSongsDuration = useCallback(async () => {
@@ -134,9 +138,9 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
       const partyDocRef = doc(db, 'party', party?._id);
       await updateDoc(partyDocRef, {
         participants: arrayUnion(user),
+        is_started: true,
       });
       await join();
-      // beginParty();
       await api.patch({
         url: `parties/start-party/${party?._id}`,
         requiresToken: true,
@@ -152,33 +156,30 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
 
   const joinParty = async () => {
     setIsLoading(true);
-    leaveParty(party?._id, user);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
-      await updateDoc(partyDocRef, {
-        participants: arrayUnion(user),
-      });
-      await join();
-      await api.post({
-        url: `parties/join-party/${party?._id}`,
-        requiresToken: true,
-        authorization: true,
-      });
-      handleJoinPartyBtnPress(party, albumBackgroundColor);
-      // const canJoinCall = await joinCall();
-      // if (!canJoinCall) {
-      //   return;
-      // } else {
-      //   await join();
-      //   await api.post({
-      //     url: `parties/join-party/${party?._id}`,
-      //     requiresToken: true,
-      //     authorization: true,
-      //   });
-      //   handleJoinPartyBtnPress(party, albumBackgroundColor);
-      // }
+      const partyData = (await getDoc(partyDocRef)).data();
+      if (partyData?.is_started) {
+        await updateDoc(partyDocRef, {
+          participants: arrayUnion(user),
+        });
+        await join();
+        await api.post({
+          url: `parties/join-party/${party?._id}`,
+          requiresToken: true,
+          authorization: true,
+        });
+        handleJoinPartyBtnPress(partyTrackWithDuration, albumBackgroundColor);
+      } else {
+        Toast.show({
+          type: ALERT_TYPE.DANGER,
+          title: "Can't join party",
+          textBody: 'The party has ended',
+          titleStyle: tw`font-poppinsRegular text-xs`,
+          textBodyStyle: tw`font-poppinsRegular text-xs`,
+        });
+      }
     } catch (error) {
-      console.log(error);
     } finally {
       setIsLoading(false);
     }
@@ -267,13 +268,14 @@ const PostItem: FunctionComponent<{
   const [partyStarted, setPartyStarted] = useState<boolean>(false);
 
   useEffect(() => {
-    const callDoc = doc(db, 'calls', partyId);
+    const partyDoc = doc(db, 'party', partyId);
 
-    const unsubscribe = onSnapshot(callDoc, snapshot => {
+    const unsubscribe = onSnapshot(partyDoc, snapshot => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        if (data) {
-          setPartyStarted(data.callStarted ?? false);
+        console.log(data.is_started);
+        if (data.is_started) {
+          setPartyStarted(data.is_started);
         }
       } else {
         console.log('Document does not exist');
