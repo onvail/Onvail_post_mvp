@@ -273,7 +273,6 @@ const PostItem: FunctionComponent<{
     const unsubscribe = onSnapshot(partyDoc, snapshot => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        console.log(data.is_started);
         if (data.is_started) {
           setPartyStarted(data.is_started);
         }
