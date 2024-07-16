@@ -54,13 +54,17 @@ export const leaveParty = async (partyId: string, user: any) => {
       party: partyId,
       user,
     });
+    const partyDocRef = doc(db, 'party', partyId);
+    await updateDoc(partyDocRef, {
+      participants: arrayRemove(user),
+    });
     await api.post({
       url: `parties/leave/${partyId}`,
       requiresToken: true,
       authorization: true,
     });
   } catch (error) {
-    console.log(error);
+    console.log('error', error);
   }
 };
 
