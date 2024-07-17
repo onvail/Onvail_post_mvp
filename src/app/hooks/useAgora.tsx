@@ -8,6 +8,7 @@ import {
   ChannelProfileType,
 } from 'react-native-agora';
 import {PermissionsAndroid, Platform} from 'react-native';
+import VIForegroundService from '@voximplant/react-native-foreground-service';
 
 const token = AGORA_TEMPORARY_TOKEN;
 const uid = 0;
@@ -15,6 +16,40 @@ const appId = AGORA_APP_ID;
 
 export const useAgora = (channelName: string) => {
   const channel = 'onvail';
+  const foregroundService = VIForegroundService.getInstance();
+
+  const startService = async () => {
+    const androidForegroundServiceChannelConfig = {
+      id: 'onvail',
+      name: 'Onvail',
+      enableVibration: true,
+      importance: 5,
+    };
+    if (Platform.OS !== 'android') {
+      return;
+    }
+    if (Platform.Version >= 26) {
+      await foregroundService.createNotificationChannel(
+        androidForegroundServiceChannelConfig,
+      );
+    }
+    const notificationConfig = {
+      channelId: 'onvail-channel-id',
+      id: 3456,
+      title: 'Foreground Service',
+      text: 'Foreground service is running',
+      icon: 'ic_launcher_foreground',
+      priority: 0,
+      button: 'Stop service',
+    };
+    try {
+      const response = await foregroundService.startService(notificationConfig);
+      console.log('response while running foreground', response);
+    } catch (e) {
+      foregroundService.off();
+      console.error('error', e);
+    }
+  };
 
   const agoraEngineRef = useRef<IRtcEngine | null>(null); // IRtcEngine instance
   const [isJoined, setIsJoined] = useState(false); // Whether the local user has joined the channel
@@ -35,6 +70,8 @@ export const useAgora = (channelName: string) => {
       }
       agoraEngineRef.current = createAgoraRtcEngine();
       const agoraEngine = agoraEngineRef.current;
+
+      agoraEngine.setParameters('{"che.audio.opensl":true}');
       // Register event callbacks
       agoraEngine.registerEventHandler({
         onJoinChannelSuccess: () => {
@@ -63,6 +100,7 @@ export const useAgora = (channelName: string) => {
     if (isJoined) {
       return;
     }
+    // Platform.OS === 'android' && startService();
     try {
       // Set the channel profile type to communication after joining the channel
       agoraEngineRef.current?.setChannelProfile(
@@ -85,6 +123,14 @@ export const useAgora = (channelName: string) => {
       setRemoteUid(0);
       setIsJoined(false);
       showMessage('Left the channel');
+      if (Platform.OS === 'android') {
+        VIForegroundService.getInstance()
+          .stopService()
+          .then((result: any) => {
+            // stop the Foreground Service
+            console.log('Stopped Android Foreground service: ', result);
+          });
+      }
     } catch (e) {
       console.log(e);
     }
