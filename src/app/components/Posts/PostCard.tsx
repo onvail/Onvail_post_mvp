@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
   Animated,
+  Pressable,
 } from 'react-native';
 import UserHeader from './UserHeader';
 import tw from 'src/lib/tailwind';
@@ -40,6 +41,7 @@ import {db} from '../../../../firebaseConfig';
 import CustomImage from '../Image/CustomImage';
 import {useAgora} from 'src/app/hooks/useAgora';
 import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
+import {leaveParty} from 'src/actions/parties';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -66,7 +68,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const [partyTrackWithDuration, setPartyTrackWithDuration] =
     useState<PartiesResponse>(party);
 
-  const {join} = useAgora(party?._id);
+  const {join, leave} = useAgora(party?._id);
 
   const handleSongsDuration = useCallback(async () => {
     const sound = new Audio.Sound();
@@ -218,6 +220,7 @@ const PostItem: FunctionComponent<{
   const CommentSvg = generalIcon.Comment;
   const PartyJoinersIcon = generalIcon.PartyJoinersIcon;
   const queryClient = useQueryClient();
+  const {user} = useUser();
 
   const handleFollowMutation = useMutation({
     mutationFn: () => {
@@ -286,6 +289,8 @@ const PostItem: FunctionComponent<{
     return () => unsubscribe();
   }, [partyId]);
 
+  const {leave} = useAgora(partyId);
+
   const fetchPartyGuests = useCallback(async () => {
     try {
       const partyDocRef = doc(db, 'party', partyId);
@@ -319,20 +324,26 @@ const PostItem: FunctionComponent<{
         isFollowing={isFollowing}
       />
       <View style={tw`self-center relative rounded-lg mx-8 mt-2 w-[95%]`}>
-        {partyStarted && (
+        {partyStarted && guestList.length > 0 && (
           <RowContainer
             style={tw`flex-row justify-between items-center w-full absolute  px-3 top-2 left-0 z-20`}>
             <View
               style={tw`bg-[#D92A2A] rounded-20 h-12 w-22 items-center justify-center`}>
               <CustomText style={tw`text-xs`}>Live</CustomText>
             </View>
-            <RowContainer
-              style={tw`bg-primary opacity-70 rounded-20 h-12 w-22 justify-center`}>
-              <PartyJoinersIcon />
-              <CustomText style={tw`text-xs text-white ml-1`}>
-                {guestList.length}
-              </CustomText>
-            </RowContainer>
+            <Pressable
+              onPress={() => {
+                leaveParty(partyId, user);
+                leave();
+              }}>
+              <RowContainer
+                style={tw`bg-primary opacity-70 rounded-20 h-12 w-22 justify-center`}>
+                <PartyJoinersIcon />
+                <CustomText style={tw`text-xs text-white ml-1`}>
+                  {guestList.length}
+                </CustomText>
+              </RowContainer>
+            </Pressable>
           </RowContainer>
         )}
         <CustomImage
