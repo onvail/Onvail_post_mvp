@@ -201,8 +201,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const fetchPartyGuests = useCallback(async () => {
     try {
       const partyDocRef = doc(db, 'party', partyId);
-      const unsubscribe = onSnapshot(partyDocRef, doc => {
-        const data = doc.data();
+      const unsubscribe = onSnapshot(partyDocRef, snapshotDoc => {
+        const data = snapshotDoc.data();
         let userList: User[] =
           data?.participants?.map((allusers: User) => allusers) ?? [];
         setGuestList(userList);
