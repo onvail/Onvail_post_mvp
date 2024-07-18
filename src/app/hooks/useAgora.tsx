@@ -34,7 +34,7 @@ export const useAgora = (channelName: string) => {
       );
     }
     const notificationConfig = {
-      channelId: 'onvail-channel-id',
+      channelId: 'onvail',
       id: 3456,
       title: 'Foreground Service',
       text: 'Foreground service is running',
@@ -100,7 +100,7 @@ export const useAgora = (channelName: string) => {
     if (isJoined) {
       return;
     }
-    // Platform.OS === 'android' && startService();
+    Platform.OS === 'android' && startService();
     try {
       // Set the channel profile type to communication after joining the channel
       agoraEngineRef.current?.setChannelProfile(
