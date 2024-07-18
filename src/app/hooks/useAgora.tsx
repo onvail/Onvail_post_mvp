@@ -129,6 +129,9 @@ export const useAgora = (channelName: string) => {
           .then((result: any) => {
             // stop the Foreground Service
             console.log('Stopped Android Foreground service: ', result);
+          })
+          .catch((error: any) => {
+            console.log('Error stopping Android Foreground service: ', error);
           });
       }
     } catch (e) {
