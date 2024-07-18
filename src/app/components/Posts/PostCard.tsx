@@ -68,7 +68,7 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const [partyTrackWithDuration, setPartyTrackWithDuration] =
     useState<PartiesResponse>(party);
 
-  const {join, leave} = useAgora(party?._id);
+  const {join} = useAgora(party?._id);
 
   const handleSongsDuration = useCallback(async () => {
     const sound = new Audio.Sound();
@@ -276,7 +276,7 @@ const PostItem: FunctionComponent<{
     const unsubscribe = onSnapshot(partyDoc, snapshot => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        if (data.is_started) {
+        if (data.is_started !== undefined) {
           setPartyStarted(data.is_started);
         }
       } else {
