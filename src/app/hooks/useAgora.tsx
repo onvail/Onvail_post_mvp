@@ -25,7 +25,6 @@ export const useAgora = (channelName: string) => {
         url: '/users/agora-token',
         authorization: true,
       });
-      console.log(response?.data?.agoraToken);
       setAgoraToken(response?.data?.agoraToken);
     } catch (error) {
       console.log(error);
