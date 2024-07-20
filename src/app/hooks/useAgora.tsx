@@ -1,5 +1,5 @@
 import {useRef, useState, useEffect, useCallback} from 'react';
-import {AGORA_APP_ID, AGORA_TEMPORARY_TOKEN} from '@env';
+import {AGORA_APP_ID} from '@env';
 // Import Agora SDK
 import {
   ClientRoleType,
@@ -9,14 +9,28 @@ import {
 } from 'react-native-agora';
 import {PermissionsAndroid, Platform} from 'react-native';
 import VIForegroundService from '@voximplant/react-native-foreground-service';
+import api from 'src/api/api';
 
-const token = AGORA_TEMPORARY_TOKEN;
 const uid = 0;
 const appId = AGORA_APP_ID;
 
 export const useAgora = (channelName: string) => {
   const channel = 'onvail';
   const foregroundService = VIForegroundService.getInstance();
+  const [agoraToken, setAgoraToken] = useState<string>('');
+
+  const fetchToken = async () => {
+    try {
+      const response = await api.get({
+        url: '/users/agora-token',
+        authorization: true,
+      });
+      console.log(response?.data?.agoraToken);
+      setAgoraToken(response?.data?.agoraToken);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const startService = async () => {
     const androidForegroundServiceChannelConfig = {
@@ -57,6 +71,10 @@ export const useAgora = (channelName: string) => {
   const [message, setMessage] = useState(''); // User prompt message
   const [isMuted, setIsMuted] = useState(true); // Whether the local user is muted
   const [isSpeakerEnabled, setIsSpeakerEnabled] = useState<boolean>(false); // Whether the local user is a speaker
+
+  useEffect(() => {
+    fetchToken();
+  }, []);
 
   // Initialize the engine when starting the App
   useEffect(() => {
@@ -107,7 +125,7 @@ export const useAgora = (channelName: string) => {
         ChannelProfileType.ChannelProfileCommunication,
       );
       // Call the joinChannel method to join the channel
-      agoraEngineRef.current?.joinChannel(token, channel, uid, {
+      agoraEngineRef.current?.joinChannel(agoraToken, channel, uid, {
         // Set the user role to broadcaster
         clientRoleType: ClientRoleType.ClientRoleBroadcaster,
       });
