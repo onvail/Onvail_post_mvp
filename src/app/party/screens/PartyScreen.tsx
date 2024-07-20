@@ -139,7 +139,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   };
 
   const songs: Song[] = party?.songs;
-  const isHost = party?.artist?._id === user?._id;
+  const isHost = useMemo(() => {
+    return party?.artist?._id === user?._id;
+  }, [party?.artist?._id, user?._id]);
 
   const allTracks = useMemo(() => {
     return songs?.map(song => ({
@@ -219,35 +221,48 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   useEffect(() => {
     const handlePartyStatus = async () => {
-      if (!isHost) {
-        const callDoc = doc(db, 'party', partyId);
-
-        const unsubscribe = onSnapshot(callDoc, async snapshot => {
-          if (snapshot.exists()) {
-            const data = snapshot.data();
-            if (data && data.is_started === false) {
-              await TrackPlayer.stop();
-              await TrackPlayer.reset();
-              await leaveParty();
-              Toast.show({
-                type: ALERT_TYPE.INFO,
-                title: 'Party ended!',
-                textBody: 'The host ended the party',
-                titleStyle: tw`font-poppinsRegular text-xs`,
-                textBodyStyle: tw`font-poppinsRegular text-xs`,
-              });
-            }
-          } else {
-            console.log('Document does not exist');
-          }
-        });
-
-        // Clean up the subscription on unmount
-        return () => unsubscribe();
+      if (isHost) {
+        return;
       }
+      const callDoc = doc(db, 'party', partyId);
+
+      const unsubscribe = onSnapshot(callDoc, async snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          const userExists = data?.participants?.find((participant: User) => {
+            const {_id} = participant;
+            return _id === user._id;
+          });
+
+          if (data && data.is_started === false && userExists) {
+            // await TrackPlayer.stop();
+            // await TrackPlayer.reset();
+            await api.post({
+              url: `parties/leave/${partyId}`,
+              requiresToken: true,
+              authorization: true,
+            });
+            navigation.navigate('BottomNavigator', {
+              screen: 'Home',
+            });
+            Toast.show({
+              type: ALERT_TYPE.INFO,
+              title: 'Party ended!',
+              textBody: 'The host ended the party',
+              titleStyle: tw`font-poppinsRegular text-xs`,
+              textBodyStyle: tw`font-poppinsRegular text-xs`,
+            });
+          }
+        } else {
+          console.log('Document does not exist');
+        }
+      });
+
+      // Clean up the subscription on unmount
+      return () => unsubscribe();
     };
     handlePartyStatus();
-  }, [partyId, leaveParty, isHost]);
+  }, [partyId, leaveParty, isHost, user, navigation]);
 
   useEffect(() => {
     if (party?._id) {
@@ -324,7 +339,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     );
   };
 
-  const endParty = async () => {
+  const endParty = useCallback(async () => {
     setIsEndingParty(true);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
@@ -347,7 +362,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     } finally {
       setIsEndingParty(false);
     }
-  };
+  }, [party?._id, leave, navigation]);
 
   const {
     playerState,
