@@ -247,7 +247,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       }
     };
     handlePartyStatus();
-  }, [navigation, partyId, leaveParty, isHost]);
+  }, [partyId, leaveParty, isHost]);
 
   useEffect(() => {
     if (party?._id) {
