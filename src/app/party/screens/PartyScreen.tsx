@@ -329,8 +329,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     try {
       const partyDocRef = doc(db, 'party', party?._id);
       leave();
+      // update doc to remove every user from the party
       await updateDoc(partyDocRef, {
-        participants: arrayRemove(user),
+        participants: [],
         is_started: false,
       });
       await api.post({
