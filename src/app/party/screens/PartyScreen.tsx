@@ -42,7 +42,7 @@ import api from "src/api/api";
 import { ALERT_TYPE, Toast } from "react-native-alert-notification";
 import useUser, { User } from "src/app/hooks/useUserInfo";
 import socket from "src/utils/socket";
-import { getPlaybackState } from "react-native-track-player/lib/trackPlayer";
+import { getPlaybackState } from "react-native-track-player/lib/src/trackPlayer";
 import moment from "moment-timezone";
 import { FireStoreComments, createFireStoreComments } from "src/actions/parties";
 import {
@@ -210,6 +210,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const [snapPointIndex, setSnapPointIndex] = useState(0);
      const [activeTabName, setActiveTabName] = useState<string>("");
      const [tabNavigation, setTabNavigation] = useState<any>(null);
+     const [snapIndexController, setSnapIndexController] = useState<any>(null);
 
      const partyId = party?._id;
 
@@ -575,8 +576,11 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
 
      const openCommentsTab = useCallback(() => {
           if (tabNavigation && bottomSheetRef.current) {
-               bottomSheetRef.current?.snapToIndex?.(1);
                tabNavigation.navigate("Comments");
+          }
+          if (snapPointIndex === 0) {
+               setSnapIndexController(1);
+               setTimeout(() => tabNavigation?.navigate?.("Comments"), 5000);
           }
      }, [tabNavigation]);
 
@@ -669,6 +673,16 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                          showsVerticalScrollIndicator={false}
                     />
                </SafeAreaView>
+
+               {snapPointIndex > 0 && (
+                    <Pressable
+                         style={StyleSheet.absoluteFillObject}
+                         onPress={() => {
+                              setSnapIndexController(0);
+                         }}
+                    />
+               )}
+
                <Modal
                     style={tw`flex-1 justify-center items-center`}
                     backdropOpacity={0.9}
@@ -750,6 +764,8 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     ref={bottomSheetRef}
                     customSnapPoints={snapPoints}
                     backgroundColor={screenColors?.accent}
+                    setSnapIndex={setSnapIndexController}
+                    snapIndex={snapIndexController}
                     // footerComponent={renderBottomFooter}
                     footerComponent={() => (
                          <View

@@ -7,7 +7,7 @@ import React, {
      useRef,
      useState,
 } from "react";
-import { ActivityIndicator, Dimensions, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Dimensions, TouchableOpacity, Vibration, View } from "react-native";
 import UserHeader from "./UserHeader";
 import tw from "src/lib/tailwind";
 import CustomText from "components/Text/CustomText";
@@ -24,7 +24,7 @@ import { getColors } from "react-native-image-colors";
 import { ColorScheme } from "src/app/navigator/types/MainStackParamList";
 import { AVPlaybackStatusSuccess, Audio } from "expo-av";
 import { leaveParty } from "src/actions/parties";
-import { arrayUnion, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { arrayUnion, doc, onSnapshot, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../../firebaseConfig";
 import useWebrtc from "src/app/hooks/useWebrtc";
 import CustomImage from "../Image/CustomImage";
@@ -40,7 +40,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { TapGestureHandler, TouchableWithoutFeedback } from "react-native-gesture-handler";
 import LoveOverlay from "../LoveOverlay/LoveOverlay";
-// import { TouchableWithoutFeedback } from "react-native-gesture-handler";
+import { ALERT_TYPE, Toast } from "react-native-alert-notification";
 
 interface JoinPartyProps {
      handleJoinPartyBtnPress: (party: PartiesResponse, albumBackgroundColor: ColorScheme) => void;
@@ -61,7 +61,6 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({ handleJoinPartyBtn
      );
      const [partyTrackWithDuration, setPartyTrackWithDuration] = useState<PartiesResponse>(party);
 
-     const { beginParty, joinCall } = useWebrtc(party?._id);
      const { join } = useAgora(party?._id);
 
      const handleSongsDuration = useCallback(async () => {
@@ -134,9 +133,9 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({ handleJoinPartyBtn
                const partyDocRef = doc(db, "party", party?._id);
                await updateDoc(partyDocRef, {
                     participants: arrayUnion(user),
+                    is_started: true,
                });
                await join();
-               // beginParty();
                await api.patch({
                     url: `parties/start-party/${party?._id}`,
                     requiresToken: true,
@@ -152,33 +151,30 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({ handleJoinPartyBtn
 
      const joinParty = async () => {
           setIsLoading(true);
-          leaveParty(party?._id, user);
           try {
                const partyDocRef = doc(db, "party", party?._id);
-               await updateDoc(partyDocRef, {
-                    participants: arrayUnion(user),
-               });
-               await join();
-               await api.post({
-                    url: `parties/join-party/${party?._id}`,
-                    requiresToken: true,
-                    authorization: true,
-               });
-               handleJoinPartyBtnPress(party, albumBackgroundColor);
-               // const canJoinCall = await joinCall();
-               // if (!canJoinCall) {
-               //   return;
-               // } else {
-               //   await join();
-               //   await api.post({
-               //     url: `parties/join-party/${party?._id}`,
-               //     requiresToken: true,
-               //     authorization: true,
-               //   });
-               //   handleJoinPartyBtnPress(party, albumBackgroundColor);
-               // }
+               const partyData = (await getDoc(partyDocRef)).data();
+               if (partyData?.is_started) {
+                    await updateDoc(partyDocRef, {
+                         participants: arrayUnion(user),
+                    });
+                    await join();
+                    await api.post({
+                         url: `parties/join-party/${party?._id}`,
+                         requiresToken: true,
+                         authorization: true,
+                    });
+                    handleJoinPartyBtnPress(partyTrackWithDuration, albumBackgroundColor);
+               } else {
+                    Toast.show({
+                         type: ALERT_TYPE.DANGER,
+                         title: "Can't join party",
+                         textBody: "The party has ended",
+                         titleStyle: tw`font-poppinsRegular text-xs`,
+                         textBodyStyle: tw`font-poppinsRegular text-xs`,
+                    });
+               }
           } catch (error) {
-               console.log(error);
           } finally {
                setIsLoading(false);
           }
@@ -213,29 +209,22 @@ interface PostItemProps {
      handleJoinPartyBtnPress: (item: PartiesResponse, albumBackgroundColor: ColorScheme) => void;
 }
 
-const PostItem: FunctionComponent<PostItemProps> = ({ item, handleJoinPartyBtnPress, userId }) => {
+const PostItem: FunctionComponent<{
+     item: PartiesResponse;
+     userId: string;
+     handleJoinPartyBtnPress: (item: PartiesResponse, albumBackgroundColor: ColorScheme) => void;
+}> = ({ item, handleJoinPartyBtnPress, userId }) => {
      const CommentSvg = generalIcon.Comment;
      const PartyJoinersIcon = generalIcon.PartyJoinersIcon;
      const queryClient = useQueryClient();
-
      const partyId = item?._id;
      const canFollowUser = item?.artist?._id !== userId;
      const isFollowing = item?.artist?.followers?.includes(userId);
-     const { height } = Dimensions.get("window");
-     const ITEM_SIZE = useMemo(() => height * 0.62, [height]);
-
      const [isLiked, setLiked] = useState<boolean>(false);
      const [likeCount, setLikeCount] = useState<number>(item?.likes?.length ?? 0);
      const [guestList, setGuestList] = useState<User[]>([]);
      const [partyStarted, setPartyStarted] = useState<boolean>(false);
      const [loveVisible, setLoveVisible] = useState<boolean>(false);
-
-     console.log(
-          "item?.likes",
-          item?.likes?.map((like) => like?._id === userId),
-          userId,
-          item?.likes?.some((likes) => likes?._id === userId),
-     );
 
      useEffect(() => {
           if (userId) {
@@ -265,7 +254,6 @@ const PostItem: FunctionComponent<PostItemProps> = ({ item, handleJoinPartyBtnPr
      const handleLikeMutation = useMutation({
           mutationFn: async () => {
                if (isLiked) {
-                    console.log("calling liked");
                     const response = await api.post({
                          url: `/parties/unlike-party/${item?._id}`,
                          authorization: true,
@@ -276,13 +264,15 @@ const PostItem: FunctionComponent<PostItemProps> = ({ item, handleJoinPartyBtnPr
                          url: `/parties/like-party/${item?._id}`,
                          authorization: true,
                     });
-                    console.log("Like Party Response:", response?.data);
                     return response;
                }
           },
           onSuccess: (data, variables, context) => {
                setLiked(!isLiked);
                setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1));
+               if (!isLiked) {
+                    Vibration.vibrate();
+               }
                // queryClient.refetchQueries({ queryKey: ["parties"] });
           },
           onError: (error, variables, context) => {
@@ -494,7 +484,7 @@ const PostCard: FunctionComponent<PostCardProps> = ({
                     <PostItem
                          item={item}
                          handleJoinPartyBtnPress={(partyItem, albumBackgroundColor) =>
-                              handleJoinPartyBtnPress(partyItem, albumBackgroundColor)
+                              handleJoinPartyBtnPress(partyItem, albumBackgroundColor as any)
                          }
                          userId={user?._id ?? ""}
                     />
@@ -510,7 +500,7 @@ const PostCard: FunctionComponent<PostCardProps> = ({
      return (
           <AnimatedFlashList
                data={reversedItems}
-               renderItem={renderItem}
+               renderItem={renderItem as any}
                estimatedItemSize={300}
                bounces={false}
                onScroll={onScroll} // Pass onScroll prop to AnimatedFlashList
