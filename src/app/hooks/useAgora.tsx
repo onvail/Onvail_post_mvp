@@ -1,5 +1,5 @@
 import {useRef, useState, useEffect, useCallback} from 'react';
-import {AGORA_APP_ID, AGORA_TEMPORARY_TOKEN} from '@env';
+import {AGORA_APP_ID} from '@env';
 // Import Agora SDK
 import {
   ClientRoleType,
@@ -8,13 +8,61 @@ import {
   ChannelProfileType,
 } from 'react-native-agora';
 import {PermissionsAndroid, Platform} from 'react-native';
+import VIForegroundService from '@voximplant/react-native-foreground-service';
+import api from 'src/api/api';
 
-const token = AGORA_TEMPORARY_TOKEN;
 const uid = 0;
 const appId = AGORA_APP_ID;
 
 export const useAgora = (channelName: string) => {
   const channel = 'onvail';
+  const foregroundService = VIForegroundService.getInstance();
+  const [agoraToken, setAgoraToken] = useState<string>('');
+
+  const fetchToken = async () => {
+    try {
+      const response = await api.get({
+        url: '/users/agora-token',
+        authorization: true,
+      });
+      setAgoraToken(response?.data?.agoraToken);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const startService = async () => {
+    const androidForegroundServiceChannelConfig = {
+      id: 'onvail',
+      name: 'Onvail',
+      enableVibration: true,
+      importance: 5,
+    };
+    if (Platform.OS !== 'android') {
+      return;
+    }
+    if (Platform.Version >= 26) {
+      await foregroundService.createNotificationChannel(
+        androidForegroundServiceChannelConfig,
+      );
+    }
+    const notificationConfig = {
+      channelId: 'onvail',
+      id: 3456,
+      title: 'Foreground Service',
+      text: 'Foreground service is running',
+      icon: 'ic_launcher_foreground',
+      priority: 0,
+      button: 'Stop service',
+    };
+    try {
+      const response = await foregroundService.startService(notificationConfig);
+      console.log('response while running foreground', response);
+    } catch (e) {
+      foregroundService.off();
+      console.error('error', e);
+    }
+  };
 
   const agoraEngineRef = useRef<IRtcEngine | null>(null); // IRtcEngine instance
   const [isJoined, setIsJoined] = useState(false); // Whether the local user has joined the channel
@@ -22,6 +70,10 @@ export const useAgora = (channelName: string) => {
   const [message, setMessage] = useState(''); // User prompt message
   const [isMuted, setIsMuted] = useState(true); // Whether the local user is muted
   const [isSpeakerEnabled, setIsSpeakerEnabled] = useState<boolean>(false); // Whether the local user is a speaker
+
+  useEffect(() => {
+    fetchToken();
+  }, []);
 
   // Initialize the engine when starting the App
   useEffect(() => {
@@ -35,6 +87,8 @@ export const useAgora = (channelName: string) => {
       }
       agoraEngineRef.current = createAgoraRtcEngine();
       const agoraEngine = agoraEngineRef.current;
+
+      agoraEngine.setParameters('{"che.audio.opensl":true}');
       // Register event callbacks
       agoraEngine.registerEventHandler({
         onJoinChannelSuccess: () => {
@@ -63,13 +117,14 @@ export const useAgora = (channelName: string) => {
     if (isJoined) {
       return;
     }
+    Platform.OS === 'android' && startService();
     try {
       // Set the channel profile type to communication after joining the channel
       agoraEngineRef.current?.setChannelProfile(
         ChannelProfileType.ChannelProfileCommunication,
       );
       // Call the joinChannel method to join the channel
-      agoraEngineRef.current?.joinChannel(token, channel, uid, {
+      agoraEngineRef.current?.joinChannel(agoraToken, channel, uid, {
         // Set the user role to broadcaster
         clientRoleType: ClientRoleType.ClientRoleBroadcaster,
       });
@@ -85,6 +140,17 @@ export const useAgora = (channelName: string) => {
       setRemoteUid(0);
       setIsJoined(false);
       showMessage('Left the channel');
+      if (Platform.OS === 'android') {
+        VIForegroundService.getInstance()
+          .stopService()
+          .then((result: any) => {
+            // stop the Foreground Service
+            console.log('Stopped Android Foreground service: ', result);
+          })
+          .catch((error: any) => {
+            console.log('Error stopping Android Foreground service: ', error);
+          });
+      }
     } catch (e) {
       console.log(e);
     }

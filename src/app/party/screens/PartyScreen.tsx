@@ -139,7 +139,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   };
 
   const songs: Song[] = party?.songs;
-  const isHost = party?.artist?._id === user?._id;
+  const isHost = useMemo(() => {
+    return party?.artist?._id === user?._id;
+  }, [party?.artist?._id, user?._id]);
 
   const allTracks = useMemo(() => {
     return songs?.map(song => ({
@@ -201,8 +203,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const fetchPartyGuests = useCallback(async () => {
     try {
       const partyDocRef = doc(db, 'party', partyId);
-      const unsubscribe = onSnapshot(partyDocRef, doc => {
-        const data = doc.data();
+      const unsubscribe = onSnapshot(partyDocRef, snapshotDoc => {
+        const data = snapshotDoc.data();
         let userList: User[] =
           data?.participants?.map((allusers: User) => allusers) ?? [];
         setGuestList(userList);
@@ -217,39 +219,50 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     fetchPartyGuests();
   }, [fetchPartyGuests]);
 
-  // useEffect(() => {
-  //   const handlePartyStatus = async () => {
-  //     if (!isHost) {
-  //       const callDoc = doc(db, 'calls', partyId);
+  useEffect(() => {
+    const handlePartyStatus = async () => {
+      if (isHost) {
+        return;
+      }
+      const callDoc = doc(db, 'party', partyId);
 
-  //       const unsubscribe = onSnapshot(callDoc, async snapshot => {
-  //         if (snapshot.exists()) {
-  //           const data = snapshot.data();
-  //           if (data) {
-  //             if (data.callEnded === true) {
-  //               await TrackPlayer.stop();
-  //               await TrackPlayer.reset();
-  //               await leaveParty();
-  //               Toast.show({
-  //                 type: ALERT_TYPE.INFO,
-  //                 title: 'Party ended!',
-  //                 textBody: 'The host ended the party',
-  //                 titleStyle: tw`font-poppinsRegular text-xs`,
-  //                 textBodyStyle: tw`font-poppinsRegular text-xs`,
-  //               });
-  //             }
-  //           }
-  //         } else {
-  //           console.log('Document does not exist');
-  //         }
-  //       });
+      const unsubscribe = onSnapshot(callDoc, async snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          const userExists = data?.participants?.find((participant: User) => {
+            const {_id} = participant;
+            return _id === user._id;
+          });
 
-  //       // Clean up the subscription on unmount
-  //       return () => unsubscribe();
-  //     }
-  //   };
-  //   handlePartyStatus();
-  // }, [navigation, partyId, leaveParty, isHost]);
+          if (data && data.is_started === false && userExists) {
+            // await TrackPlayer.stop();
+            // await TrackPlayer.reset();
+            await api.post({
+              url: `parties/leave/${partyId}`,
+              requiresToken: true,
+              authorization: true,
+            });
+            navigation.navigate('BottomNavigator', {
+              screen: 'Home',
+            });
+            Toast.show({
+              type: ALERT_TYPE.INFO,
+              title: 'Party ended!',
+              textBody: 'The host ended the party',
+              titleStyle: tw`font-poppinsRegular text-xs`,
+              textBodyStyle: tw`font-poppinsRegular text-xs`,
+            });
+          }
+        } else {
+          console.log('Document does not exist');
+        }
+      });
+
+      // Clean up the subscription on unmount
+      return () => unsubscribe();
+    };
+    handlePartyStatus();
+  }, [partyId, leaveParty, isHost, user, navigation]);
 
   useEffect(() => {
     if (party?._id) {
@@ -326,13 +339,15 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     );
   };
 
-  const endParty = async () => {
+  const endParty = useCallback(async () => {
     setIsEndingParty(true);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
-      await leave();
+      leave();
+      // update doc to remove every user from the party
       await updateDoc(partyDocRef, {
-        participants: arrayRemove(user),
+        participants: [],
+        is_started: false,
       });
       await api.post({
         url: `parties/leave/${party?._id}`,
@@ -347,7 +362,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     } finally {
       setIsEndingParty(false);
     }
-  };
+  }, [party?._id, leave, navigation]);
 
   const {
     playerState,

@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
   Animated,
+  Pressable,
 } from 'react-native';
 import UserHeader from './UserHeader';
 import tw from 'src/lib/tailwind';
@@ -29,12 +30,18 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {getColors} from 'react-native-image-colors';
 import {ColorScheme} from 'src/app/navigator/types/MainStackParamList';
 import {AVPlaybackStatusSuccess, Audio} from 'expo-av';
-import {leaveParty} from 'src/actions/parties';
-import {arrayUnion, doc, onSnapshot, updateDoc} from 'firebase/firestore';
+import {
+  arrayUnion,
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+} from 'firebase/firestore';
 import {db} from '../../../../firebaseConfig';
-import useWebrtc from 'src/app/hooks/useWebrtc';
 import CustomImage from '../Image/CustomImage';
 import {useAgora} from 'src/app/hooks/useAgora';
+import {ALERT_TYPE, Toast} from 'react-native-alert-notification';
+import {leaveParty} from 'src/actions/parties';
 interface JoinPartyProps {
   handleJoinPartyBtnPress: (
     party: PartiesResponse,
@@ -61,7 +68,6 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
   const [partyTrackWithDuration, setPartyTrackWithDuration] =
     useState<PartiesResponse>(party);
 
-  const {beginParty, joinCall} = useWebrtc(party?._id);
   const {join} = useAgora(party?._id);
 
   const handleSongsDuration = useCallback(async () => {
@@ -134,9 +140,9 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
       const partyDocRef = doc(db, 'party', party?._id);
       await updateDoc(partyDocRef, {
         participants: arrayUnion(user),
+        is_started: true,
       });
       await join();
-      // beginParty();
       await api.patch({
         url: `parties/start-party/${party?._id}`,
         requiresToken: true,
@@ -152,33 +158,30 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
 
   const joinParty = async () => {
     setIsLoading(true);
-    leaveParty(party?._id, user);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
-      await updateDoc(partyDocRef, {
-        participants: arrayUnion(user),
-      });
-      await join();
-      await api.post({
-        url: `parties/join-party/${party?._id}`,
-        requiresToken: true,
-        authorization: true,
-      });
-      handleJoinPartyBtnPress(party, albumBackgroundColor);
-      // const canJoinCall = await joinCall();
-      // if (!canJoinCall) {
-      //   return;
-      // } else {
-      //   await join();
-      //   await api.post({
-      //     url: `parties/join-party/${party?._id}`,
-      //     requiresToken: true,
-      //     authorization: true,
-      //   });
-      //   handleJoinPartyBtnPress(party, albumBackgroundColor);
-      // }
+      const partyData = (await getDoc(partyDocRef)).data();
+      if (partyData?.is_started) {
+        await updateDoc(partyDocRef, {
+          participants: arrayUnion(user),
+        });
+        await join();
+        await api.post({
+          url: `parties/join-party/${party?._id}`,
+          requiresToken: true,
+          authorization: true,
+        });
+        handleJoinPartyBtnPress(partyTrackWithDuration, albumBackgroundColor);
+      } else {
+        Toast.show({
+          type: ALERT_TYPE.DANGER,
+          title: "Can't join party",
+          textBody: 'The party has ended',
+          titleStyle: tw`font-poppinsRegular text-xs`,
+          textBodyStyle: tw`font-poppinsRegular text-xs`,
+        });
+      }
     } catch (error) {
-      console.log(error);
     } finally {
       setIsLoading(false);
     }
@@ -217,6 +220,7 @@ const PostItem: FunctionComponent<{
   const CommentSvg = generalIcon.Comment;
   const PartyJoinersIcon = generalIcon.PartyJoinersIcon;
   const queryClient = useQueryClient();
+  const {user} = useUser();
 
   const handleFollowMutation = useMutation({
     mutationFn: () => {
@@ -267,13 +271,13 @@ const PostItem: FunctionComponent<{
   const [partyStarted, setPartyStarted] = useState<boolean>(false);
 
   useEffect(() => {
-    const callDoc = doc(db, 'calls', partyId);
+    const partyDoc = doc(db, 'party', partyId);
 
-    const unsubscribe = onSnapshot(callDoc, snapshot => {
+    const unsubscribe = onSnapshot(partyDoc, snapshot => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        if (data) {
-          setPartyStarted(data.callStarted ?? false);
+        if (data.is_started !== undefined) {
+          setPartyStarted(data.is_started);
         }
       } else {
         console.log('Document does not exist');
@@ -284,6 +288,8 @@ const PostItem: FunctionComponent<{
     // Clean up the subscription on unmount
     return () => unsubscribe();
   }, [partyId]);
+
+  const {leave} = useAgora(partyId);
 
   const fetchPartyGuests = useCallback(async () => {
     try {
@@ -318,20 +324,26 @@ const PostItem: FunctionComponent<{
         isFollowing={isFollowing}
       />
       <View style={tw`self-center relative rounded-lg mx-8 mt-2 w-[95%]`}>
-        {partyStarted && (
+        {partyStarted && guestList.length > 0 && (
           <RowContainer
             style={tw`flex-row justify-between items-center w-full absolute  px-3 top-2 left-0 z-20`}>
             <View
               style={tw`bg-[#D92A2A] rounded-20 h-12 w-22 items-center justify-center`}>
               <CustomText style={tw`text-xs`}>Live</CustomText>
             </View>
-            <RowContainer
-              style={tw`bg-primary opacity-70 rounded-20 h-12 w-22 justify-center`}>
-              <PartyJoinersIcon />
-              <CustomText style={tw`text-xs text-white ml-1`}>
-                {guestList.length}
-              </CustomText>
-            </RowContainer>
+            <Pressable
+              onPress={() => {
+                leaveParty(partyId, user);
+                leave();
+              }}>
+              <RowContainer
+                style={tw`bg-primary opacity-70 rounded-20 h-12 w-22 justify-center`}>
+                <PartyJoinersIcon />
+                <CustomText style={tw`text-xs text-white ml-1`}>
+                  {guestList.length}
+                </CustomText>
+              </RowContainer>
+            </Pressable>
           </RowContainer>
         )}
         <CustomImage
