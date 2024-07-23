@@ -16,6 +16,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  NativeModules,
+  NativeEventEmitter,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'src/app/components/Icons/Icon';
@@ -76,6 +78,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
+  const {AgoraMusicHandler} = NativeModules;
   const {user} = useUser();
   const {isMuted, toggleMute, toggleIsSpeakerEnabled, leave, isSpeakerEnabled} =
     useAgora(party?._id);
@@ -95,6 +98,77 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const [selectedBottomSheetTab, setSelectedBottomSheetTab] =
     useState<number>(0);
   const [guestList, setGuestList] = useState<User[]>([]);
+  const [trackDuration, setTrackDuration] = useState<null | number[]>(null);
+  const [trackPosition, setTrackPosition] = useState<null | number[]>(null);
+  const enum MediaEngineAudioEvent {
+    MIXING_PLAYING = 710,
+    MIXING_PAUSED = 711,
+    MIXING_STOPPED = 713,
+    MIXING_ERROR = 714,
+  }
+
+  enum AudioMixingReason {
+    STARTED_BY_USER = 720,
+    ONE_LOOP_COMPLETED = 721,
+    START_NEW_LOOP = 722,
+    RESUMED_BY_USER = 726,
+    PAUSED_BY_USER = 725,
+    ALL_LOOPS_COMPLETED = 723,
+    STOPPED_BY_USER = 724,
+    CAN_NOT_OPEN = 701,
+    TOO_FREQUENT_CALL = 702,
+    INTERRUPTED_EOF = 703,
+  }
+
+  // Function to map numeric state to enum
+  const mapStateToEnum = useCallback(
+    (state: number): MediaEngineAudioEvent | undefined => {
+      switch (state) {
+        case 710:
+          return MediaEngineAudioEvent.MIXING_PLAYING;
+        case 711:
+          return MediaEngineAudioEvent.MIXING_PAUSED;
+        case 713:
+          return MediaEngineAudioEvent.MIXING_STOPPED;
+        case 714:
+          return MediaEngineAudioEvent.MIXING_ERROR;
+        default:
+          return undefined;
+      }
+    },
+    [MediaEngineAudioEvent],
+  );
+
+  //Function to map reason to enum
+  const mapReasonToEnum = useCallback(
+    (reason: number): AudioMixingReason | undefined => {
+      switch (reason) {
+        case 720:
+          return AudioMixingReason.STARTED_BY_USER;
+        case 721:
+          return AudioMixingReason.ONE_LOOP_COMPLETED;
+        case 722:
+          return AudioMixingReason.START_NEW_LOOP;
+        case 726:
+          return AudioMixingReason.RESUMED_BY_USER;
+        case 725:
+          return AudioMixingReason.PAUSED_BY_USER;
+        case 723:
+          return AudioMixingReason.ALL_LOOPS_COMPLETED;
+        case 724:
+          return AudioMixingReason.STOPPED_BY_USER;
+        case 701:
+          return AudioMixingReason.CAN_NOT_OPEN;
+        case 702:
+          return AudioMixingReason.TOO_FREQUENT_CALL;
+        case 703:
+          return AudioMixingReason.INTERRUPTED_EOF;
+        default:
+          return undefined;
+      }
+    },
+    [AudioMixingReason],
+  );
 
   const [volume, setVolume] = useState<number>(0.5);
   const [comments, setComments] = useState<FireStoreComments[]>([]);
@@ -107,6 +181,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     useState<boolean>(false);
   const [isEndingParty, setIsEndingParty] = useState<boolean>(false);
   const [isLeavingParty, setIsLeavingParty] = useState<boolean>(false);
+  const [trackState, setTrackState] = useState<
+    MediaEngineAudioEvent | undefined
+  >(undefined);
   const partyId = party?._id;
 
   // Initialize the animated value
@@ -369,7 +446,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     checkIfTrackQueueIsDifferent,
     skipToNext,
     skipToPrevious,
-    handlePauseAndPlayTrack,
   } = useMusicPlayer({
     track: allTracks,
   });
@@ -382,27 +458,68 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     volumeHandler();
   }, [volume, volumeHandler]);
 
-  const handlePlay = async () => {
-    // Get the previous playback state
-    const previousState = await getPlaybackState();
+  const emitter = useMemo(() => {
+    const agoraMusicHandlerEmitter = new NativeEventEmitter(AgoraMusicHandler);
+    return agoraMusicHandlerEmitter;
+  }, [AgoraMusicHandler]);
 
+  useEffect(() => {
+    const eventListener = emitter.addListener(
+      'onAudioMixingStateChanged',
+      event => {
+        console.log('Audio Mixing State Changed:', event);
+
+        // Map the numeric state to enum
+        const state = mapStateToEnum(event.state);
+        const reason = mapReasonToEnum(event.reason);
+        if (state !== undefined) {
+          setTrackState(state);
+        }
+        console.log('State:', state);
+        console.log('Reason:', reason);
+      },
+    );
+
+    // Cleanup the event listener when the component unmounts
+    return () => {
+      eventListener.remove();
+    };
+  }, [emitter, mapStateToEnum, mapReasonToEnum]);
+
+  const fetchTrackDuration = useCallback(async () => {
     try {
-      // Call the function to play or pause the track
-      await handlePauseAndPlayTrack();
+      const duration = await AgoraMusicHandler.getDuration();
+      console.log('duration', duration);
+    } catch (error) {
+      console.log(error);
+    }
+  }, [AgoraMusicHandler]);
 
-      // Add a slight delay to ensure the state has time to update
-      await new Promise(resolve => setTimeout(resolve, 100));
+  useEffect(() => {
+    party?.songs?.map(song => {
+      AgoraMusicHandler.preLoadMusicFiles(song.file_url);
+    });
+  }, [party?.songs, AgoraMusicHandler, fetchTrackDuration]);
 
-      // Get the current playback state after the delay
-      const currentState = await getPlaybackState();
-
-      // Emit the play event only if there is an actual state change
-      if (currentState !== previousState) {
-        socket.emit('play', {
-          cmd: 'play',
-          timeStamp: utcTimeStamp,
-          party: party?._id,
-        });
+  const handlePlay = async () => {
+    try {
+      switch (trackState) {
+        case MediaEngineAudioEvent.MIXING_STOPPED:
+          await AgoraMusicHandler.playMusic(
+            'https://onvail-media.s3.eu-north-1.amazonaws.com/uploads/Elevation_Worship_-_The_one_You_Love_CeeNaija.com_.mp3',
+          );
+          await fetchTrackDuration();
+          break;
+        case MediaEngineAudioEvent.MIXING_PLAYING:
+          AgoraMusicHandler.pauseMusic();
+          break;
+        case MediaEngineAudioEvent.MIXING_PAUSED:
+          AgoraMusicHandler.resumeMusic();
+          break;
+        default:
+          AgoraMusicHandler.playMusic(
+            'https://onvail-media.s3.eu-north-1.amazonaws.com/uploads/Elevation_Worship_-_The_one_You_Love_CeeNaija.com_.mp3',
+          );
       }
     } catch (error) {
       console.log(error);
@@ -457,7 +574,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   let IconComponent;
 
-  if (isSameQueue && playerState === 'playing') {
+  if (trackState === MediaEngineAudioEvent.MIXING_PLAYING) {
     IconComponent = <PauseIcon />;
   } else if (buffering) {
     IconComponent = <ActivityIndicator />;
