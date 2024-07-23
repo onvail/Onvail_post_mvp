@@ -5,15 +5,43 @@ import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import io.agora.rtc2.IRtcEngineEventHandler
+import io.agora.rtc2.RtcEngine
+import java.util.LinkedList
+import java.util.Queue
 
 class AgoraEventHandler(private val reactContext: ReactContext) : IRtcEngineEventHandler() {
+    private var engine: RtcEngine? = null
+    private val audioFilesQueue: Queue<String> = LinkedList()
+    private var currentFilePath: String? = null
 
     override fun onAudioMixingStateChanged(state: Int, reason: Int) {
         val params = Arguments.createMap().apply {
             putInt("state", state)
             putInt("reason", reason)
         }
+        if (state == 710 && reason == 723) {
+            // Play the next audio file in the queue if available
+            if (audioFilesQueue.isNotEmpty()) {
+                val nextFilePath = audioFilesQueue.poll()
+                playNextAudioFile(nextFilePath)
+            }
+        }
         sendEvent("onAudioMixingStateChanged", params)
+    }
+
+    fun addAudioFileToQueue(filePath: String) {
+        audioFilesQueue.add(filePath)
+        if (currentFilePath == null) {
+            currentFilePath = audioFilesQueue.poll()
+            playNextAudioFile(currentFilePath)
+        }
+    }
+
+    private fun playNextAudioFile(filePath: String?) {
+        currentFilePath = filePath
+        filePath?.let {
+            engine?.startAudioMixing(it, false, 1, 0)
+        }
     }
 
     override fun onError(err: Int) {

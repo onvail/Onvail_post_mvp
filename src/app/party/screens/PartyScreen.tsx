@@ -499,7 +499,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   useEffect(() => {
     party?.songs?.map(song => {
-      AgoraMusicHandler.preLoadMusicFiles(song.file_url);
+      AgoraMusicHandler.addAudioFileToQueue(song.file_url);
     });
   }, [party?.songs, AgoraMusicHandler, fetchTrackDuration]);
 
@@ -507,9 +507,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     try {
       switch (trackState) {
         case MediaEngineAudioEvent.MIXING_STOPPED:
-          await AgoraMusicHandler.playMusic(
-            'https://onvail-media.s3.eu-north-1.amazonaws.com/uploads/Elevation_Worship_-_The_one_You_Love_CeeNaija.com_.mp3',
-          );
+          await AgoraMusicHandler.playMusic();
           await fetchTrackDuration();
           break;
         case MediaEngineAudioEvent.MIXING_PLAYING:
@@ -519,9 +517,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           AgoraMusicHandler.resumeMusic();
           break;
         default:
-          AgoraMusicHandler.playMusic(
-            'https://onvail-media.s3.eu-north-1.amazonaws.com/uploads/Elevation_Worship_-_The_one_You_Love_CeeNaija.com_.mp3',
-          );
+          AgoraMusicHandler.playMusic();
       }
     } catch (error) {
       console.log(error);

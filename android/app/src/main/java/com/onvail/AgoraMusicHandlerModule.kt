@@ -7,12 +7,15 @@ import com.facebook.react.bridge.ReactMethod
 import io.agora.rtc2.*
 import com.onvail.BuildConfig
 import io.agora.rtc2.IAudioEffectManager
+import java.util.LinkedList
+import java.util.Queue
 
 class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
     private var engine: RtcEngine? = null
-    private lateinit var agoraEventHandler: IRtcEngineEventHandler
+    private lateinit var agoraEventHandler: AgoraEventHandler
     private lateinit var audioEffectManager: IAudioEffectManager
+    private val musicQueue: Queue<String> = LinkedList()
 
     init {
         try {
@@ -28,8 +31,16 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     override fun getName(): String = "AgoraMusicHandler"
 
     @ReactMethod
-    fun playMusic(filePath: String) {
-        engine?.startAudioMixing(filePath, false, 1, 0)
+    fun addAudioFileToQueue(filePath: String) {
+        musicQueue.add(filePath)
+    }
+
+    @ReactMethod
+    fun playMusic() {
+        val filePath = getNextFileFromQueue()
+        if (filePath != null) {
+            engine?.startAudioMixing(filePath, false, 1, 0)
+        }
     }
 
     @ReactMethod
@@ -49,18 +60,13 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
 
     @ReactMethod
     fun preLoadMusicFiles(filePath: String) {
-        // Sets the audio effect ID.
         var id: Int = 0
-        // Preloads the specified local audio effect file into the memory.
         audioEffectManager.preloadEffect(id++, filePath)
-        // Unloads the preloaded audio effect file.
-        // audioEffectManager.unloadEffect(id)
     }
 
     @ReactMethod
     fun getDuration(promise: Promise) {
         try {
-            // Ensure engine is not null before accessing it
             val duration = engine?.audioMixingDuration ?: throw NullPointerException("RtcEngine is not initialized")
             promise.resolve(duration)
         } catch (e: Exception) {
@@ -71,7 +77,6 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     @ReactMethod
     fun setPosition(position: Int, promise: Promise) {
         try {
-            // Ensure engine is not null before accessing it
             engine?.setAudioMixingPosition(position) ?: throw NullPointerException("RtcEngine is not initialized")
             promise.resolve(null)
         } catch (e: Exception) {
@@ -82,7 +87,6 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     @ReactMethod
     fun getPosition(promise: Promise) {
         try {
-            // Ensure engine is not null before accessing it
             val position = engine?.audioMixingCurrentPosition ?: throw NullPointerException("RtcEngine is not initialized")
             promise.resolve(position)
         } catch (e: Exception) {
@@ -91,8 +95,8 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     }
 
     @ReactMethod
-    fun setAudioVolume(volume: Int){
-        engine?.adjustAudioMixingVolume(volume);
+    fun setAudioVolume(volume: Int) {
+        engine?.adjustAudioMixingVolume(volume)
     }
 
     @ReactMethod
@@ -103,5 +107,13 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     @ReactMethod
     fun removeListeners(count: Int) {
         // Remove listeners if needed
+    }
+
+    private fun getNextFileFromQueue(): String? {
+        return if (musicQueue.isNotEmpty()) {
+            musicQueue.poll()
+        } else {
+            null
+        }
     }
 }
