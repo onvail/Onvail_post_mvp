@@ -90,7 +90,11 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
         }
     }
 
-    
+    @ReactMethod
+    fun setAudioVolume(volume: Int){
+        engine?.adjustAudioMixingVolume(volume);
+    }
+
     @ReactMethod
     fun addListener(eventName: String) {
         // Keep track of listeners if needed

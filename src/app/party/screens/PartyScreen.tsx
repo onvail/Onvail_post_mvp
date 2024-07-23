@@ -170,7 +170,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     [AudioMixingReason],
   );
 
-  const [volume, setVolume] = useState<number>(0.5);
+  const [volume, setVolume] = useState<number>(20);
   const [comments, setComments] = useState<FireStoreComments[]>([]);
   const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
   const commentRef = useRef<string>('');
@@ -369,6 +369,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [party?._id]);
 
+  console.log(volume);
+
   const commentOnParty = useCallback(async () => {
     setIsUploadingComment(true);
     try {
@@ -451,8 +453,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   });
 
   const volumeHandler = useCallback(async () => {
-    await VolumeManager.setVolume(volume);
-  }, [volume]);
+    await AgoraMusicHandler.setAudioVolume(volume);
+  }, [volume, AgoraMusicHandler]);
 
   useEffect(() => {
     volumeHandler();
@@ -823,7 +825,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
             <Slider
               style={tw`w-70`}
               minimumValue={0}
-              maximumValue={1}
+              maximumValue={100}
+              step={1}
               minimumTrackTintColor="#FFFFFF"
               maximumTrackTintColor="#000000"
               thumbTintColor="#FFFF"
