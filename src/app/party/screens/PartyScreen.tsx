@@ -803,7 +803,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           {isHost && (
             <RowContainer
               style={tw`mt-6 w-[60%]  justify-around  items-center`}>
-              <Pressable onPress={handlePrevious}>
+              <Pressable onPress={() => AgoraMusicHandler.previous()}>
                 <Icon icon="rewind" color="white" size={25} />
               </Pressable>
               <Pressable
@@ -811,7 +811,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                 style={tw`w-10 items-center `}>
                 {IconComponent}
               </Pressable>
-              <Pressable onPress={handleNext}>
+              <Pressable onPress={() => AgoraMusicHandler.next()}>
                 <Icon icon="fast-forward" color="white" size={25} />
               </Pressable>
             </RowContainer>

@@ -15,7 +15,9 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     private var engine: RtcEngine? = null
     private lateinit var agoraEventHandler: AgoraEventHandler
     private lateinit var audioEffectManager: IAudioEffectManager
-    private val musicQueue: Queue<String> = LinkedList()
+    private val audioFilesQueue: Queue<String> = LinkedList()
+    private var currentFilePath: String? = null
+    private var previousFilePath: String? = null
 
     init {
         try {
@@ -32,14 +34,26 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
 
     @ReactMethod
     fun addAudioFileToQueue(filePath: String) {
-        musicQueue.add(filePath)
+        audioFilesQueue.add(filePath)
+        if (currentFilePath == null) {
+            playNextAudioFile(audioFilesQueue.poll())
+        }
+    }
+
+    private fun playNextAudioFile(filePath: String?) {
+        previousFilePath = currentFilePath
+        currentFilePath = filePath
+        filePath?.let {
+            engine?.startAudioMixing(it, false, 1, 0)
+        }
     }
 
     @ReactMethod
     fun playMusic() {
-        val filePath = getNextFileFromQueue()
-        if (filePath != null) {
-            engine?.startAudioMixing(filePath, false, 1, 0)
+        if (currentFilePath != null) {
+            engine?.startAudioMixing(currentFilePath, false, 1, 0)
+        } else if (audioFilesQueue.isNotEmpty()) {
+            playNextAudioFile(audioFilesQueue.poll())
         }
     }
 
@@ -56,6 +70,18 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     @ReactMethod
     fun resumeMusic() {
         engine?.resumeAudioMixing()
+    }
+
+    @ReactMethod
+    fun next() {
+        if (audioFilesQueue.isNotEmpty()) {
+            playNextAudioFile(audioFilesQueue.poll())
+        }
+    }
+
+    @ReactMethod
+    fun previous() {
+        playNextAudioFile(previousFilePath)
     }
 
     @ReactMethod
@@ -107,13 +133,5 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     @ReactMethod
     fun removeListeners(count: Int) {
         // Remove listeners if needed
-    }
-
-    private fun getNextFileFromQueue(): String? {
-        return if (musicQueue.isNotEmpty()) {
-            musicQueue.poll()
-        } else {
-            null
-        }
     }
 }
