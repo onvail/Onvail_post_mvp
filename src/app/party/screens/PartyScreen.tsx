@@ -397,7 +397,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   // increase and decrease volume music
   const volumeHandler = useCallback(async () => {
-    await AgoraMusicHandler.setAudioVolume(volume);
+    if (Platform.OS === 'android') {
+      await AgoraMusicHandler.setAudioVolume(volume);
+    }
   }, [volume, AgoraMusicHandler]);
 
   useEffect(() => {
@@ -455,14 +457,18 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   );
 
   const emitter = useMemo(() => {
-    const agoraMusicHandlerEmitter = new NativeEventEmitter(AgoraMusicHandler);
-    return agoraMusicHandlerEmitter;
+    if (Platform.OS === 'android') {
+      const agoraMusicHandlerEmitter = new NativeEventEmitter(
+        AgoraMusicHandler,
+      );
+      return agoraMusicHandlerEmitter;
+    }
   }, [AgoraMusicHandler]);
 
   // android specific eventListener for agora natiive codes
   useEffect(() => {
     if (Platform.OS === 'android') {
-      const eventListener = emitter.addListener(
+      const eventListener = emitter?.addListener(
         'onAudioMixingStateChanged',
         event => {
           console.log('Audio Mixing State Changed:', event);
@@ -480,7 +486,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
       // Cleanup the event listener when the component unmounts
       return () => {
-        eventListener.remove();
+        eventListener?.remove();
       };
     }
   }, [emitter, mapStateToEnum, mapReasonToEnum]);
@@ -495,9 +501,11 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   }, [AgoraMusicHandler]);
 
   useEffect(() => {
-    party?.songs?.map(song => {
-      AgoraMusicHandler.addAudioFileToQueue(song.file_url);
-    });
+    if (Platform.OS === 'android') {
+      party?.songs?.map(song => {
+        AgoraMusicHandler.addAudioFileToQueue(song.file_url);
+      });
+    }
   }, [party?.songs, AgoraMusicHandler, fetchTrackDuration]);
 
   // handle music play and pause with agora native codes
