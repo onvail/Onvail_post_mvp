@@ -319,8 +319,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [party?._id]);
 
-  console.log(volume);
-
   const commentOnParty = useCallback(async () => {
     setIsUploadingComment(true);
     try {
