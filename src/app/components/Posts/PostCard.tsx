@@ -165,12 +165,12 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({
         await updateDoc(partyDocRef, {
           participants: arrayUnion(user),
         });
-        await join();
         await api.post({
           url: `parties/join-party/${party?._id}`,
           requiresToken: true,
           authorization: true,
         });
+        await join();
         handleJoinPartyBtnPress(partyTrackWithDuration, albumBackgroundColor);
       } else {
         Toast.show({
