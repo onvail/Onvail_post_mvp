@@ -76,28 +76,28 @@ import {useAgora} from 'src/app/hooks/useAgora';
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const enum MediaEngineAudioEvent {
-  MIXING_PLAYING = 710,
-  MIXING_PAUSED = 711,
-  MIXING_STOPPED = 713,
-  MIXING_ERROR = 714,
+  CustomAgoraAudioMixingStatePlaying = 710,
+  CustomAgoraAudioMixingStatePaused = 711,
+  CustomAgoraAudioMixingStateStopped = 713,
+  CustomAgoraAudioMixingStateFailed = 714,
 }
 
 enum AudioMixingReason {
-  STARTED_BY_USER = 720,
-  ONE_LOOP_COMPLETED = 721,
-  START_NEW_LOOP = 722,
-  RESUMED_BY_USER = 726,
-  PAUSED_BY_USER = 725,
-  ALL_LOOPS_COMPLETED = 723,
-  STOPPED_BY_USER = 724,
-  CAN_NOT_OPEN = 701,
-  TOO_FREQUENT_CALL = 702,
-  INTERRUPTED_EOF = 703,
+  CustomAgoraAudioMixingReasonCanNotOpen = 701,
+  CustomAgoraAudioMixingReasonTooFrequentCall = 702,
+  CustomAgoraAudioMixingReasonInterruptedEOF = 703,
+  CustomAgoraAudioMixingReasonStartedByUser = 720,
+  CustomAgoraAudioMixingReasonOneLoopCompleted = 721,
+  CustomAgoraAudioMixingReasonStartNewLoop = 722,
+  CustomAgoraAudioMixingReasonAllLoopsCompleted = 723,
+  CustomAgoraAudioMixingReasonStoppedByUser = 724,
+  CustomAgoraAudioMixingReasonPausedByUser = 725,
+  CustomAgoraAudioMixingReasonResumedByUser = 726,
 }
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const {party, partyBackgroundColor} = route.params;
-  const {AgoraMusicHandler} = NativeModules;
+  const {AgoraMusicHandler, AgoraModule} = NativeModules;
   const {user} = useUser();
   const {isMuted, toggleMute, toggleIsSpeakerEnabled, leave, isSpeakerEnabled} =
     useAgora(party?._id);
@@ -400,6 +400,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     if (Platform.OS === 'android') {
       await AgoraMusicHandler.setAudioVolume(volume);
     }
+    if (Platform.OS === 'ios') {
+    }
   }, [volume, AgoraMusicHandler]);
 
   useEffect(() => {
@@ -411,13 +413,13 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     (state: number): MediaEngineAudioEvent | undefined => {
       switch (state) {
         case 710:
-          return MediaEngineAudioEvent.MIXING_PLAYING;
+          return MediaEngineAudioEvent.CustomAgoraAudioMixingStatePlaying;
         case 711:
-          return MediaEngineAudioEvent.MIXING_PAUSED;
+          return MediaEngineAudioEvent.CustomAgoraAudioMixingStatePaused;
         case 713:
-          return MediaEngineAudioEvent.MIXING_STOPPED;
+          return MediaEngineAudioEvent.CustomAgoraAudioMixingStateStopped;
         case 714:
-          return MediaEngineAudioEvent.MIXING_ERROR;
+          return MediaEngineAudioEvent.CustomAgoraAudioMixingStateFailed;
         default:
           return undefined;
       }
@@ -430,25 +432,25 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     (reason: number): AudioMixingReason | undefined => {
       switch (reason) {
         case 720:
-          return AudioMixingReason.STARTED_BY_USER;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonStartedByUser;
         case 721:
-          return AudioMixingReason.ONE_LOOP_COMPLETED;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonOneLoopCompleted;
         case 722:
-          return AudioMixingReason.START_NEW_LOOP;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonStartNewLoop;
         case 726:
-          return AudioMixingReason.RESUMED_BY_USER;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonResumedByUser;
         case 725:
-          return AudioMixingReason.PAUSED_BY_USER;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonPausedByUser;
         case 723:
-          return AudioMixingReason.ALL_LOOPS_COMPLETED;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonAllLoopsCompleted;
         case 724:
-          return AudioMixingReason.STOPPED_BY_USER;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonStoppedByUser;
         case 701:
-          return AudioMixingReason.CAN_NOT_OPEN;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonCanNotOpen;
         case 702:
-          return AudioMixingReason.TOO_FREQUENT_CALL;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonTooFrequentCall;
         case 703:
-          return AudioMixingReason.INTERRUPTED_EOF;
+          return AudioMixingReason.CustomAgoraAudioMixingReasonInterruptedEOF;
         default:
           return undefined;
       }
@@ -506,24 +508,50 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         AgoraMusicHandler.addAudioFileToQueue(song.file_url);
       });
     }
-  }, [party?.songs, AgoraMusicHandler, fetchTrackDuration]);
+    if (Platform.OS === 'ios') {
+      party?.songs?.map(song => {
+        AgoraModule?.addAudioFileToQueue(song.file_url);
+      });
+    }
+  }, [party?.songs, AgoraMusicHandler, fetchTrackDuration, AgoraModule]);
 
   // handle music play and pause with agora native codes
   const handlePlayAndroid = async () => {
     try {
       switch (trackState) {
-        case MediaEngineAudioEvent.MIXING_STOPPED:
+        case MediaEngineAudioEvent.CustomAgoraAudioMixingStateStopped:
           await AgoraMusicHandler.playMusic();
           await fetchTrackDuration();
           break;
-        case MediaEngineAudioEvent.MIXING_PLAYING:
+        case MediaEngineAudioEvent.CustomAgoraAudioMixingStatePlaying:
           AgoraMusicHandler.pauseMusic();
           break;
-        case MediaEngineAudioEvent.MIXING_PAUSED:
+        case MediaEngineAudioEvent.CustomAgoraAudioMixingStatePaused:
           AgoraMusicHandler.resumeMusic();
           break;
         default:
           AgoraMusicHandler.playMusic();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handlePlayIos = async () => {
+    try {
+      switch (trackState) {
+        case MediaEngineAudioEvent.CustomAgoraAudioMixingStateStopped:
+          await AgoraModule.playMusic();
+          await fetchTrackDuration();
+          break;
+        case MediaEngineAudioEvent.CustomAgoraAudioMixingStatePlaying:
+          AgoraModule.pauseMusic();
+          break;
+        case MediaEngineAudioEvent.CustomAgoraAudioMixingStatePaused:
+          AgoraModule.resumeMusic();
+          break;
+        default:
+          AgoraModule.playMusic();
       }
     } catch (error) {
       console.log(error);
@@ -558,7 +586,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   let IconComponent;
 
-  if (trackState === MediaEngineAudioEvent.MIXING_PLAYING) {
+  if (trackState === MediaEngineAudioEvent.CustomAgoraAudioMixingStatePlaying) {
     IconComponent = <PauseIcon />;
   } else if (buffering) {
     IconComponent = <ActivityIndicator />;
@@ -777,21 +805,25 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
                 onPress={() =>
                   Platform.OS === 'android'
                     ? AgoraMusicHandler.previous()
-                    : null
+                    : AgoraModule.previous()
                 }>
                 <Icon icon="rewind" color="white" size={25} />
               </Pressable>
               <Pressable
                 onPress={() =>
-                  Platform.OS === 'android' ? handlePlayAndroid() : null
+                  Platform.OS === 'android'
+                    ? handlePlayAndroid()
+                    : handlePlayIos()
                 }
                 style={tw`w-10 items-center `}>
                 {IconComponent}
               </Pressable>
               <Pressable
-                onPress={() => {
-                  Platform.OS === 'android' ? AgoraMusicHandler.next() : null;
-                }}>
+                onPress={() =>
+                  Platform.OS === 'android'
+                    ? AgoraMusicHandler.next()
+                    : AgoraModule.next()
+                }>
                 <Icon icon="fast-forward" color="white" size={25} />
               </Pressable>
             </RowContainer>
