@@ -60,6 +60,13 @@
             ReferencedContainer = "container:onvail.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "AGORA_APP_ID"
+            value = "96026316465942ecbd6ec97dd28aed7e"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

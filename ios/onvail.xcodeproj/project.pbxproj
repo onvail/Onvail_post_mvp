@@ -43,6 +43,10 @@
 		A55FD8702C42BE1700D2AB69 /* Octicons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A55FD85C2C42BE1700D2AB69 /* Octicons.ttf */; };
 		A55FD8712C42BE1700D2AB69 /* SimpleLineIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A55FD85D2C42BE1700D2AB69 /* SimpleLineIcons.ttf */; };
 		A55FD8722C42BE1700D2AB69 /* Zocial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A55FD85E2C42BE1700D2AB69 /* Zocial.ttf */; };
+		A57E71122C502B4E00FF198E /* Environment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57E71112C502B4E00FF198E /* Environment.swift */; };
+		A57E71132C502B4E00FF198E /* Environment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57E71112C502B4E00FF198E /* Environment.swift */; };
+		A57E711D2C5166E700FF198E /* RCTAgoraMusicHandlerModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A57E711C2C5166E700FF198E /* RCTAgoraMusicHandlerModule.m */; };
+		A57E711E2C5166E700FF198E /* RCTAgoraMusicHandlerModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A57E711C2C5166E700FF198E /* RCTAgoraMusicHandlerModule.m */; };
 		A773FA1042D642CE883C7089 /* Poppins-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F843523782974C2287482243 /* Poppins-Medium.ttf */; };
 		B4EE384B01A9435CABD4B6C3 /* Poppins-BlackItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E4CF62FB4A0B4875A20EF81E /* Poppins-BlackItalic.ttf */; };
 		C5DD492EB0AA4C6F96A89E86 /* Poppins-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F28CEF08A66D4277B1BAEB0E /* Poppins-Light.ttf */; };
@@ -114,6 +118,9 @@
 		A55FD85C2C42BE1700D2AB69 /* Octicons.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Octicons.ttf; sourceTree = "<group>"; };
 		A55FD85D2C42BE1700D2AB69 /* SimpleLineIcons.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = SimpleLineIcons.ttf; sourceTree = "<group>"; };
 		A55FD85E2C42BE1700D2AB69 /* Zocial.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Zocial.ttf; sourceTree = "<group>"; };
+		A57E71112C502B4E00FF198E /* Environment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Environment.swift; sourceTree = "<group>"; };
+		A57E71182C51660600FF198E /* RCTAgoraMusicHandlerModule.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCTAgoraMusicHandlerModule.h; sourceTree = "<group>"; };
+		A57E711C2C5166E700FF198E /* RCTAgoraMusicHandlerModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCTAgoraMusicHandlerModule.m; sourceTree = "<group>"; };
 		A5BDDAD72BA39C7E009726CC /* onvail-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "onvail-Bridging-Header.h"; sourceTree = "<group>"; };
 		A5BDDADA2BA39F90009726CC /* dummy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = dummy.swift; sourceTree = "<group>"; };
 		A5C0639D06C644729DC1B300 /* Poppins-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraBold.ttf"; path = "../assets/fonts/Poppins-ExtraBold.ttf"; sourceTree = "<group>"; };
@@ -177,6 +184,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB71A68108700A75B9A /* main.m */,
+				A57E71112C502B4E00FF198E /* Environment.swift */,
 			);
 			name = onvail;
 			sourceTree = "<group>";
@@ -209,6 +217,8 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				A57E711C2C5166E700FF198E /* RCTAgoraMusicHandlerModule.m */,
+				A57E71182C51660600FF198E /* RCTAgoraMusicHandlerModule.h */,
 				A5BDDADA2BA39F90009726CC /* dummy.swift */,
 				A55FD85F2C42BE1700D2AB69 /* Fonts */,
 				13B07FAE1A68108700A75B9A /* onvail */,
@@ -644,6 +654,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				00E356F31AD99517003FC87E /* onvailTests.m in Sources */,
+				A57E711E2C5166E700FF198E /* RCTAgoraMusicHandlerModule.m in Sources */,
+				A57E71132C502B4E00FF198E /* Environment.swift in Sources */,
 				CB5D273FF3812B7765F674AB /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -654,7 +666,9 @@
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
+				A57E711D2C5166E700FF198E /* RCTAgoraMusicHandlerModule.m in Sources */,
 				EE70E83C6C30934463E8051D /* ExpoModulesProvider.swift in Sources */,
+				A57E71122C502B4E00FF198E /* Environment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -739,7 +753,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 6.1.2;
+				MARKETING_VERSION = 6.1.4;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -774,7 +788,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 6.1.2;
+				MARKETING_VERSION = 6.1.4;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
