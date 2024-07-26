@@ -1,34 +1,9 @@
-//
-//  RCTAgoraMusicHandlerModule.m
-//  onvail
-//
-//  Created by Marvelous Ikechi on 24/07/2024.
-//
-
 #import "RCTAgoraMusicHandlerModule.h"
 #import <React/RCTLog.h>
 
-typedef NS_ENUM(NSInteger, CustomAgoraAudioMixingStateCode) {
-    CustomAgoraAudioMixingStatePlaying = 710,
-    CustomAgoraAudioMixingStatePaused = 711,
-    CustomAgoraAudioMixingStateStopped = 713,
-    CustomAgoraAudioMixingStateFailed = 714
-};
-
-typedef NS_ENUM(NSInteger, CustomAgoraAudioMixingReasonCode) {
-    CustomAgoraAudioMixingReasonCanNotOpen = 701,
-    CustomAgoraAudioMixingReasonTooFrequentCall = 702,
-    CustomAgoraAudioMixingReasonInterruptedEOF = 703,
-    CustomAgoraAudioMixingReasonStartedByUser = 720,
-    CustomAgoraAudioMixingReasonOneLoopCompleted = 721,
-    CustomAgoraAudioMixingReasonStartNewLoop = 722,
-    CustomAgoraAudioMixingReasonAllLoopsCompleted = 723,
-    CustomAgoraAudioMixingReasonStoppedByUser = 724,
-    CustomAgoraAudioMixingReasonPausedByUser = 725,
-    CustomAgoraAudioMixingReasonResumedByUser = 726
-};
-
 @implementation RCTAgoraMusicHandlerModule
+
+RCT_EXPORT_MODULE(AgoraModule)
 
 - (instancetype)init {
   if (self = [super init]) {
@@ -47,13 +22,18 @@ typedef NS_ENUM(NSInteger, CustomAgoraAudioMixingReasonCode) {
   self.agoraKit = [AgoraRtcEngineKit sharedEngineWithAppId:appId delegate:self];
 }
 
-RCT_EXPORT_MODULE(AgoraModule)
+- (NSArray<NSString *> *)supportedEvents {
+  return @[@"onAudioMixingStateChanged"];
+}
 
-RCT_EXPORT_METHOD(playMusic:(NSString *)filePath) {
-  BOOL loopback = NO;
-  NSInteger cycle = 1;
-  NSInteger startPos = 0;
-  [self.agoraKit startAudioMixing:filePath loopback:loopback cycle:cycle startPos:startPos];
+RCT_EXPORT_METHOD(playMusic) {
+  if (self.audioFilesQueue.count > 0) {
+    NSString *filePath = [self.audioFilesQueue firstObject];
+    [self.audioFilesQueue removeObjectAtIndex:0];
+    [self playNextAudioFile:filePath];
+  } else {
+    RCTLogError(@"No audio files in the queue to play");
+  }
 }
 
 RCT_EXPORT_METHOD(stopMusic) {
@@ -74,39 +54,59 @@ RCT_EXPORT_METHOD(resumeMusic) {
   if (filePath) {
     BOOL loopback = NO;
     NSInteger cycle = 1;
-    NSInteger startPos = 0;
-    [self.agoraKit startAudioMixing:filePath loopback:loopback  cycle:cycle startPos:startPos];
+    [self.agoraKit startAudioMixing:filePath loopback:loopback cycle:cycle];
   }
 }
 
 RCT_EXPORT_METHOD(addAudioFileToQueue:(NSString *)filePath) {
   [self.audioFilesQueue addObject:filePath];
-  if (!self.currentFilePath) {
-    NSString *nextFilePath = [self.audioFilesQueue firstObject];
-    [self.audioFilesQueue removeObjectAtIndex:0];
-    [self playNextAudioFile:nextFilePath];
-  }
 }
 
 RCT_EXPORT_METHOD(next) {
   if (self.audioFilesQueue.count > 0) {
-    NSString *nextFilePath = [self.audioFilesQueue firstObject];
-    [self.audioFilesQueue removeObjectAtIndex:0];
-    [self playNextAudioFile:nextFilePath];
-  }
+     // Play the next file in the queue
+     NSString *nextFilePath = [self.audioFilesQueue firstObject];
+     [self.audioFilesQueue removeObjectAtIndex:0];
+     [self playNextAudioFile:nextFilePath];
+   } else {
+     // Queue is empty, restart from the first item
+     if (self.previousFilePath) {
+       [self playNextAudioFile:self.previousFilePath];
+     } else if (self.audioFilesQueue.count > 0) {
+       NSString *firstFilePath = [self.audioFilesQueue firstObject];
+       [self playNextAudioFile:firstFilePath];
+     } else {
+       RCTLogError(@"No audio files available to play");
+     }
+   }
 }
 
 RCT_EXPORT_METHOD(previous) {
-  [self playNextAudioFile:self.previousFilePath];
-}
+  if (self.previousFilePath) {
+      // Play the previous file if available
+      [self playNextAudioFile:self.previousFilePath];
+    } else if (self.audioFilesQueue.count > 0) {
+      // Re-add the first file to the queue and play it
+      NSString *firstFilePath = [self.audioFilesQueue firstObject];
+      [self.audioFilesQueue insertObject:firstFilePath atIndex:0];
+      [self playNextAudioFile:firstFilePath];
+    } else {
+      RCTLogError(@"No previous audio file available");
+    }}
+
 
 + (BOOL)requiresMainQueueSetup {
   return NO;
 }
 
-- (void)rtcEngine:(AgoraRtcEngineKit *)engine audioMixingStateChanged:(CustomAgoraAudioMixingStateCode)state reason:(CustomAgoraAudioMixingReasonCode)reason {
+- (void)rtcEngine:(AgoraRtcEngineKit *)engine audioMixingStateChanged:(AgoraAudioMixingStateType)state reason:(AgoraAudioMixingReasonCode)reason {
+  RCTLogInfo(@"Audio mixing state changed: state=%ld, reason=%ld", (long)state, (long)reason);
+  
+  // Send event to React Native
+  [self sendEventWithName:@"onAudioMixingStateChanged" body:@{@"state": @(state), @"reason": @(reason)}];
+
   // Handle the state change here
-  if (state == CustomAgoraAudioMixingStateStopped && reason == CustomAgoraAudioMixingReasonStoppedByUser) {
+  if (state == AgoraAudioMixingStateTypeStopped && reason == AgoraAudioMixingReasonStoppedByUser) {
     // Play the next audio file in the queue if available
     if (self.audioFilesQueue.count > 0) {
       NSString *nextFilePath = [self.audioFilesQueue firstObject];

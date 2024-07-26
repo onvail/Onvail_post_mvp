@@ -7,10 +7,9 @@
 
 #import <React/RCTBridgeModule.h>
 #import <AgoraRtcKit/AgoraRtcEngineKit.h>
+#import <React/RCTEventEmitter.h>
 
-
-
-@interface RCTAgoraMusicHandlerModule : NSObject <RCTBridgeModule, AgoraRtcEngineDelegate>
+@interface RCTAgoraMusicHandlerModule : RCTEventEmitter <RCTBridgeModule, AgoraRtcEngineDelegate>
 
 @property (nonatomic, strong) AgoraRtcEngineKit *agoraKit;
 @property (nonatomic, copy) NSString *currentFilePath;
