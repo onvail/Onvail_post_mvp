@@ -2,7 +2,6 @@ import React, {
   FunctionComponent,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -34,7 +33,6 @@ import CommentCards from 'src/app/components/Cards/CommentCards';
 import RowContainer from 'src/app/components/View/RowContainer';
 import {FlashList, ListRenderItem} from '@shopify/flash-list';
 import MusicList from '../components/MusicList';
-import useMusicPlayer from 'src/app/hooks/useMusicPlayer';
 import TrackPlayer, {State, Track} from 'react-native-track-player';
 import {Song} from 'src/types/partyTypes';
 import api from 'src/api/api';
@@ -112,7 +110,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const HandDownIcon = generalIcon.HandDownIcon;
 
   const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
-  const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
   const [selectedBottomSheetTab, setSelectedBottomSheetTab] =
     useState<number>(0);
   const [guestList, setGuestList] = useState<User[]>([]);
@@ -391,10 +388,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [party?._id, leave, navigation]);
 
-  const {playerState, checkIfTrackQueueIsDifferent} = useMusicPlayer({
-    track: allTracks,
-  });
-
   // increase and decrease volume music
   const volumeHandler = useCallback(async () => {
     if (Platform.OS === 'android') {
@@ -602,19 +595,8 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     );
   };
 
-  const buffering = isSameQueue && playerState === 'buffering';
-
-  const handleSameQueueItemState = useCallback(async () => {
-    const sameQueue = await checkIfTrackQueueIsDifferent();
-    setIsSameQueue(sameQueue);
-    return sameQueue;
-  }, [checkIfTrackQueueIsDifferent]);
-
-  useLayoutEffect(() => {
-    handleSameQueueItemState();
-  }, [handleSameQueueItemState]);
-
   let IconComponent;
+  const buffering = false;
 
   if (trackState === MediaEngineAudioEvent.AgoraAudioMixingStateTypePlaying) {
     IconComponent = <PauseIcon />;
