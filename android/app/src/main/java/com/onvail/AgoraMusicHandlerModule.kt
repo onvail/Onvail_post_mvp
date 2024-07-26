@@ -128,8 +128,13 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     }
 
     @ReactMethod
-    fun setAudioVolume(volume: Int) {
+    fun setAudioVolumeAsHost(volume: Int) {
         engine?.adjustAudioMixingVolume(volume)
+    }
+
+    @ReactMethod
+    fun setAudioVolumeAsGuest(volume: Int){
+        engine?.adjustAudioMixingPlayoutVolume(volume)
     }
 
     @ReactMethod

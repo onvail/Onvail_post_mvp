@@ -94,6 +94,26 @@ RCT_EXPORT_METHOD(previous) {
       RCTLogError(@"No previous audio file available");
     }}
 
+// Increase volume for as the host
+RCT_EXPORT_METHOD(increaseHostVolume:(NSInteger)volume) {
+  // Ensure the volume is within a valid range (0-100)
+  volume = MAX(0, MIN(volume, 100));
+
+  // Use the Agora RTC Engine instance to adjust the volume
+  [self.agoraKit adjustAudioMixingVolume:volume];
+}
+
+
+//increase volume for guest
+RCT_EXPORT_METHOD(increaseGuestVolume:(NSInteger)volume) {
+  // Ensure the volume is within a valid range (0-100)
+  volume = MAX(0, MIN(volume, 100));
+
+  // Use the Agora RTC Engine instance to adjust the playback volume
+  [self.agoraKit adjustAudioMixingPlayoutVolume:volume];
+}
+
+
 
 + (BOOL)requiresMainQueueSetup {
   return NO;
