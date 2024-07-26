@@ -76,23 +76,23 @@ import {useAgora} from 'src/app/hooks/useAgora';
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
 const enum MediaEngineAudioEvent {
-  CustomAgoraAudioMixingStatePlaying = 710,
-  CustomAgoraAudioMixingStatePaused = 711,
-  CustomAgoraAudioMixingStateStopped = 713,
-  CustomAgoraAudioMixingStateFailed = 714,
+  AgoraAudioMixingStateTypePlaying = 710,
+  AgoraAudioMixingStateTypePaused = 711,
+  AgoraAudioMixingStateTypeStopped = 713,
+  AgoraAudioMixingStateTypeFailed = 714,
 }
 
 enum AudioMixingReason {
-  CustomAgoraAudioMixingReasonCanNotOpen = 701,
-  CustomAgoraAudioMixingReasonTooFrequentCall = 702,
-  CustomAgoraAudioMixingReasonInterruptedEOF = 703,
-  CustomAgoraAudioMixingReasonStartedByUser = 720,
-  CustomAgoraAudioMixingReasonOneLoopCompleted = 721,
-  CustomAgoraAudioMixingReasonStartNewLoop = 722,
-  CustomAgoraAudioMixingReasonAllLoopsCompleted = 723,
-  CustomAgoraAudioMixingReasonStoppedByUser = 724,
-  CustomAgoraAudioMixingReasonPausedByUser = 725,
-  CustomAgoraAudioMixingReasonResumedByUser = 726,
+  AgoraAudioMixingReasonCanNotOpen = 701,
+  AgoraAudioMixingReasonTooFrequentCall = 702,
+  AgoraAudioMixingReasonInterruptedEOF = 703,
+  AgoraAudioMixingReasonStartedByUser = 720,
+  AgoraAudioMixingReasonOneLoopCompleted = 721,
+  AgoraAudioMixingReasonStartNewLoop = 722,
+  AgoraAudioMixingReasonAllLoopsCompleted = 723,
+  AgoraAudioMixingReasonStoppedByUser = 724,
+  AgoraAudioMixingReasonPausedByUser = 725,
+  AgoraAudioMixingReasonResumedByUser = 726,
 }
 
 const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
@@ -413,13 +413,13 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     (state: number): MediaEngineAudioEvent | undefined => {
       switch (state) {
         case 710:
-          return MediaEngineAudioEvent.CustomAgoraAudioMixingStatePlaying;
+          return MediaEngineAudioEvent.AgoraAudioMixingStateTypePlaying;
         case 711:
-          return MediaEngineAudioEvent.CustomAgoraAudioMixingStatePaused;
+          return MediaEngineAudioEvent.AgoraAudioMixingStateTypePaused;
         case 713:
-          return MediaEngineAudioEvent.CustomAgoraAudioMixingStateStopped;
+          return MediaEngineAudioEvent.AgoraAudioMixingStateTypeStopped;
         case 714:
-          return MediaEngineAudioEvent.CustomAgoraAudioMixingStateFailed;
+          return MediaEngineAudioEvent.AgoraAudioMixingStateTypeFailed;
         default:
           return undefined;
       }
@@ -432,25 +432,25 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     (reason: number): AudioMixingReason | undefined => {
       switch (reason) {
         case 720:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonStartedByUser;
+          return AudioMixingReason.AgoraAudioMixingReasonStartedByUser;
         case 721:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonOneLoopCompleted;
+          return AudioMixingReason.AgoraAudioMixingReasonOneLoopCompleted;
         case 722:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonStartNewLoop;
+          return AudioMixingReason.AgoraAudioMixingReasonStartNewLoop;
         case 726:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonResumedByUser;
+          return AudioMixingReason.AgoraAudioMixingReasonResumedByUser;
         case 725:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonPausedByUser;
+          return AudioMixingReason.AgoraAudioMixingReasonPausedByUser;
         case 723:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonAllLoopsCompleted;
+          return AudioMixingReason.AgoraAudioMixingReasonAllLoopsCompleted;
         case 724:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonStoppedByUser;
+          return AudioMixingReason.AgoraAudioMixingReasonStoppedByUser;
         case 701:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonCanNotOpen;
+          return AudioMixingReason.AgoraAudioMixingReasonCanNotOpen;
         case 702:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonTooFrequentCall;
+          return AudioMixingReason.AgoraAudioMixingReasonTooFrequentCall;
         case 703:
-          return AudioMixingReason.CustomAgoraAudioMixingReasonInterruptedEOF;
+          return AudioMixingReason.AgoraAudioMixingReasonInterruptedEOF;
         default:
           return undefined;
       }
@@ -460,21 +460,45 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   const emitter = useMemo(() => {
     if (Platform.OS === 'android') {
-      const agoraMusicHandlerEmitter = new NativeEventEmitter(
-        AgoraMusicHandler,
-      );
-      return agoraMusicHandlerEmitter;
+      return new NativeEventEmitter(AgoraMusicHandler);
+    } else if (Platform.OS === 'ios') {
+      return new NativeEventEmitter(AgoraModule);
     }
-  }, [AgoraMusicHandler]);
+  }, [AgoraMusicHandler, AgoraModule]);
 
-  // android specific eventListener for agora natiive codes
+  // Event listener for Android
   useEffect(() => {
     if (Platform.OS === 'android') {
       const eventListener = emitter?.addListener(
         'onAudioMixingStateChanged',
         event => {
           console.log('Audio Mixing State Changed:', event);
+          // Map the numeric state to enum
+          const state = mapStateToEnum(event.state);
+          const reason = mapReasonToEnum(event.reason);
+          if (state !== undefined) {
+            setTrackState(state);
+          }
+          console.log('State:', state);
+          console.log('Reason:', reason);
+        },
+      );
 
+      // Cleanup the event listener when the component unmounts
+      return () => {
+        eventListener?.remove();
+      };
+    }
+  }, [emitter, mapStateToEnum, mapReasonToEnum]);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      console.log('ios', emitter);
+      const eventListener = emitter?.addListener(
+        'onAudioMixingStateChanged',
+        event => {
+          console.log('changing');
+          console.log('Audio Mixing State Changed:', event);
           // Map the numeric state to enum
           const state = mapStateToEnum(event.state);
           const reason = mapReasonToEnum(event.reason);
@@ -519,14 +543,14 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const handlePlayAndroid = async () => {
     try {
       switch (trackState) {
-        case MediaEngineAudioEvent.CustomAgoraAudioMixingStateStopped:
+        case MediaEngineAudioEvent.AgoraAudioMixingStateTypeStopped:
           await AgoraMusicHandler.playMusic();
           await fetchTrackDuration();
           break;
-        case MediaEngineAudioEvent.CustomAgoraAudioMixingStatePlaying:
+        case MediaEngineAudioEvent.AgoraAudioMixingStateTypePlaying:
           AgoraMusicHandler.pauseMusic();
           break;
-        case MediaEngineAudioEvent.CustomAgoraAudioMixingStatePaused:
+        case MediaEngineAudioEvent.AgoraAudioMixingStateTypePaused:
           AgoraMusicHandler.resumeMusic();
           break;
         default:
@@ -540,14 +564,14 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const handlePlayIos = async () => {
     try {
       switch (trackState) {
-        case MediaEngineAudioEvent.CustomAgoraAudioMixingStateStopped:
+        case MediaEngineAudioEvent.AgoraAudioMixingStateTypeStopped:
           await AgoraModule.playMusic();
           await fetchTrackDuration();
           break;
-        case MediaEngineAudioEvent.CustomAgoraAudioMixingStatePlaying:
+        case MediaEngineAudioEvent.AgoraAudioMixingStateTypePlaying:
           AgoraModule.pauseMusic();
           break;
-        case MediaEngineAudioEvent.CustomAgoraAudioMixingStatePaused:
+        case MediaEngineAudioEvent.AgoraAudioMixingStateTypePaused:
           AgoraModule.resumeMusic();
           break;
         default:
@@ -586,7 +610,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   let IconComponent;
 
-  if (trackState === MediaEngineAudioEvent.CustomAgoraAudioMixingStatePlaying) {
+  if (trackState === MediaEngineAudioEvent.AgoraAudioMixingStateTypePlaying) {
     IconComponent = <PauseIcon />;
   } else if (buffering) {
     IconComponent = <ActivityIndicator />;
