@@ -391,11 +391,20 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   // increase and decrease volume music
   const volumeHandler = useCallback(async () => {
     if (Platform.OS === 'android') {
-      await AgoraMusicHandler.setAudioVolume(volume);
+      if (isHost) {
+        await AgoraMusicHandler.setAudioVolumeAsHost(volume);
+      } else {
+        await AgoraMusicHandler.setAudioVolumeAsGuest(volume);
+      }
     }
     if (Platform.OS === 'ios') {
+      if (isHost) {
+        await AgoraModule.increaseHostVolume(volume);
+      } else {
+        await AgoraModule.increaseGuestVolume(volume);
+      }
     }
-  }, [volume, AgoraMusicHandler]);
+  }, [volume, AgoraMusicHandler, AgoraModule, isHost]);
 
   useEffect(() => {
     volumeHandler();
