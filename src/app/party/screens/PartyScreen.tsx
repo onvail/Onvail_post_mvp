@@ -527,17 +527,23 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   }, [AgoraMusicHandler]);
 
   useEffect(() => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' && isHost) {
       party?.songs?.map(song => {
         AgoraMusicHandler.addAudioFileToQueue(song.file_url);
       });
     }
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === 'ios' && isHost) {
       party?.songs?.map(song => {
         AgoraModule?.addAudioFileToQueue(song.file_url);
       });
     }
-  }, [party?.songs, AgoraMusicHandler, fetchTrackDuration, AgoraModule]);
+  }, [
+    party?.songs,
+    AgoraMusicHandler,
+    fetchTrackDuration,
+    AgoraModule,
+    isHost,
+  ]);
 
   // handle music play and pause with agora native codes
   const handlePlayAndroid = async () => {
