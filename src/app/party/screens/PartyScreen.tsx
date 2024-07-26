@@ -230,7 +230,9 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      };
 
      const snapPoints = useMemo(() => [125, "65%"], []);
-     const darkerAccentColor = tinycolor(screenColors?.accent).darken(20).toString();
+     const darkerAccentColor = tinycolor(screenColors?.background ?? screenColors?.accent)
+          .darken(1)
+          .toString();
 
      const openBottomSheet = () => {
           bottomSheetRef.current?.open();
@@ -585,10 +587,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      }, [tabNavigation]);
 
      return (
-          <LinearGradient
-               style={tw`h-full flex-1 p-4`}
-               colors={[screenColors?.background ?? "#0E0E0E", screenColors?.detail ?? "#087352"]}
-          >
+          <LinearGradient style={tw`h-full flex-1 p-4`} colors={[darkerAccentColor, "#000"]}>
                <SafeAreaView style={tw`h-full flex-1`}>
                     <TouchableOpacity
                          style={tw` ${
@@ -760,26 +759,48 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                          </RowContainer>
                     </View>
                </Modal>
+               {snapPointIndex === 0 && (
+                    <View
+                         style={[
+                              tw`absolute items-center justify-center flex transform w-100 h-4 `,
+                              { marginBottom: 135, bottom: 0 },
+                         ]}
+                    >
+                         <Animated.View
+                              style={[
+                                   tw`items-center justify-center flex transform -translate-x-1/2 h-6`,
+                                   animatedArrowStyle,
+                              ]}
+                         >
+                              <MaterialIcons name="keyboard-arrow-up" color="white" size={20} />
+                              <MaterialIcons
+                                   name="keyboard-arrow-up"
+                                   color="white"
+                                   size={25}
+                                   style={{ marginTop: -12 }}
+                              />
+                              <MaterialIcons
+                                   name="keyboard-arrow-up"
+                                   color="white"
+                                   size={30}
+                                   style={{ marginTop: -15 }}
+                              />
+                         </Animated.View>
+                    </View>
+               )}
                <CustomBottomSheet
                     ref={bottomSheetRef}
                     customSnapPoints={snapPoints}
-                    backgroundColor={screenColors?.accent}
+                    backgroundColor={"#000000"}
                     setSnapIndex={setSnapIndexController}
                     snapIndex={snapIndexController}
                     // footerComponent={renderBottomFooter}
+
                     footerComponent={() => (
-                         <View
-                              style={[
-                                   tw`border-t z-20  bg-[${darkerAccentColor}] border-grey2 w-full`,
-                              ]}
-                         >
+                         <View style={[tw` z-20  bg-[#000000] w-full`]}>
                               <View style={[tw` justify-center w-full pb-4`]}>
                                    <RowContainer
-                                        style={tw`justify-between px-3 items-center py-[10px] ${
-                                             activeTabName === "Comments"
-                                                  ? "border border-grey4"
-                                                  : ""
-                                        }`}
+                                        style={tw`justify-between px-3 items-center py-[10px] border-t border-grey2`}
                                    >
                                         <RowContainer
                                              style={tw`justify-between items-center w-1/3`}
@@ -877,16 +898,27 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     visibilityHandler={() => {}}
                     onChange={(index: number) => setSnapPointIndex(index)}
                >
-                    {snapPointIndex === 0 && (
-                         <Animated.View
+                    {/* {snapPointIndex === 0 && (
+                         <View
                               style={[
-                                   tw`items-center justify-center flex transform -translate-x-1/2 h-6`,
-                                   animatedArrowStyle,
+                                   tw`absolute items-center justify-center flex transform w-100 h-6 z-100`,
+                                   { marginTop: -10, zIndex: 100000 },
                               ]}
                          >
-                              <MaterialIcons name="keyboard-arrow-up" color="white" size={30} />
-                         </Animated.View>
-                    )}
+                              <Animated.View
+                                   style={[
+                                        tw`items-center justify-center flex transform -translate-x-1/2 h-6`,
+                                        animatedArrowStyle,
+                                   ]}
+                              >
+                                   <MaterialIcons
+                                        name="keyboard-arrow-up"
+                                        color="white"
+                                        size={30}
+                                   />
+                              </Animated.View>
+                         </View>
+                    )} */}
                     {snapPointIndex > 0 && (
                          <NavigationContainer
                               independent={true}
@@ -934,7 +966,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                                         {() => (
                                              <View
                                                   style={{
-                                                       backgroundColor: screenColors?.detail,
+                                                       backgroundColor: "#000000",
                                                        height: "100%",
                                                   }}
                                              >
@@ -951,7 +983,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                                         {() => (
                                              <View
                                                   style={{
-                                                       backgroundColor: screenColors?.detail,
+                                                       backgroundColor: "#000000",
                                                        height: "100%",
                                                   }}
                                              >

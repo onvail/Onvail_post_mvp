@@ -1,5 +1,5 @@
-import React, { FunctionComponent, useState } from "react";
-import { Dimensions, Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { forwardRef, memo, useImperativeHandle, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
 import { generalIcon } from "src/app/components/Icons/generalIcons";
 import PostCard from "src/app/components/Posts/PostCard";
 import ScreenContainer from "src/app/components/Screens/ScreenContainer";
@@ -13,7 +13,6 @@ import Animated, {
      useSharedValue,
      useAnimatedStyle,
      withTiming,
-     runOnJS,
 } from "react-native-reanimated";
 import { BottomTabParamList } from "src/app/navigator/types/BottomTabParamList";
 import { useQuery } from "@tanstack/react-query";
@@ -24,9 +23,12 @@ import { Colors } from "src/app/styles/colors";
 import useUser from "src/app/hooks/useUserInfo";
 import CustomImage from "src/app/components/Image/CustomImage";
 import HomeSkeletonPlaceHolder from "src/app/components/Screens/HomeSkeletonPlaceHolder";
+import { RefreshControl } from "react-native-gesture-handler";
+import CustomRefreshControl from "src/app/components/CustomRefreshControl/CustomRefreshControl";
 
 type Props = NativeStackScreenProps<BottomTabParamList, "Home">;
-const Home: FunctionComponent<Props> = ({ navigation }) => {
+
+const Home = forwardRef<unknown, Props>(({ navigation }, ref) => {
      const LogoSvg = generalIcon.Logo;
      const NotificationBellSvg = generalIcon.NotificationBell;
      type Tabs = "Parties" | "Feeds";
@@ -45,17 +47,26 @@ const Home: FunctionComponent<Props> = ({ navigation }) => {
 
      const AnimatedButton = Animated.createAnimatedComponent(TouchableOpacity);
 
-     const { data: partiesData, isLoading: loadingParties } = useQuery({
+     const {
+          data: partiesData,
+          isLoading: loadingParties,
+          refetch: refetchParties,
+     } = useQuery({
           queryKey: ["parties"],
           queryFn: fetchParties,
      });
 
-     const { data: postsData, isLoading: loadingPosts } = useQuery({
+     const {
+          data: postsData,
+          isLoading: loadingPosts,
+          refetch: refetchPosts,
+     } = useQuery({
           queryKey: ["posts"],
           queryFn: fetchPosts,
      });
 
      const isLoading = loadingParties || loadingPosts;
+     const [refreshing, setRefreshing] = useState(false);
 
      const scrollY = useSharedValue(0);
      const headerTranslateY = useSharedValue(0);
@@ -99,6 +110,33 @@ const Home: FunctionComponent<Props> = ({ navigation }) => {
                transform: [{ translateY: tabTranslateY.value }],
           };
      });
+
+     const onRefresh = () => {
+          setRefreshing(true);
+
+          if (selectedTab === "Parties") {
+               refetchParties().then(() => {
+                    setRefreshing(false);
+                    handleTabSwitch("Parties");
+               });
+          } else {
+               refetchPosts().then(() => {
+                    setRefreshing(false);
+                    handleTabSwitch("Feeds");
+               });
+          }
+     };
+
+     useImperativeHandle(ref, () => ({
+          refresh: () => {
+               handleTabSwitch("Parties");
+               onRefresh();
+          },
+          refreshing,
+     }));
+
+     const isPartiesEmpty = !loadingParties && (!partiesData || partiesData.length === 0);
+     const isPostsEmpty = !loadingPosts && (!postsData || postsData.length === 0);
 
      return (
           <ScreenContainer>
@@ -187,6 +225,11 @@ const Home: FunctionComponent<Props> = ({ navigation }) => {
                               })}
                          </Animated.View>
                     </Animated.View>
+                    {refreshing && (
+                         <View style={styles.spinnerContainer}>
+                              <ActivityIndicator size="large" color={"#ebebeb"} />
+                         </View>
+                    )}
                     <View
                          style={{
                               ...tw`flex-1 ${
@@ -200,6 +243,19 @@ const Home: FunctionComponent<Props> = ({ navigation }) => {
                                    contentContainerStyle={tw`px-2`}
                                    onScroll={scrollHandler}
                                    scrollEventThrottle={16}
+                                   refreshControl={
+                                        <RefreshControl
+                                             refreshing={refreshing}
+                                             onRefresh={onRefresh}
+                                             tintColor="transparent"
+                                             progressViewOffset={-50}
+                                        >
+                                             <CustomRefreshControl
+                                                  refreshing={refreshing}
+                                                  pullDistance={scrollY}
+                                             />
+                                        </RefreshControl>
+                                   }
                               >
                                    {Array.from({ length: 10 }, (_, key) => (
                                         <HomeSkeletonPlaceHolder key={key} />
@@ -208,26 +264,55 @@ const Home: FunctionComponent<Props> = ({ navigation }) => {
                          ) : (
                               <>
                                    {selectedTab === "Parties" && (
-                                        <PostCard
-                                             handleJoinPartyBtnPress={(
-                                                  item,
-                                                  partyBackgroundColor,
-                                             ) => {
-                                                  navigation.navigate("MainAppNavigator", {
-                                                       screen: "PartyScreen",
-                                                       params: {
-                                                            party: item,
-                                                            partyBackgroundColor:
-                                                                 partyBackgroundColor,
-                                                       },
-                                                  });
-                                             }}
-                                             data={partiesData}
-                                             onScroll={scrollHandler}
-                                        />
+                                        <>
+                                             {isPartiesEmpty ? (
+                                                  <View style={styles.emptyContainer}>
+                                                       <CustomText style={styles.emptyText}>
+                                                            No parties available. Pull to refresh.
+                                                       </CustomText>
+                                                  </View>
+                                             ) : (
+                                                  <PostCard
+                                                       handleJoinPartyBtnPress={(
+                                                            item,
+                                                            partyBackgroundColor,
+                                                       ) => {
+                                                            navigation.navigate(
+                                                                 "MainAppNavigator",
+                                                                 {
+                                                                      screen: "PartyScreen",
+                                                                      params: {
+                                                                           party: item,
+                                                                           partyBackgroundColor:
+                                                                                partyBackgroundColor,
+                                                                      },
+                                                                 },
+                                                            );
+                                                       }}
+                                                       data={partiesData}
+                                                       onScroll={scrollHandler}
+                                                       onRefresh={onRefresh}
+                                                       refreshing={refreshing}
+                                                  />
+                                             )}
+                                        </>
                                    )}
                                    {selectedTab === "Feeds" && (
-                                        <Feeds data={postsData} /> // Pass scroll handler to Feeds
+                                        <>
+                                             {isPostsEmpty ? (
+                                                  <View style={styles.emptyContainer}>
+                                                       <CustomText style={styles.emptyText}>
+                                                            No posts available. Pull to refresh.
+                                                       </CustomText>
+                                                  </View>
+                                             ) : (
+                                                  <Feeds
+                                                       data={postsData}
+                                                       // onRefresh={onRefresh}
+                                                       // refreshing={refreshing}
+                                                  />
+                                             )}
+                                        </>
                                    )}
                               </>
                          )}
@@ -235,12 +320,30 @@ const Home: FunctionComponent<Props> = ({ navigation }) => {
                </View>
           </ScreenContainer>
      );
-};
+});
 
 const styles = StyleSheet.create({
      logo: {
           marginLeft: -14,
      },
      freePlanText: { marginLeft: -10, marginTop: -8 },
+     spinnerContainer: {
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          alignItems: "center",
+          zIndex: 1,
+     },
+     emptyContainer: {
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+     },
+     emptyText: {
+          fontSize: 16,
+          color: "#888",
+     },
 });
-export default Home;
+
+export default memo(Home);

@@ -38,9 +38,14 @@ import Animated, {
      withSpring,
      withTiming,
 } from "react-native-reanimated";
-import { TapGestureHandler, TouchableWithoutFeedback } from "react-native-gesture-handler";
+import {
+     RefreshControl,
+     TapGestureHandler,
+     TouchableWithoutFeedback,
+} from "react-native-gesture-handler";
 import LoveOverlay from "../LoveOverlay/LoveOverlay";
 import { ALERT_TYPE, Toast } from "react-native-alert-notification";
+import CustomRefreshControl from "../CustomRefreshControl/CustomRefreshControl";
 
 interface JoinPartyProps {
      handleJoinPartyBtnPress: (party: PartiesResponse, albumBackgroundColor: ColorScheme) => void;
@@ -462,23 +467,26 @@ const PostItem: FunctionComponent<{
  * @returns FlashList component that renders posts vertically.
  */
 
-interface PostCardProps {
-     handleJoinPartyBtnPress: (item: PartiesResponse, albumBackgroundColor: string) => void;
+type PostCardProps = {
+     handleJoinPartyBtnPress: (item: PartiesResponse, backgroundColor: string) => void;
      data: PartiesResponse[];
      onScroll: (event: any) => void;
-}
+     onRefresh: () => void;
+     refreshing: boolean;
+};
 
 const PostCard: FunctionComponent<PostCardProps> = ({
      handleJoinPartyBtnPress,
      data = [],
      onScroll,
+     onRefresh,
+     refreshing,
 }) => {
      const { user } = useUser();
      const ITEM_SIZE = 600;
+     const pullDistance = useSharedValue(0);
 
      const renderItem: ListRenderItem<PartiesResponse> = ({ item, index }) => {
-          const opacityInputRange = [-1, 0, index * ITEM_SIZE, (index + 1.3) * ITEM_SIZE];
-
           return (
                <Animated.View>
                     <PostItem
@@ -502,13 +510,27 @@ const PostCard: FunctionComponent<PostCardProps> = ({
                data={reversedItems}
                renderItem={renderItem as any}
                estimatedItemSize={300}
-               bounces={false}
-               onScroll={onScroll} // Pass onScroll prop to AnimatedFlashList
+               bounces={true}
+               alwaysBounceVertical={false}
+               onScroll={onScroll}
                scrollEventThrottle={16}
                showsHorizontalScrollIndicator={false}
                ListFooterComponent={renderFooterComponent}
                contentContainerStyle={tw`px-4 pb-12`}
+               refreshControl={
+                    <RefreshControl
+                         refreshing={refreshing}
+                         onRefresh={onRefresh}
+                         progressViewOffset={20}
+                         colors={["#9Bd35A", "#689F38"]}
+                         progressBackgroundColor="#fff"
+                         tintColor="#fff"
+                         title={refreshing ? "Refreshing" : "Pull to refresh"}
+                         titleColor="#fff"
+                    />
+               }
           />
      );
 };
+
 export default PostCard;

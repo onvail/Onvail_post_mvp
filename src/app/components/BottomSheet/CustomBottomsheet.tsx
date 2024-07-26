@@ -75,6 +75,8 @@ const CustomBottomSheetInner: ForwardRefRenderFunction<CustomBottomSheetRef, Pro
                     topInset={80}
                     keyboardBehavior={"extend"}
                     footerComponent={footerComponent}
+                    enableOverDrag
+                    enableHandlePanningGesture
                     backgroundStyle={[
                          tw``,
                          {
