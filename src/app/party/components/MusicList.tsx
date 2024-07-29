@@ -12,16 +12,23 @@ import {
   secondsToMinutesAndSeconds,
   truncateText,
 } from 'src/utils/utilities';
+import {MediaEngineAudioEvent} from '../screens/PartyScreen';
 
-interface Props extends Track {}
+interface Props extends Track {
+  playerState: MediaEngineAudioEvent | undefined;
+}
 
-const MusicList: FunctionComponent<Props> = ({title, index, id, duration}) => {
+const MusicList: FunctionComponent<Props> = ({
+  title,
+  index,
+  id,
+  duration,
+  url,
+  playerState,
+}) => {
   const bgColor = index && (index + 1) % 2 === 0 ? 'transparent' : 'green';
   const currentlyPlayingTrack = useMusicStore(
     (state: MusicStoreState) => state.currentTrack,
-  );
-  const playerState = useMusicStore(
-    (state: MusicStoreState) => state.currentPlayerState,
   );
 
   const {position} = useProgress();
@@ -49,12 +56,18 @@ const MusicList: FunctionComponent<Props> = ({title, index, id, duration}) => {
           <CustomText style={tw`ml-4 text-xs`}>
             {truncateText(title ?? '', 27)}
           </CustomText>
-          {currentlyPlayingTrack?.id === id && (
+          {id === url && (
             <LottieView
               source={require('../../../assets/audio-wave.json')}
               style={tw`h-5 w-5`}
-              autoPlay={playerState === State.Playing}
-              loop={playerState === State.Playing}
+              autoPlay={
+                playerState ===
+                MediaEngineAudioEvent.AgoraAudioMixingStateTypePlaying
+              }
+              loop={
+                playerState ===
+                MediaEngineAudioEvent.AgoraAudioMixingStateTypePlaying
+              }
             />
           )}
         </RowContainer>

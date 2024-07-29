@@ -10,14 +10,17 @@ import io.agora.rtc2.IAudioEffectManager
 import java.util.LinkedList
 import java.util.Queue
 
+data class AudioFile(val id: Int, val filePath: String)
+
 class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
     private var engine: RtcEngine? = null
     private lateinit var agoraEventHandler: AgoraEventHandler
     private lateinit var audioEffectManager: IAudioEffectManager
-    private val audioFilesQueue: Queue<String> = LinkedList()
-    private var currentFilePath: String? = null
-    private var previousFilePath: String? = null
+    private val audioFilesQueue: Queue<AudioFile> = LinkedList()
+    private var currentAudioFile: AudioFile? = null
+    private var previousAudioFile: AudioFile? = null
+    private var nextAudioFileId: Int = 0
 
     init {
         try {
@@ -34,25 +37,26 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
 
     @ReactMethod
     fun addAudioFileToQueue(filePath: String) {
-        audioFilesQueue.add(filePath)
+        val audioFile = AudioFile(nextAudioFileId++, filePath)
+        audioFilesQueue.add(audioFile)
     }
 
-    private fun playNextAudioFile(filePath: String?) {
-        previousFilePath = currentFilePath
-        currentFilePath = filePath
-        filePath?.let {
-            engine?.startAudioMixing(it, false, 1, 0)
+    private fun playNextAudioFile(audioFile: AudioFile?) {
+        previousAudioFile = currentAudioFile
+        currentAudioFile = audioFile
+        audioFile?.let {
+            engine?.startAudioMixing(it.filePath, false, 1, 0)
         }
     }
 
     @ReactMethod
     fun playMusic() {
-        if (currentFilePath == null) {
+        if (currentAudioFile == null) {
             if (audioFilesQueue.isNotEmpty()) {
                 playNextAudioFile(audioFilesQueue.poll())
             }
         } else {
-            engine?.startAudioMixing(currentFilePath, false, 1, 0)
+            engine?.startAudioMixing(currentAudioFile?.filePath, false, 1, 0)
         }
     }
 
@@ -75,7 +79,7 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     fun next() {
         if (audioFilesQueue.isNotEmpty()) {
             playNextAudioFile(audioFilesQueue.poll())
-        } else if (currentFilePath != null) {
+        } else if (currentAudioFile != null) {
             // Restart from the beginning if queue is empty
             playNextAudioFile(audioFilesQueue.peek())
         }
@@ -83,18 +87,18 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
 
     @ReactMethod
     fun previous() {
-        if (previousFilePath != null) {
-            playNextAudioFile(previousFilePath)
-        } else if (currentFilePath != null) {
+        if (previousAudioFile != null) {
+            playNextAudioFile(previousAudioFile)
+        } else if (currentAudioFile != null) {
             // If there's no previous file, restart the current file
-            engine?.startAudioMixing(currentFilePath, false, 1, 0)
+            engine?.startAudioMixing(currentAudioFile?.filePath, false, 1, 0)
         }
     }
 
     @ReactMethod
     fun preLoadMusicFiles(filePath: String) {
-        var id: Int = 0
-        audioEffectManager.preloadEffect(id++, filePath)
+        val id = nextAudioFileId++
+        audioEffectManager.preloadEffect(id, filePath)
     }
 
     @ReactMethod
@@ -133,8 +137,17 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     }
 
     @ReactMethod
-    fun setAudioVolumeAsGuest(volume: Int){
+    fun setAudioVolumeAsGuest(volume: Int) {
         engine?.adjustAudioMixingPlayoutVolume(volume)
+    }
+
+    @ReactMethod
+    fun getCurrentPlayingTrack(promise: Promise) {
+        try {
+            promise.resolve(currentAudioFile?.filePath)
+        } catch (e: Exception) {
+            promise.reject("ERROR_GET_CURRENT_PLAYING_TRACK", e)
+        }
     }
 
     @ReactMethod

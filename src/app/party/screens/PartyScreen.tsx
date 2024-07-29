@@ -73,7 +73,7 @@ import {useAgora} from 'src/app/hooks/useAgora';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PartyScreen'>;
 
-const enum MediaEngineAudioEvent {
+export const enum MediaEngineAudioEvent {
   AgoraAudioMixingStateTypePlaying = 710,
   AgoraAudioMixingStateTypePaused = 711,
   AgoraAudioMixingStateTypeStopped = 713,
@@ -128,6 +128,9 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
   const [trackState, setTrackState] = useState<
     MediaEngineAudioEvent | undefined
   >(undefined);
+  const [currentlyPlayingTrack, setCurrentlyPlayingTrack] = useState<
+    string | null
+  >(null);
   const partyId = party?._id;
 
   // Initialize the animated value
@@ -528,6 +531,15 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   }, [AgoraMusicHandler]);
 
+  Platform.OS === 'android' &&
+    AgoraMusicHandler.getCurrentPlayingTrack()
+      .then((currentTrack: string) => {
+        setCurrentlyPlayingTrack(currentTrack);
+      })
+      .catch((error: any) => {
+        console.error('Error getting current playing track:', error);
+      });
+
   useEffect(() => {
     if (Platform.OS === 'android' && isHost) {
       party?.songs?.map(song => {
@@ -590,19 +602,23 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     }
   };
 
-  const trackRenderItem: ListRenderItem<Track> = ({item, index}) => {
-    const {artist, title, url, id, duration} = item;
-    return (
-      <MusicList
-        duration={duration}
-        title={title}
-        index={index}
-        artist={artist}
-        url={url}
-        id={id}
-      />
-    );
-  };
+  const trackRenderItem: ListRenderItem<Track> = useCallback(
+    ({item, index}) => {
+      const {artist, title, url, duration} = item;
+      return (
+        <MusicList
+          duration={duration}
+          title={title}
+          index={index}
+          artist={artist}
+          url={url}
+          id={currentlyPlayingTrack}
+          playerState={trackState}
+        />
+      );
+    },
+    [currentlyPlayingTrack, trackState],
+  );
 
   let IconComponent;
   const buffering = false;
@@ -868,6 +884,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           data={allTracks}
           renderItem={trackRenderItem}
           keyExtractor={item => item?.id}
+          extraData={[currentlyPlayingTrack, trackState]}
           estimatedItemSize={20}
           estimatedListSize={{
             height: 120,
