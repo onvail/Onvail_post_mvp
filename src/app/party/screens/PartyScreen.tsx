@@ -366,11 +366,18 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     );
   };
 
+  const stopMusic = useCallback(async () => {
+    Platform.OS === 'android'
+      ? await AgoraMusicHandler.stopMusic()
+      : AgoraModule.stopMusic();
+  }, [AgoraMusicHandler, AgoraModule]);
+
   const endParty = useCallback(async () => {
     setIsEndingParty(true);
     try {
       const partyDocRef = doc(db, 'party', party?._id);
       leave();
+      stopMusic();
       // update doc to remove every user from the party
       await updateDoc(partyDocRef, {
         participants: [],
@@ -389,7 +396,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
     } finally {
       setIsEndingParty(false);
     }
-  }, [party?._id, leave, navigation]);
+  }, [party?._id, leave, navigation, stopMusic]);
 
   // increase and decrease volume music
   const volumeHandler = useCallback(async () => {
