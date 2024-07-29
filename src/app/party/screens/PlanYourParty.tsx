@@ -25,7 +25,6 @@ import DefaultImages from "../components/DefaultImages";
 import ProceedBtn from "src/app/components/Buttons/ProceedBtn";
 import { toast, Toasts, ToastPosition } from "@backpackapp-io/react-native-toast";
 import { createFireStoreParties } from "src/actions/parties";
-import { S3ImageUpload, S3FileUpload } from "src/utils/aws";
 import { truncateText } from "src/utils/utilities";
 import tw from "src/lib/tailwind";
 import api from "src/api/api";
@@ -35,6 +34,9 @@ import useUser from "src/app/hooks/useUserInfo";
 import { MainStackParamList } from "src/app/navigator/types/MainStackParamList";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Party, PartyError } from "src/types/partyTypes";
+import axios from "axios"; // Add axios for making HTTP requests
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import localStorageKeys from "src/api/config/local-storage-keys";
 
 type Props = NativeStackScreenProps<MainStackParamList, "PlanYourParty">;
 type ImageColors = "purple" | "orange";
@@ -61,6 +63,16 @@ const PlanYourParty: FunctionComponent<Props> = ({ navigation, route }) => {
      const { tryPickImageFromDevice } = useImageService();
      const { selectDocument } = useDocumentPicker();
 
+     const options = {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          timeZoneName: "short",
+     };
+
      const defaultValues: Party = {
           partyName: "",
           partyDesc: "",
@@ -68,10 +80,10 @@ const PlanYourParty: FunctionComponent<Props> = ({ navigation, route }) => {
           albumPicture: "",
           date: new Date().toISOString(),
           visibility: "public",
-          guests: ["example@gmail.com"],
+          // guests: ["example@gmail.com"],
           pollOptions: [],
           pollQuestion: "",
-          partyApplicationClosingDate: new Date().toLocaleDateString(),
+          applicationClose: new Date().toLocaleString("en-US", options),
      };
 
      const {
@@ -85,64 +97,66 @@ const PlanYourParty: FunctionComponent<Props> = ({ navigation, route }) => {
      });
 
      const onSubmit = async (data: Party) => {
-          // setIsCreatingParty(true);
-          // try {
-          //      const [imageUri, musicUrl] = await Promise.all([getImageUrl(), getMusicUrl()]);
-          //      const formData = {
-          //           partyType,
-          //           ...data,
-          //           songs: musicUrl,
-          //           albumPicture: imageUri,
-          //      };
+          setIsCreatingParty(true);
+          try {
+               const [imageUri, musicUrls] = await Promise.all([getImageUrl(), uploadMusicFiles()]);
+               const formData = {
+                    partyType,
+                    ...data,
+                    songs: musicUrls,
+                    albumPicture: imageUri,
+               };
 
-          //      if (partyType === "cozy_jam_session") {
-          //           delete formData.guests;
-          //           delete formData.pollQuestion;
-          //           delete formData.partyApplicationClosingDate;
-          //      }
+               if (partyType === "cozy_jam_session") {
+                    // delete formData.guests;
+                    delete formData.pollQuestion;
+                    delete formData.applicationClose;
+               }
 
-          //      const response = await api.post({
-          //           url: "/parties/create-party",
-          //           data: formData,
-          //           requiresToken: true,
-          //           authorization: true,
-          //      });
+               const response = await api.post({
+                    url: "/parties/create-party",
+                    data: formData,
+                    requiresToken: true,
+                    authorization: true,
+               });
 
-          //      const firestoreData = {
-          //           partyId: response?.data?.party?._id,
-          //           artist: response?.data?.party?.artist,
-          //           partyName: response?.data?.party?.artist,
-          //           partyType: response?.data?.party?.partyType,
-          //      };
+               const firestoreData = {
+                    partyId: response?.data?.party?._id,
+                    artist: response?.data?.party?.artist,
+                    partyName: response?.data?.party?.artist,
+                    partyType: response?.data?.party?.partyType,
+               };
 
-          //      await createFireStoreParties(firestoreData);
+               await createFireStoreParties(firestoreData);
 
-          //      toast("Party created! 🎉 🎊", {
-          //           duration: 4000,
-          //           position: ToastPosition.TOP,
-          //           styles: {
-          //                view: tw``,
-          //                pressable: tw`-top-20 justify-center items-center bg-purple4`,
-          //                text: tw`text-white font-poppinsBold`,
-          //           },
-          //      });
+               toast("Party created! 🎉 🎊", {
+                    duration: 4000,
+                    position: ToastPosition.TOP,
+                    styles: {
+                         view: tw``,
+                         pressable: tw`-top-20 justify-center items-center bg-purple4`,
+                         text: tw`text-white font-poppinsBold`,
+                    },
+               });
 
-          //      navigation.navigate("PartySuccessScreen");
-          // } catch (error) {
-          //      console.log((error as PartyError).response?.data);
-          //      toast("Oops! Party didn't create🚨", {
-          //           duration: 4000,
-          //           position: ToastPosition.TOP,
-          //           styles: {
-          //                view: tw``,
-          //                pressable: tw`-top-20 justify-center items-center bg-orange`,
-          //                text: tw`text-white font-poppinsBold`,
-          //           },
-          //      });
-          // } finally {
-          //      setIsCreatingParty(false);
-          // }
-          navigation.navigate("PartySuccessScreen");
+               navigation.navigate("PartySuccessScreen");
+          } catch (error) {
+               console.log(
+                    "error creating a party:",
+                    JSON.stringify((error as PartyError).response?.data),
+               );
+               toast("Oops! Party didn't create🚨", {
+                    duration: 4000,
+                    position: ToastPosition.TOP,
+                    styles: {
+                         view: tw``,
+                         pressable: tw`-top-20 justify-center items-center bg-orange`,
+                         text: tw`text-white font-poppinsBold`,
+                    },
+               });
+          } finally {
+               setIsCreatingParty(false);
+          }
      };
 
      const handleSelectPhoto = async (action: "openCamera" | "openPicker") => {
@@ -167,7 +181,12 @@ const PlanYourParty: FunctionComponent<Props> = ({ navigation, route }) => {
           return response;
      };
 
+     const getFileNameFromUri = (uri: string) => {
+          return uri.split("/").pop() || "file";
+     };
+
      const getImageUrl = async () => {
+          const token = await AsyncStorage.getItem(localStorageKeys.accessToken);
           try {
                let fileUri: string;
                if (selectedImageOption === "uploadedImage") {
@@ -177,22 +196,60 @@ const PlanYourParty: FunctionComponent<Props> = ({ navigation, route }) => {
                     fileUri = await captureDefaultImage();
                     setValue("albumPicture", fileUri);
                }
-               const response = await S3ImageUpload(fileUri);
-               return response?.Location;
+
+               const formData = new FormData();
+               formData.append("files", {
+                    uri: fileUri,
+                    type: "image/jpeg",
+                    name: getFileNameFromUri(fileUri),
+               });
+
+               const response = await axios.post(
+                    "https://onvailbe-postmvp.onrender.com/upload",
+                    formData,
+                    {
+                         headers: {
+                              "Content-Type": "multipart/form-data",
+                              Authorization: `bearer ${token}`, // Replace with your actual token
+                         },
+                    },
+               );
+
+               return response.data?.data?.[0];
           } catch (error) {
-               console.log("error", error);
+               console.log("error saving image file", JSON.stringify(error));
           }
      };
 
-     const getMusicUrl = async () => {
+     const uploadMusicFiles = async () => {
+          const token = await AsyncStorage.getItem(localStorageKeys.accessToken);
           try {
-               const response = await S3FileUpload(musicFiles);
-               return response.map((item) => ({
-                    name: item?.fileName,
-                    file_url: item?.Location,
+               const formData = new FormData();
+               musicFiles.forEach((file) => {
+                    formData.append("files", {
+                         uri: file.uri,
+                         type: file.type,
+                         name: getFileNameFromUri(file.uri),
+                    });
+               });
+
+               const response = await axios.post(
+                    "https://onvailbe-postmvp.onrender.com/upload",
+                    formData,
+                    {
+                         headers: {
+                              "Content-Type": "multipart/form-data",
+                              Authorization: `bearer ${token}`,
+                         },
+                    },
+               );
+
+               return response.data.data?.map((file: string) => ({
+                    name: file.split("/").pop(),
+                    file_url: file,
                }));
           } catch (error) {
-               console.log("error", error);
+               console.log("error uploading music", error.response);
           }
      };
 
@@ -264,7 +321,6 @@ const PlanYourParty: FunctionComponent<Props> = ({ navigation, route }) => {
                               <ErrorText>{errors?.albumPicture?.message}</ErrorText>
                               <Controller
                                    control={control}
-                                   rules={{ required: "Album picture is required" }}
                                    render={({ field: { onChange } }) => (
                                         <View>
                                              <Pressable
@@ -456,9 +512,7 @@ const PlanYourParty: FunctionComponent<Props> = ({ navigation, route }) => {
                          </Animated.View>
                          {partyType === "artist_show_down" && (
                               <Animated.View style={[tw`mb-4`, animatedStyle]}>
-                                   <ErrorText>
-                                        {errors?.partyApplicationClosingDate?.message}
-                                   </ErrorText>
+                                   <ErrorText>{errors?.applicationClose?.message}</ErrorText>
                                    <Controller
                                         control={control}
                                         rules={{ required: "Application closing date required" }}
@@ -475,7 +529,7 @@ const PlanYourParty: FunctionComponent<Props> = ({ navigation, route }) => {
                                                   value={value}
                                              />
                                         )}
-                                        name="partyApplicationClosingDate"
+                                        name="applicationClose"
                                    />
                               </Animated.View>
                          )}
@@ -526,7 +580,7 @@ const PlanYourParty: FunctionComponent<Props> = ({ navigation, route }) => {
                                         }}
                                    />
                               )}
-                              name="partyApplicationClosingDate"
+                              name="applicationClose"
                          />
                     </View>
                </KeyboardAwareScrollView>
