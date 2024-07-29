@@ -1,17 +1,12 @@
-import React, {FunctionComponent, useMemo} from 'react';
-import {Pressable} from 'react-native';
-import {State, Track, useProgress} from 'react-native-track-player';
+import React, {FunctionComponent, useEffect, useMemo} from 'react';
+import {Pressable, NativeModules, Platform} from 'react-native';
+import {Track} from 'react-native-track-player';
 import CustomText from 'src/app/components/Text/CustomText';
 import RowContainer from 'src/app/components/View/RowContainer';
 import {Colors} from 'src/app/styles/colors';
 import tw from 'src/lib/tailwind';
 import LottieView from 'lottie-react-native';
-import {MusicStoreState, useMusicStore} from 'src/app/zustand/store';
-import {
-  convertMillisecondsToMinSec,
-  secondsToMinutesAndSeconds,
-  truncateText,
-} from 'src/utils/utilities';
+import {convertMillisecondsToMinSec, truncateText} from 'src/utils/utilities';
 import {MediaEngineAudioEvent} from '../screens/PartyScreen';
 
 interface Props extends Track {
@@ -22,25 +17,42 @@ const MusicList: FunctionComponent<Props> = ({
   title,
   index,
   id,
-  duration,
   url,
   playerState,
 }) => {
   const bgColor = index && (index + 1) % 2 === 0 ? 'transparent' : 'green';
-  const currentlyPlayingTrack = useMusicStore(
-    (state: MusicStoreState) => state.currentTrack,
-  );
+  const {AgoraMusicHandler, AgoraModule} = NativeModules;
+  const [currentPosition, setCurrentPosition] = React.useState(0);
 
-  const {position} = useProgress();
+  console.log('currentPosition', currentPosition);
+
   const currentItemPosition = useMemo(() => {
-    if (currentlyPlayingTrack?.id === id) {
-      return secondsToMinutesAndSeconds(position);
-    } else if (duration !== undefined) {
-      return convertMillisecondsToMinSec(duration);
+    if (url === id) {
+      return convertMillisecondsToMinSec(currentPosition);
     } else {
       return '--:--';
     }
-  }, [currentlyPlayingTrack?.id, id, position, duration]);
+  }, [url, id, currentPosition]);
+
+  useEffect(() => {
+    if (
+      playerState === MediaEngineAudioEvent.AgoraAudioMixingStateTypePlaying
+    ) {
+      const trackPosition = setInterval(() => {
+        if (Platform.OS === 'android') {
+          AgoraMusicHandler.getPosition()
+            .then((position: any) => {
+              setCurrentPosition(position);
+            })
+            .catch((error: any) => {
+              console.log('error', error);
+            });
+        }
+      }, 1000);
+
+      return () => clearInterval(trackPosition); // cleanup interval on unmount or when playerState changes
+    }
+  }, [playerState, AgoraMusicHandler]);
 
   return (
     <Pressable>
