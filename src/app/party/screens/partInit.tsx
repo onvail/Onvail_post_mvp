@@ -1,14 +1,11 @@
-/* eslint-disable react/no-unstable-nested-components */
-/* eslint-disable react-native/no-inline-styles */
-/* eslint-disable quotes */
 import React, {
      FunctionComponent,
      useCallback,
      useEffect,
+     useLayoutEffect,
+     useMemo,
      useRef,
      useState,
-     useMemo,
-     Animated as RNAnimated,
 } from "react";
 import {
      Pressable,
@@ -19,7 +16,6 @@ import {
      TouchableOpacity,
      StyleSheet,
      Dimensions,
-     ScrollView,
 } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Icon from "src/app/components/Icons/Icon";
@@ -32,6 +28,8 @@ import { MainStackParamList } from "src/app/navigator/types/MainStackParamList";
 import CustomBottomSheet, {
      CustomBottomSheetRef,
 } from "src/app/components/BottomSheet/CustomBottomsheet";
+import CommentCards from "src/app/components/Cards/CommentCards";
+import RowContainer from "src/app/components/View/RowContainer";
 import { FlashList, ListRenderItem } from "@shopify/flash-list";
 import MusicList from "../components/MusicList";
 import useMusicPlayer from "src/app/hooks/useMusicPlayer";
@@ -42,7 +40,7 @@ import api from "src/api/api";
 import { ALERT_TYPE, Toast } from "react-native-alert-notification";
 import useUser, { User } from "src/app/hooks/useUserInfo";
 import socket from "src/utils/socket";
-import { getPlaybackState } from "react-native-track-player/lib/src/trackPlayer";
+import { getPlaybackState } from "react-native-track-player/lib/trackPlayer";
 import moment from "moment-timezone";
 import { FireStoreComments, createFireStoreComments } from "src/actions/parties";
 import {
@@ -56,126 +54,21 @@ import {
      updateDoc,
 } from "firebase/firestore";
 import { db } from "../../../../firebaseConfig";
+import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
 import { BottomSheetFooter, BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import LottieView from "lottie-react-native";
 import Animated, {
-     interpolate,
      runOnJS,
      useAnimatedStyle,
      useSharedValue,
-     withRepeat,
      withSpring,
-     withTiming,
 } from "react-native-reanimated";
+import GuestsList from "../components/GuestsList";
 import Modal from "react-native-modal/dist/modal";
 import CustomImage from "src/app/components/Image/CustomImage";
 import { useAgora } from "src/app/hooks/useAgora";
-import { NavigationContainer } from "@react-navigation/native";
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import RowContainer from "src/app/components/View/RowContainer";
-import CommentCards from "src/app/components/Cards/CommentCards";
-import GuestsList from "../components/GuestsList";
-import tinycolor from "tinycolor2";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-
-const Tab = createMaterialTopTabNavigator();
 
 type Props = NativeStackScreenProps<MainStackParamList, "PartyScreen">;
-
-const GuestsListScreen: FunctionComponent<{
-     guestList: User[];
-     isMuted: boolean;
-     toggleMute: () => void;
-     party: any;
-}> = ({ guestList, isMuted, toggleMute, party }) => {
-     const renderItem: ListRenderItem<User> = ({ item }) => (
-          <GuestsList
-               item={item}
-               isHost={party?.artist?._id === item?._id}
-               toggleMute={toggleMute}
-               isMuted={isMuted}
-          />
-     );
-
-     return (
-          <FlashList
-               data={guestList}
-               renderItem={renderItem}
-               estimatedItemSize={200}
-               numColumns={4}
-               horizontal={false}
-               style={{ borderWidth: 2, borderColor: "red" }}
-               extraData={isMuted}
-          />
-     );
-};
-
-const CommentsScreen: FunctionComponent<{
-     comments: FireStoreComments[];
-     commentsRenderItem: ListRenderItem<FireStoreComments>;
-}> = ({ comments, commentsRenderItem }) => (
-     <View style={tw`flex-1 px-3`}>
-          {comments.length === 0 ? (
-               <View style={tw`justify-center items-center mt-30`}>
-                    <LottieView
-                         source={require("../../../assets/comments.json")}
-                         style={tw`h-50 w-50`}
-                         autoPlay={true}
-                         loop={true}
-                    />
-                    <CustomText style={tw`text-center text-base mt-5`}>
-                         Be the first to say something
-                    </CustomText>
-               </View>
-          ) : (
-               <FlashList
-                    renderItem={commentsRenderItem}
-                    estimatedItemSize={200}
-                    data={comments}
-                    renderScrollComponent={ScrollView}
-                    showsVerticalScrollIndicator={false}
-                    // contentContainerStyle={tw`pb-20`}
-               />
-          )}
-     </View>
-);
-
-const BounceButton: React.FC<{
-     onPress: () => void;
-     children: React.ReactNode;
-     isRounded?: boolean;
-}> = ({ onPress, children, isRounded }) => {
-     const scale = useSharedValue(1);
-
-     const animatedStyle = useAnimatedStyle(() => {
-          return {
-               transform: [{ scale: scale.value }],
-          };
-     });
-
-     return (
-          <Pressable
-               onPressIn={() => {
-                    scale.value = withSpring(0.8);
-               }}
-               onPressOut={() => {
-                    scale.value = withSpring(1);
-               }}
-               onPress={onPress}
-          >
-               <Animated.View
-                    style={[
-                         animatedStyle,
-                         tw`items-center justify-center ${
-                              isRounded ? "rounded-full border border-grey2" : ""
-                         } w-9 h-9`,
-                    ]}
-               >
-                    {children}
-               </Animated.View>
-          </Pressable>
-     );
-};
 
 const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const { party, partyBackgroundColor } = route.params;
@@ -196,6 +89,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
 
      const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
      const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
+     const [selectedBottomSheetTab, setSelectedBottomSheetTab] = useState<number>(0);
      const [guestList, setGuestList] = useState<User[]>([]);
 
      const [volume, setVolume] = useState<number>(0.5);
@@ -207,12 +101,17 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const [isLeavePartyModalVisible, setIsLeavePartyModalVisible] = useState<boolean>(false);
      const [isEndingParty, setIsEndingParty] = useState<boolean>(false);
      const [isLeavingParty, setIsLeavingParty] = useState<boolean>(false);
-     const [snapPointIndex, setSnapPointIndex] = useState(0);
-     const [activeTabName, setActiveTabName] = useState<string>("");
-     const [tabNavigation, setTabNavigation] = useState<any>(null);
-     const [snapIndexController, setSnapIndexController] = useState<any>(null);
-
      const partyId = party?._id;
+
+     // Initialize the animated value
+     const translateX = useSharedValue(0);
+
+     // Animated style
+     const animatedStyle = useAnimatedStyle(() => {
+          return {
+               transform: [{ translateX: translateX.value }],
+          };
+     });
 
      const screenColors = {
           background:
@@ -228,11 +127,6 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     ? partyBackgroundColor?.darkMuted
                     : partyBackgroundColor?.detail,
      };
-
-     const snapPoints = useMemo(() => [125, "65%"], []);
-     const darkerAccentColor = tinycolor(screenColors?.background ?? screenColors?.accent)
-          .darken(1)
-          .toString();
 
      const openBottomSheet = () => {
           bottomSheetRef.current?.open();
@@ -291,6 +185,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      }, [leaveParty]);
 
      const endPartyHandler = async () => {
+          // await endCall();
           await endParty();
           setIsEndPartyModalVisible(false);
           await TrackPlayer.stop();
@@ -339,6 +234,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     setComments(fetchedComments);
                });
 
+               // Cleanup the listener on unmount
                return () => unsubscribe();
           }
      }, [party?._id]);
@@ -422,13 +318,20 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      }, [volume, volumeHandler]);
 
      const handlePlay = async () => {
+          // Get the previous playback state
           const previousState = await getPlaybackState();
 
           try {
+               // Call the function to play or pause the track
                await handlePauseAndPlayTrack();
+
+               // Add a slight delay to ensure the state has time to update
                await new Promise((resolve) => setTimeout(resolve, 100));
+
+               // Get the current playback state after the delay
                const currentState = await getPlaybackState();
 
+               // Emit the play event only if there is an actual state change
                if (currentState !== previousState) {
                     socket.emit("play", {
                          cmd: "play",
@@ -461,6 +364,20 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           });
      };
 
+     const trackRenderItem: ListRenderItem<Track> = ({ item, index }) => {
+          const { artist, title, url, id, duration } = item;
+          return (
+               <MusicList
+                    duration={duration}
+                    title={title}
+                    index={index}
+                    artist={artist}
+                    url={url}
+                    id={id}
+               />
+          );
+     };
+
      const buffering = isSameQueue && playerState === "buffering";
 
      const handleSameQueueItemState = useCallback(async () => {
@@ -469,7 +386,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           return sameQueue;
      }, [checkIfTrackQueueIsDifferent]);
 
-     useEffect(() => {
+     useLayoutEffect(() => {
           handleSameQueueItemState();
      }, [handleSameQueueItemState]);
 
@@ -535,13 +452,20 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      useEffect(() => {
           mountTrackForGuests();
           socket.on("receive", handleSocketEvents);
+          // socket.on('receive', handleSocketEventsForEveryone);
 
           return () => {
                TrackPlayer.stop();
                TrackPlayer.reset();
                socket.off("receive", handleSocketEvents);
+               // socket.off('receive', handleSocketEventsForEveryone);
           };
-     }, [isHost, mountTrackForGuests, handleSocketEvents]);
+     }, [
+          isHost,
+          mountTrackForGuests,
+          handleSocketEvents,
+          // handleSocketEventsForEveryone,
+     ]);
 
      const handleCommentChange = (text: string) => {
           commentRef.current = text;
@@ -556,43 +480,103 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           }
      }, [isHost, party?._id, user]);
 
-     const arrowY = useSharedValue(0);
-     const opacity = useSharedValue(1);
+     const updateTab = (direction: number) => {
+          setSelectedBottomSheetTab((prev) => {
+               let nextTab = prev + direction;
+               if (nextTab < 0) {
+                    nextTab = 0;
+               }
+               if (nextTab > 2) {
+                    nextTab = 2;
+               }
+               return nextTab;
+          });
+     };
 
-     const animatedArrowStyle = useAnimatedStyle(() => {
-          return {
-               transform: [{ translateY: arrowY.value }],
-               opacity: opacity.value,
-          };
-     });
+     const screenWidth = Dimensions.get("window").width;
 
-     useEffect(() => {
-          if (snapPointIndex === 0) {
-               arrowY.value = withRepeat(withTiming(-10, { duration: 1000 }), -1, true);
-               opacity.value = withRepeat(withTiming(0.5, { duration: 1000 }), -1, true);
-          } else {
-               arrowY.value = 0;
-               opacity.value = 1;
-          }
-     }, [snapPointIndex]);
+     const swipeGesture = Gesture.Pan()
+          .onUpdate((event) => {
+               translateX.value = event.translationX;
+          })
+          .onEnd((event) => {
+               if (event.translationX < -screenWidth / 3) {
+                    runOnJS(updateTab)(1);
+               } else if (event.translationX > screenWidth / 3) {
+                    runOnJS(updateTab)(-1);
+               }
+               translateX.value = withSpring(0, {
+                    damping: 20,
+                    stiffness: 90,
+               });
+          });
 
-     const openCommentsTab = useCallback(() => {
-          if (tabNavigation && bottomSheetRef.current) {
-               tabNavigation.navigate("Comments");
-          }
-          if (snapPointIndex === 0) {
-               setSnapIndexController(1);
-               setTimeout(() => tabNavigation?.navigate?.("Comments"), 5000);
-          }
-     }, [tabNavigation]);
+     const guestRenderItem: ListRenderItem<User> = useCallback(
+          ({ item }) => {
+               return (
+                    <GuestsList
+                         item={item}
+                         isHost={party?.artist?._id === item?._id}
+                         toggleMute={toggleMute}
+                         isMuted={isMuted}
+                    />
+               );
+          },
+          [isMuted, toggleMute, party?.artist?._id],
+     );
 
+     const renderBottomFooter = useCallback(
+          (props: any) => (
+               <>
+                    {selectedBottomSheetTab === 1 ? ( // Change tab number for comments
+                         <BottomSheetFooter {...props} bottomInset={24}>
+                              <View
+                                   style={[
+                                        tw`bg-inherit m-4 mt-3  h-10 rounded-full border-grey4 flex-row px-3 items-center border `,
+                                        {
+                                             backgroundColor: screenColors.accent,
+                                        },
+                                   ]}
+                              >
+                                   <BottomSheetTextInput
+                                        placeholder="Add comment"
+                                        style={tw`text-white text-xs w-[90%]  font-poppinsRegular`}
+                                        placeholderTextColor={"white"}
+                                        onChangeText={handleCommentChange} // Use the new handler
+                                   />
+                                   <Pressable
+                                        disabled={isUploadingComment}
+                                        onPress={() => commentOnParty()}
+                                   >
+                                        {isUploadingComment ? <ActivityIndicator /> : <SendIcon />}
+                                   </Pressable>
+                              </View>
+                         </BottomSheetFooter>
+                    ) : (
+                         <></>
+                    )}
+               </>
+          ),
+          [
+               isUploadingComment,
+               screenColors?.accent,
+               SendIcon,
+               commentOnParty,
+               selectedBottomSheetTab,
+          ],
+     );
+
+     const snapPoints = useMemo(() => ["20%", "50%", "75%"], []);
      return (
-          <LinearGradient style={tw`h-full flex-1 p-4`} colors={[darkerAccentColor, "#000"]}>
+          <LinearGradient
+               style={tw`h-full  flex-1 p-4`}
+               colors={[screenColors?.background ?? "#0E0E0E", screenColors?.detail ?? "#087352"]}
+          >
                <SafeAreaView style={tw`h-full flex-1`}>
                     <TouchableOpacity
                          style={tw` ${
                               Platform.OS === "android" ? "mt-6" : "mt-0"
-                         } h-10 w-20 items-center justify-center self-end`}
+                         } h-10 w-20 items-center  justify-center self-end`}
                          onPress={() =>
                               isHost
                                    ? setIsEndPartyModalVisible(true)
@@ -600,6 +584,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                          }
                     >
                          <CustomText
+                              // eslint-disable-next-line react-native/no-inline-styles
                               style={{
                                    color: screenColors?.accent,
                                    fontWeight: "700",
@@ -614,7 +599,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                               resizeMode="cover"
                               style={tw`h-60 w-60 rounded-lg`}
                          />
-                         <View style={tw`mt-8 flex-row items-center justify-between`}>
+                         <View style={tw` mt-8 flex-row items-center justify-between`}>
                               <HighLightLeft />
                               <CustomText style={tw`font-poppinsBold w-10`}>LIVE</CustomText>
                               <Pressable onPress={() => openBottomSheet()}>
@@ -622,13 +607,13 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                               </Pressable>
                          </View>
                          {isHost && (
-                              <RowContainer style={tw`mt-6 w-[60%] justify-around items-center`}>
+                              <RowContainer style={tw`mt-6 w-[60%]  justify-around  items-center`}>
                                    <Pressable onPress={handlePrevious}>
                                         <Icon icon="rewind" color="white" size={25} />
                                    </Pressable>
                                    <Pressable
                                         onPress={() => handlePlay()}
-                                        style={tw`w-10 items-center`}
+                                        style={tw`w-10 items-center `}
                                    >
                                         {IconComponent}
                                    </Pressable>
@@ -653,16 +638,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     </View>
                     <FlashList
                          data={allTracks}
-                         renderItem={({ item, index }) => (
-                              <MusicList
-                                   duration={item.duration}
-                                   title={item.title}
-                                   index={index}
-                                   artist={item.artist}
-                                   url={item.url}
-                                   id={item.id}
-                              />
-                         )}
+                         renderItem={trackRenderItem}
                          keyExtractor={(item) => item?.id}
                          estimatedItemSize={20}
                          estimatedListSize={{
@@ -672,16 +648,6 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                          showsVerticalScrollIndicator={false}
                     />
                </SafeAreaView>
-
-               {snapPointIndex > 0 && (
-                    <Pressable
-                         style={StyleSheet.absoluteFillObject}
-                         onPress={() => {
-                              setSnapIndexController(0);
-                         }}
-                    />
-               )}
-
                <Modal
                     style={tw`flex-1 justify-center items-center`}
                     backdropOpacity={0.9}
@@ -689,12 +655,12 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     isVisible={isLeavePartyModalVisible}
                >
                     <View
-                         style={tw`bg-white w-[80%] h-1/7 p-3 rounded-lg items-center justify-center`}
+                         style={tw` bg-white w-[80%] h-1/7 p-3 rounded-lg items-center justify-center`}
                     >
                          <CustomText style={tw`text-grey6 font-poppinsBold`}>
                               Are you sure you want to leave the party?
                          </CustomText>
-                         <RowContainer style={tw`mt-3`}>
+                         <RowContainer style={tw`mt-3 `}>
                               <Pressable
                                    onPress={() => setIsLeavePartyModalVisible(false)}
                                    style={tw`border w-15 items-center h-7 justify-center rounded-full border-grey4`}
@@ -705,7 +671,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                               </Pressable>
                               <Pressable
                                    onPress={() => leavePartyHandler()}
-                                   style={tw`w-15 items-center h-7 justify-center ml-4 rounded-full bg-purple`}
+                                   style={tw` w-15 items-center h-7 justify-center  ml-4 rounded-full bg-purple`}
                               >
                                    {isLeavingParty ? (
                                         <ActivityIndicator />
@@ -720,6 +686,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                          </RowContainer>
                     </View>
                </Modal>
+
                <Modal
                     style={tw`flex-1 justify-center items-center`}
                     backdropOpacity={0.9}
@@ -727,12 +694,12 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     isVisible={isEndPartyModalVisible}
                >
                     <View
-                         style={tw`bg-white w-[80%] h-1/7 p-3 rounded-lg items-center justify-center`}
+                         style={tw` bg-white w-[80%] h-1/7 p-3 rounded-lg items-center justify-center`}
                     >
                          <CustomText style={tw`text-grey6 font-poppinsBold`}>
                               Are you sure you want to end the party?
                          </CustomText>
-                         <RowContainer style={tw`mt-3`}>
+                         <RowContainer style={tw`mt-3 `}>
                               <Pressable
                                    onPress={() => setIsEndPartyModalVisible(false)}
                                    style={tw`border w-15 items-center h-7 justify-center rounded-full border-grey4`}
@@ -744,7 +711,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                               <Pressable
                                    disabled={isEndingParty}
                                    onPress={() => endPartyHandler()}
-                                   style={tw`w-15 items-center h-7 justify-center ml-4 rounded-full bg-purple`}
+                                   style={tw` w-15 items-center h-7 justify-center  ml-4 rounded-full bg-purple`}
                               >
                                    {isEndingParty ? (
                                         <ActivityIndicator color={"white"} />
@@ -759,247 +726,188 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                          </RowContainer>
                     </View>
                </Modal>
-               {snapPointIndex === 0 && (
-                    <View
-                         style={[
-                              tw`absolute items-center justify-center flex transform w-100 h-4 `,
-                              { marginBottom: 135, bottom: 0 },
-                         ]}
-                    >
-                         <Animated.View
-                              style={[
-                                   tw`items-center justify-center flex transform -translate-x-1/2 h-6`,
-                                   animatedArrowStyle,
-                              ]}
-                         >
-                              <MaterialIcons name="keyboard-arrow-up" color="white" size={20} />
-                              <MaterialIcons
-                                   name="keyboard-arrow-up"
-                                   color="white"
-                                   size={25}
-                                   style={{ marginTop: -12 }}
-                              />
-                              <MaterialIcons
-                                   name="keyboard-arrow-up"
-                                   color="white"
-                                   size={30}
-                                   style={{ marginTop: -15 }}
-                              />
-                         </Animated.View>
-                    </View>
-               )}
+
                <CustomBottomSheet
                     ref={bottomSheetRef}
                     customSnapPoints={snapPoints}
-                    backgroundColor={"#000000"}
-                    setSnapIndex={setSnapIndexController}
-                    snapIndex={snapIndexController}
-                    // footerComponent={renderBottomFooter}
-
-                    footerComponent={() => (
-                         <View style={[tw` z-20  bg-[#000000] w-full`]}>
-                              <View style={[tw` justify-center w-full pb-4`]}>
-                                   <RowContainer
-                                        style={tw`justify-between px-3 items-center py-[10px] border-t border-grey2`}
-                                   >
-                                        <RowContainer
-                                             style={tw`justify-between items-center w-1/3`}
-                                        >
-                                             <BounceButton onPress={toggleMute} isRounded>
-                                                  {isMuted ? <MicMuteIcon /> : <MicUnmuteIcon />}
-                                                  {/* <SoundTracker isMuted={isMuted} /> */}
-                                             </BounceButton>
-                                             <BounceButton
-                                                  onPress={() => setIsHandRaised((prev) => !prev)}
-                                                  isRounded
-                                             >
-                                                  {isHandRaised ? (
-                                                       <HandRaisedIcon />
-                                                  ) : (
-                                                       <HandDownIcon />
-                                                  )}
-                                             </BounceButton>
-                                             <BounceButton
-                                                  onPress={toggleIsSpeakerEnabled}
-                                                  isRounded
-                                             >
-                                                  <Icon
-                                                       icon={
-                                                            isSpeakerEnabled
-                                                                 ? "volume-high"
-                                                                 : "volume-low"
-                                                       }
-                                                       size={20}
-                                                       color={isSpeakerEnabled ? "white" : "grey"}
+                    backgroundColor={screenColors?.accent}
+                    footerComponent={renderBottomFooter}
+                    visibilityHandler={() => {}}
+               >
+                    <View style={tw`relative h-[40px] flex-1  mb-6`}>
+                         <RowContainer style={tw`items-center mb-3 mt-5 px-3 justify-center gap-2`}>
+                              {Array.from({ length: 2 }, (_, key) => (
+                                   <Pressable
+                                        key={key}
+                                        onPress={() => {
+                                             setSelectedBottomSheetTab(key);
+                                        }}
+                                        style={tw`h-1 w-8 rounded-lg bg-${
+                                             selectedBottomSheetTab === key ? "white" : "grey2"
+                                        }`}
+                                   />
+                              ))}
+                         </RowContainer>
+                         <GestureDetector gesture={swipeGesture}>
+                              <View style={tw`relative w-full`}>
+                                   <Animated.View style={[styles.tabsContainer, animatedStyle]}>
+                                        <View style={styles.tabContent}>
+                                             {selectedBottomSheetTab === 1 && ( // Change tab number for comments
+                                                  <View style={tw`flex-1 px-3`}>
+                                                       {comments.length === 0 ? (
+                                                            <View
+                                                                 style={tw`justify-center items-center  mt-30`}
+                                                            >
+                                                                 <LottieView
+                                                                      source={require("../../../assets/comments.json")}
+                                                                      style={tw`h-50 w-50`}
+                                                                      autoPlay={true}
+                                                                      loop={true}
+                                                                 />
+                                                                 <CustomText
+                                                                      style={tw`text-center text-base mt-5`}
+                                                                 >
+                                                                      Be the first to say something
+                                                                 </CustomText>
+                                                            </View>
+                                                       ) : (
+                                                            <FlashList
+                                                                 renderItem={commentsRenderItem}
+                                                                 estimatedItemSize={200}
+                                                                 data={comments}
+                                                                 renderScrollComponent={ScrollView}
+                                                                 showsVerticalScrollIndicator={
+                                                                      false
+                                                                 }
+                                                                 contentContainerStyle={tw`pb-20`}
+                                                            />
+                                                       )}
+                                                  </View>
+                                             )}
+                                             {selectedBottomSheetTab === 0 && ( // Change tab number for guests
+                                                  <FlashList
+                                                       data={guestList}
+                                                       renderItem={guestRenderItem}
+                                                       estimatedItemSize={200}
+                                                       numColumns={4}
+                                                       horizontal={false}
+                                                       extraData={isMuted}
                                                   />
-                                             </BounceButton>
-                                        </RowContainer>
-                                        {activeTabName !== "Comments" && (
+                                             )}
+                                             {selectedBottomSheetTab === 2 && <></>}
+                                        </View>
+                                   </Animated.View>
+                                   <View
+                                        style={[
+                                             tw`absolute border-t z-20 h-16 justify-center bg-black border-grey2  ${
+                                                  selectedBottomSheetTab === 1 // Change tab number for comments
+                                                       ? "bottom-0"
+                                                       : "-bottom-12"
+                                             } w-full `,
+                                        ]}
+                                   >
+                                        <RowContainer style={tw`justify-between mx-3 items-center`}>
                                              <RowContainer
                                                   style={tw`justify-between items-center w-1/3`}
                                              >
-                                                  <BounceButton onPress={() => {}}>
-                                                       <Icon
-                                                            icon={"gift-outline"}
-                                                            color="grey"
-                                                            size={20}
-                                                       />
-                                                  </BounceButton>
-                                                  <BounceButton onPress={() => {}}>
-                                                       <Icon
-                                                            icon={"heart-outline"}
-                                                            color="grey"
-                                                            size={20}
-                                                       />
-                                                  </BounceButton>
-                                                  <BounceButton onPress={openCommentsTab}>
-                                                       <Icon
-                                                            icon={"message-outline"}
-                                                            color="grey"
-                                                            size={25}
-                                                       />
-                                                  </BounceButton>
-                                             </RowContainer>
-                                        )}
-                                   </RowContainer>
-                                   {activeTabName === "Comments" && (
-                                        <View
-                                             style={[
-                                                  tw`bg-inherit flex-row px-3 items-center py-3`,
-                                             ]}
-                                        >
-                                             <View
-                                                  style={[
-                                                       tw` h-10 rounded-full border-grey4 flex-row px-3 items-center border `,
-                                                  ]}
-                                             >
-                                                  <BottomSheetTextInput
-                                                       placeholder="Add comment"
-                                                       style={tw`text-white text-xs w-[90%] font-poppinsRegular`}
-                                                       placeholderTextColor={"white"}
-                                                       onChangeText={handleCommentChange}
-                                                  />
                                                   <Pressable
-                                                       disabled={isUploadingComment}
-                                                       onPress={() => commentOnParty()}
+                                                       onPress={toggleMute}
+                                                       style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}
                                                   >
-                                                       {isUploadingComment ? (
-                                                            <ActivityIndicator />
+                                                       {isMuted ? (
+                                                            <MicMuteIcon />
                                                        ) : (
-                                                            <SendIcon />
+                                                            <MicUnmuteIcon />
                                                        )}
                                                   </Pressable>
-                                             </View>
-                                        </View>
-                                   )}
-                              </View>
-                         </View>
-                    )}
-                    visibilityHandler={() => {}}
-                    onChange={(index: number) => setSnapPointIndex(index)}
-               >
-                    {/* {snapPointIndex === 0 && (
-                         <View
-                              style={[
-                                   tw`absolute items-center justify-center flex transform w-100 h-6 z-100`,
-                                   { marginTop: -10, zIndex: 100000 },
-                              ]}
-                         >
-                              <Animated.View
-                                   style={[
-                                        tw`items-center justify-center flex transform -translate-x-1/2 h-6`,
-                                        animatedArrowStyle,
-                                   ]}
-                              >
-                                   <MaterialIcons
-                                        name="keyboard-arrow-up"
-                                        color="white"
-                                        size={30}
-                                   />
-                              </Animated.View>
-                         </View>
-                    )} */}
-                    {snapPointIndex > 0 && (
-                         <NavigationContainer
-                              independent={true}
-                              onStateChange={(state) => {
-                                   const activeRoute = state?.routes[state.index];
-                                   setActiveTabName((activeRoute?.name as string) ?? "");
-                              }}
-                         >
-                              <Tab.Navigator
-                                   tabBar={({ navigation, state }) => {
-                                        setTabNavigation(navigation);
-
-                                        return (
-                                             <RowContainer
-                                                  style={tw`items-center mt-5 justify-center`}
-                                             >
-                                                  {Array.from(
-                                                       { length: state.routes.length },
-                                                       (_, key) => (
-                                                            <Pressable
-                                                                 key={key}
-                                                                 onPress={() => {
-                                                                      navigation.navigate(
-                                                                           state.routes[key].name,
-                                                                      );
-                                                                 }}
-                                                                 style={tw`px-1 py-1`}
-                                                            >
-                                                                 <View
-                                                                      key={key}
-                                                                      style={tw`h-1 w-12 rounded-lg bg-${
-                                                                           state.index === key
-                                                                                ? "white"
-                                                                                : "grey2"
-                                                                      }`}
-                                                                 />
-                                                            </Pressable>
-                                                       ),
-                                                  )}
+                                                  <Pressable
+                                                       onPress={() =>
+                                                            setIsHandRaised((prev) => !prev)
+                                                       }
+                                                       style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}
+                                                  >
+                                                       {isHandRaised ? (
+                                                            <HandRaisedIcon />
+                                                       ) : (
+                                                            <HandDownIcon />
+                                                       )}
+                                                  </Pressable>
+                                                  <Pressable
+                                                       style={tw`border border-grey2 items-center justify-center rounded-full w-9 h-9`}
+                                                       onPress={toggleIsSpeakerEnabled}
+                                                  >
+                                                       <Icon
+                                                            icon={
+                                                                 isSpeakerEnabled
+                                                                      ? "volume-high"
+                                                                      : "volume-low"
+                                                            }
+                                                            size={20}
+                                                            color={
+                                                                 isSpeakerEnabled ? "white" : "grey"
+                                                            }
+                                                       />
+                                                  </Pressable>
                                              </RowContainer>
-                                        );
-                                   }}
-                              >
-                                   <Tab.Screen name="Guests">
-                                        {() => (
-                                             <View
-                                                  style={{
-                                                       backgroundColor: "#000000",
-                                                       height: "100%",
-                                                  }}
-                                             >
-                                                  <GuestsListScreen
-                                                       guestList={guestList}
-                                                       isMuted={isMuted}
-                                                       toggleMute={toggleMute}
-                                                       party={party}
-                                                  />
-                                             </View>
-                                        )}
-                                   </Tab.Screen>
-                                   <Tab.Screen name="Comments">
-                                        {() => (
-                                             <View
-                                                  style={{
-                                                       backgroundColor: "#000000",
-                                                       height: "100%",
-                                                  }}
-                                             >
-                                                  <CommentsScreen
-                                                       comments={comments}
-                                                       commentsRenderItem={commentsRenderItem}
-                                                  />
-                                             </View>
-                                        )}
-                                   </Tab.Screen>
-                              </Tab.Navigator>
-                         </NavigationContainer>
-                    )}
+                                             {selectedBottomSheetTab !== 1 && ( // Change tab number for comments
+                                                  <RowContainer
+                                                       style={tw`justify-between items-center w-1/3`}
+                                                  >
+                                                       <Pressable
+                                                            style={tw`  items-center justify-center rounded-full`}
+                                                       >
+                                                            <Icon
+                                                                 icon={"gift-outline"}
+                                                                 color="grey"
+                                                                 size={20}
+                                                            />
+                                                       </Pressable>
+                                                       <Pressable
+                                                            style={tw`  items-center justify-center rounded-full`}
+                                                       >
+                                                            <Icon
+                                                                 icon={"heart-outline"}
+                                                                 color="grey"
+                                                                 size={20}
+                                                            />
+                                                       </Pressable>
+                                                       <Pressable
+                                                            onPress={
+                                                                 () => setSelectedBottomSheetTab(1) // Change tab number for comments
+                                                            }
+                                                            style={tw`items-center justify-center rounded-full`}
+                                                       >
+                                                            <Icon
+                                                                 icon={"message-outline"}
+                                                                 color="grey"
+                                                                 size={25}
+                                                            />
+                                                       </Pressable>
+                                                  </RowContainer>
+                                             )}
+                                        </RowContainer>
+                                   </View>
+                              </View>
+                         </GestureDetector>
+                    </View>
                </CustomBottomSheet>
           </LinearGradient>
      );
 };
+
+const styles = StyleSheet.create({
+     tabsContainer: {
+          zIndex: 0,
+          flexDirection: "row",
+          paddingHorizontal: 3,
+          width: Dimensions.get("window").width * 3,
+     },
+
+     tabContent: {
+          zIndex: 0,
+          width: Dimensions.get("window").width,
+          height: Dimensions.get("window").height / 2,
+     },
+});
 
 export default PartyScreen;

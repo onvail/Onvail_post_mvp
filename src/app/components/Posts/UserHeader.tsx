@@ -1,47 +1,47 @@
-import React, {FunctionComponent} from 'react';
-import {TouchableOpacity} from 'react-native';
-import CustomImage from 'components/Image/CustomImage';
-import tw from 'src/lib/tailwind';
-import CustomText from 'components/Text/CustomText';
-import RowContainer from '../View/RowContainer';
-import Icon from '../Icons/Icon';
-import {Colors} from 'src/app/styles/colors';
-import { generalIcon } from '../Icons/generalIcons';
+import React, { FunctionComponent } from "react";
+import { TouchableOpacity } from "react-native";
+import CustomImage from "components/Image/CustomImage";
+import tw from "src/lib/tailwind";
+import CustomText from "components/Text/CustomText";
+import RowContainer from "../View/RowContainer";
+import Icon from "../Icons/Icon";
+import { Colors } from "src/app/styles/colors";
+import { generalIcon } from "../Icons/generalIcons";
 
 interface User {
-  name?: string;
-  uri?: string;
-  handleFollowBtnPress: () => void;
-  isFollowing: boolean;
-  canFollow: boolean;
+     name?: string;
+     uri?: string;
+     handleFollowBtnPress: () => void;
+     isFollowing: boolean;
+     canFollow: boolean;
 }
 
 const UserHeader: FunctionComponent<User> = ({
-  name,
-  uri,
-  handleFollowBtnPress,
-  isFollowing,
-  canFollow,
+     name,
+     uri,
+     handleFollowBtnPress,
+     isFollowing,
+     canFollow,
 }) => {
-  const MenuIcon = generalIcon.MenuIcon;
-  return (
-    <RowContainer style={tw`px-4 justify-between`}>
-      <RowContainer>
-        {uri ? (
-          <CustomImage
-            uri={uri}
-            style={tw`h-9 w-9 rounded-full`}
-            resizeMode="cover"
-          />
-        ) : (
-          <Icon icon="account-circle" color={Colors.grey} size={35} />
-        )}
-        {name && <CustomText style={tw`ml-3 text-[13px]`}>{name}</CustomText>}
-      </RowContainer>
-      <TouchableOpacity activeOpacity={0.9}>
-        <MenuIcon />
-      </TouchableOpacity>
-      {/* {canFollow && (
+     const MenuIcon = generalIcon.MenuIcon;
+     return (
+          <RowContainer style={tw`px-2 justify-between`}>
+               <RowContainer>
+                    {uri ? (
+                         <CustomImage
+                              uri={uri}
+                              style={tw`h-9 w-9 rounded-full`}
+                              resizeMode="cover"
+                         />
+                    ) : (
+                         <Icon icon="account-circle" color={Colors.grey} size={35} />
+                    )}
+                    {name && <CustomText style={tw`ml-3 text-[13px]`}>{name}</CustomText>}
+               </RowContainer>
+               <TouchableOpacity activeOpacity={0.9}>
+                    <MenuIcon />
+               </TouchableOpacity>
+               {/* {canFollow && (
         <TouchableOpacity
           onPress={() => handleFollowBtnPress()}
           style={tw`border bg-${
@@ -55,8 +55,8 @@ const UserHeader: FunctionComponent<User> = ({
           }
         </TouchableOpacity>
       )} */}
-    </RowContainer>
-  );
+          </RowContainer>
+     );
 };
 
 export default UserHeader;
