@@ -104,12 +104,32 @@ class AgoraMusicHandlerModule(reactContext: ReactApplicationContext) : ReactCont
     @ReactMethod
     fun getDuration(promise: Promise) {
         try {
-            val duration = engine?.audioMixingDuration ?: throw NullPointerException("RtcEngine is not initialized")
-            promise.resolve(duration)
+            if (engine == null) {
+                throw NullPointerException("RtcEngine is not initialized")
+            }
+
+            val durations = mutableListOf<Int>()
+            val iterator = audioFilesQueue.iterator()
+            
+            while (iterator.hasNext()) {
+                val audioFile = iterator.next()
+                engine?.startAudioMixing(audioFile.filePath, false, 1, 0)
+
+                // Wait until the audio file is loaded
+                Thread.sleep(1000) // Adding a delay to ensure the audio file is loaded properly
+                val duration = engine?.audioMixingDuration ?: 0
+                durations.add(duration)
+
+                // Stop the audio mixing after getting the duration
+                engine?.stopAudioMixing()
+            }
+
+            promise.resolve(durations)
         } catch (e: Exception) {
             promise.reject("ERROR_GET_DURATION", e)
         }
     }
+
 
     @ReactMethod
     fun setPosition(position: Int, promise: Promise) {
