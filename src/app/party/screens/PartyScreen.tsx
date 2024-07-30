@@ -487,12 +487,10 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
           console.log('Audio Mixing State Changed:', event);
           // Map the numeric state to enum
           const state = mapStateToEnum(event.state);
-          const reason = mapReasonToEnum(event.reason);
           if (state !== undefined) {
             setTrackState(state);
           }
           console.log('State:', state);
-          console.log('Reason:', reason);
         },
       );
 
@@ -510,7 +508,6 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         'onAudioMixingStateChanged',
         event => {
           const state = mapStateToEnum(event.state);
-          const reason = mapReasonToEnum(event.reason);
           if (state !== undefined) {
             setTrackState(state);
           }
@@ -525,7 +522,7 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         eventListener?.remove();
       };
     }
-  }, [emitter]);
+  }, [emitter, mapReasonToEnum, mapStateToEnum]);
 
   const fetchTrackDuration = useCallback(async () => {
     try {
