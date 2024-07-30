@@ -27,26 +27,33 @@ RCT_EXPORT_MODULE(AgoraModule)
 }
 
 RCT_EXPORT_METHOD(playMusic) {
+  RCTLogInfo(@"playMusic called");
   if (self.audioFilesQueue.count > 0) {
     NSString *filePath = [self.audioFilesQueue firstObject];
     [self.audioFilesQueue removeObjectAtIndex:0];
     [self playNextAudioFile:filePath];
+    [self sendEventWithName:@"onAudioMixingStateChanged" body:@{@"state": @(AgoraAudioMixingStateTypePlaying), @"reason": @(AgoraAudioMixingReasonTypeOk)}];
   } else {
     RCTLogError(@"No audio files in the queue to play");
   }
+}
+
+RCT_EXPORT_METHOD(pauseMusic) {
+  RCTLogInfo(@"pauseMusic called");
+  [self.agoraKit pauseAudioMixing];
+  [self sendEventWithName:@"onAudioMixingStateChanged" body:@{@"state": @(AgoraAudioMixingStateTypePaused), @"reason": @(AgoraAudioMixingReasonTypeOk)}];
+}
+
+RCT_EXPORT_METHOD(resumeMusic) {
+  RCTLogInfo(@"resumeMusic called");
+  [self.agoraKit resumeAudioMixing];
+  [self sendEventWithName:@"onAudioMixingStateChanged" body:@{@"state": @(AgoraAudioMixingStateTypePlaying), @"reason": @(AgoraAudioMixingReasonTypeOk)}];
 }
 
 RCT_EXPORT_METHOD(stopMusic) {
   [self.agoraKit stopAudioMixing];
 }
 
-RCT_EXPORT_METHOD(pauseMusic) {
-  [self.agoraKit pauseAudioMixing];
-}
-
-RCT_EXPORT_METHOD(resumeMusic) {
-  [self.agoraKit resumeAudioMixing];
-}
 
 - (void)playNextAudioFile:(NSString *)filePath {
   self.previousFilePath = self.currentFilePath;
@@ -55,6 +62,7 @@ RCT_EXPORT_METHOD(resumeMusic) {
     BOOL loopback = NO;
     NSInteger cycle = 1;
     [self.agoraKit startAudioMixing:filePath loopback:loopback cycle:cycle];
+    [self sendEventWithName:@"onAudioMixingStateChanged" body:@{@"state": @(AgoraAudioMixingStateTypePlaying), @"reason": @(AgoraAudioMixingReasonTypeOk)}];
   }
 }
 
@@ -72,8 +80,10 @@ RCT_EXPORT_METHOD(next) {
      // Queue is empty, restart from the first item
      if (self.previousFilePath) {
        [self playNextAudioFile:self.previousFilePath];
+       [self sendEventWithName:@"onAudioMixingStateChanged" body:@{@"state": @(AgoraAudioMixingStateTypePlaying), @"reason": @(AgoraAudioMixingReasonTypeOk)}];
      } else if (self.audioFilesQueue.count > 0) {
        NSString *firstFilePath = [self.audioFilesQueue firstObject];
+       [self sendEventWithName:@"onAudioMixingStateChanged" body:@{@"state": @(AgoraAudioMixingStateTypePlaying), @"reason": @(AgoraAudioMixingReasonTypeOk)}];
        [self playNextAudioFile:firstFilePath];
      } else {
        RCTLogError(@"No audio files available to play");
@@ -90,6 +100,7 @@ RCT_EXPORT_METHOD(previous) {
       NSString *firstFilePath = [self.audioFilesQueue firstObject];
       [self.audioFilesQueue insertObject:firstFilePath atIndex:0];
       [self playNextAudioFile:firstFilePath];
+      [self sendEventWithName:@"onAudioMixingStateChanged" body:@{@"state": @(AgoraAudioMixingStateTypePlaying), @"reason": @(AgoraAudioMixingReasonTypeOk)}];
     } else {
       RCTLogError(@"No previous audio file available");
     }}
@@ -113,7 +124,9 @@ RCT_EXPORT_METHOD(increaseGuestVolume:(NSInteger)volume) {
   [self.agoraKit adjustAudioMixingPlayoutVolume:volume];
 }
 
-
+RCT_EXPORT_METHOD(emitTestEvent) {
+  [self sendEventWithName:@"onAudioMixingStateChanged" body:@{@"state": @(1), @"reason": @(1)}];
+}
 
 + (BOOL)requiresMainQueueSetup {
   return NO;

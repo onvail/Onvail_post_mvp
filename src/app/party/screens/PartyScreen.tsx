@@ -505,29 +505,27 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
 
   useEffect(() => {
     if (Platform.OS === 'ios') {
-      console.log('ios', emitter);
+      console.log('Registering event listener for onAudioMixingStateChanged');
       const eventListener = emitter?.addListener(
         'onAudioMixingStateChanged',
         event => {
-          console.log('changing');
-          console.log('Audio Mixing State Changed:', event);
-          // Map the numeric state to enum
           const state = mapStateToEnum(event.state);
           const reason = mapReasonToEnum(event.reason);
           if (state !== undefined) {
             setTrackState(state);
           }
-          console.log('State:', state);
-          console.log('Reason:', reason);
         },
       );
 
-      // Cleanup the event listener when the component unmounts
+      // Call the test event
+      NativeModules.AgoraModule.emitTestEvent();
+
       return () => {
+        console.log('Removing event listener for onAudioMixingStateChanged');
         eventListener?.remove();
       };
     }
-  }, [emitter, mapStateToEnum, mapReasonToEnum]);
+  }, [emitter]);
 
   const fetchTrackDuration = useCallback(async () => {
     try {
