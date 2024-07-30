@@ -24,8 +24,6 @@ const MusicList: FunctionComponent<Props> = ({
   const {AgoraMusicHandler, AgoraModule} = NativeModules;
   const [currentPosition, setCurrentPosition] = React.useState(0);
 
-  console.log('currentPosition', currentPosition);
-
   const currentItemPosition = useMemo(() => {
     if (url === id) {
       return convertMillisecondsToMinSec(currentPosition);
@@ -48,11 +46,20 @@ const MusicList: FunctionComponent<Props> = ({
               console.log('error', error);
             });
         }
+        if (Platform.OS === 'ios') {
+          AgoraModule.getPosition()
+            .then((position: any) => {
+              setCurrentPosition(position);
+            })
+            .catch((error: any) => {
+              console.log('error', error);
+            });
+        }
       }, 1000);
 
       return () => clearInterval(trackPosition); // cleanup interval on unmount or when playerState changes
     }
-  }, [playerState, AgoraMusicHandler]);
+  }, [playerState, AgoraMusicHandler, AgoraModule]);
 
   return (
     <Pressable>
