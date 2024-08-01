@@ -898,27 +898,6 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     visibilityHandler={() => {}}
                     onChange={(index: number) => setSnapPointIndex(index)}
                >
-                    {/* {snapPointIndex === 0 && (
-                         <View
-                              style={[
-                                   tw`absolute items-center justify-center flex transform w-100 h-6 z-100`,
-                                   { marginTop: -10, zIndex: 100000 },
-                              ]}
-                         >
-                              <Animated.View
-                                   style={[
-                                        tw`items-center justify-center flex transform -translate-x-1/2 h-6`,
-                                        animatedArrowStyle,
-                                   ]}
-                              >
-                                   <MaterialIcons
-                                        name="keyboard-arrow-up"
-                                        color="white"
-                                        size={30}
-                                   />
-                              </Animated.View>
-                         </View>
-                    )} */}
                     {snapPointIndex > 0 && (
                          <NavigationContainer
                               independent={true}
