@@ -48,7 +48,11 @@ import { ALERT_TYPE, Toast } from "react-native-alert-notification";
 import CustomRefreshControl from "../CustomRefreshControl/CustomRefreshControl";
 
 interface JoinPartyProps {
-     handleJoinPartyBtnPress: (party: PartiesResponse, albumBackgroundColor: ColorScheme) => void;
+     handleJoinPartyBtnPress: (
+          party: PartiesResponse,
+          albumBackgroundColor: ColorScheme,
+          join: () => Promise<boolean>,
+     ) => void;
      party: PartiesResponse;
 }
 
@@ -140,13 +144,13 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({ handleJoinPartyBtn
                     participants: arrayUnion(user),
                     is_started: true,
                });
-               await join();
+               // await ();
                await api.patch({
                     url: `parties/start-party/${party?._id}`,
                     requiresToken: true,
                     authorization: true,
                });
-               handleJoinPartyBtnPress(partyTrackWithDuration, albumBackgroundColor);
+               handleJoinPartyBtnPress(partyTrackWithDuration, albumBackgroundColor, join);
           } catch (error) {
                console.log(error);
           } finally {
@@ -157,19 +161,20 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({ handleJoinPartyBtn
      const joinParty = async () => {
           setIsLoading(true);
           try {
+               console.log("clicked");
                const partyDocRef = doc(db, "party", party?._id);
                const partyData = (await getDoc(partyDocRef)).data();
                if (partyData?.is_started) {
                     await updateDoc(partyDocRef, {
                          participants: arrayUnion(user),
                     });
-                    await join();
+                    // await join();
                     await api.post({
                          url: `parties/join-party/${party?._id}`,
                          requiresToken: true,
                          authorization: true,
                     });
-                    handleJoinPartyBtnPress(partyTrackWithDuration, albumBackgroundColor);
+                    handleJoinPartyBtnPress(partyTrackWithDuration, albumBackgroundColor, join);
                } else {
                     Toast.show({
                          type: ALERT_TYPE.DANGER,
@@ -180,6 +185,27 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({ handleJoinPartyBtn
                     });
                }
           } catch (error) {
+               // console.log({ errorHere: JSON.stringify(error.response) });
+               if (error.response?.data?.message === "You have already joined this party.") {
+                  
+                    const partyDocRef = doc(db, "party", party?._id);
+                    const partyData = (await getDoc(partyDocRef)).data();
+                    if (partyData?.is_started) {
+                         handleJoinPartyBtnPress(
+                              partyTrackWithDuration,
+                              albumBackgroundColor,
+                              join,
+                         );
+                    } else {
+                         Toast.show({
+                              type: ALERT_TYPE.DANGER,
+                              title: "Something Went Wrong",
+                              textBody: error.response?.data?.message,
+                              titleStyle: tw`font-poppinsRegular text-xs`,
+                              textBodyStyle: tw`font-poppinsRegular text-xs`,
+                         });
+                    }
+               }
           } finally {
                setIsLoading(false);
           }
@@ -211,13 +237,21 @@ const JoinPartyButton: FunctionComponent<JoinPartyProps> = ({ handleJoinPartyBtn
 interface PostItemProps {
      item: PartiesResponse;
      userId: string;
-     handleJoinPartyBtnPress: (item: PartiesResponse, albumBackgroundColor: ColorScheme) => void;
+     handleJoinPartyBtnPress: (
+          item: PartiesResponse,
+          albumBackgroundColor: ColorScheme,
+          join: () => Promise<boolean>,
+     ) => void;
 }
 
 const PostItem: FunctionComponent<{
      item: PartiesResponse;
      userId: string;
-     handleJoinPartyBtnPress: (item: PartiesResponse, albumBackgroundColor: ColorScheme) => void;
+     handleJoinPartyBtnPress: (
+          item: PartiesResponse,
+          albumBackgroundColor: ColorScheme,
+          join: () => Promise<boolean>,
+     ) => void;
 }> = ({ item, handleJoinPartyBtnPress, userId }) => {
      const CommentSvg = generalIcon.Comment;
      const PartyJoinersIcon = generalIcon.PartyJoinersIcon;
@@ -419,8 +453,8 @@ const PostItem: FunctionComponent<{
                               </View>
                               <JoinPartyButton
                                    party={item}
-                                   handleJoinPartyBtnPress={(party, albumBackgroundColor) =>
-                                        handleJoinPartyBtnPress(party, albumBackgroundColor)
+                                   handleJoinPartyBtnPress={(party, albumBackgroundColor, join) =>
+                                        handleJoinPartyBtnPress(party, albumBackgroundColor, join)
                                    }
                               />
                          </RowContainer>
@@ -468,7 +502,11 @@ const PostItem: FunctionComponent<{
  */
 
 type PostCardProps = {
-     handleJoinPartyBtnPress: (item: PartiesResponse, backgroundColor: string) => void;
+     handleJoinPartyBtnPress: (
+          item: PartiesResponse,
+          backgroundColor: string,
+          join: () => Promise<boolean>,
+     ) => void;
      data: PartiesResponse[];
      onScroll: (event: any) => void;
      onRefresh: () => void;
@@ -491,8 +529,8 @@ const PostCard: FunctionComponent<PostCardProps> = ({
                <Animated.View>
                     <PostItem
                          item={item}
-                         handleJoinPartyBtnPress={(partyItem, albumBackgroundColor) =>
-                              handleJoinPartyBtnPress(partyItem, albumBackgroundColor as any)
+                         handleJoinPartyBtnPress={(partyItem, albumBackgroundColor, join) =>
+                              handleJoinPartyBtnPress(partyItem, albumBackgroundColor as any, join)
                          }
                          userId={user?._id ?? ""}
                     />

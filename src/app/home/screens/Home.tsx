@@ -25,6 +25,7 @@ import CustomImage from "src/app/components/Image/CustomImage";
 import HomeSkeletonPlaceHolder from "src/app/components/Screens/HomeSkeletonPlaceHolder";
 import { RefreshControl } from "react-native-gesture-handler";
 import CustomRefreshControl from "src/app/components/CustomRefreshControl/CustomRefreshControl";
+import { PartiesResponse } from "src/types/partyTypes";
 
 type Props = NativeStackScreenProps<BottomTabParamList, "Home">;
 
@@ -274,20 +275,28 @@ const Home = forwardRef<unknown, Props>(({ navigation }, ref) => {
                                              ) : (
                                                   <PostCard
                                                        handleJoinPartyBtnPress={(
-                                                            item,
-                                                            partyBackgroundColor,
+                                                            item: PartiesResponse,
+                                                            partyBackgroundColor: string,
+                                                            join,
                                                        ) => {
-                                                            navigation.navigate(
-                                                                 "MainAppNavigator",
-                                                                 {
-                                                                      screen: "PartyScreen",
-                                                                      params: {
-                                                                           party: item,
-                                                                           partyBackgroundColor:
-                                                                                partyBackgroundColor,
-                                                                      },
-                                                                 },
-                                                            );
+                                                            const joinParty = async () => {
+                                                                 const joined = await join();
+                                                                 console.log({ joined });
+                                                                 if (joined) {
+                                                                      navigation.navigate(
+                                                                           "MainAppNavigator",
+                                                                           {
+                                                                                screen: "PartyScreen",
+                                                                                params: {
+                                                                                     party: item,
+                                                                                     partyBackgroundColor:
+                                                                                          partyBackgroundColor,
+                                                                                },
+                                                                           },
+                                                                      );
+                                                                 }
+                                                            };
+                                                            joinParty();
                                                        }}
                                                        data={partiesData}
                                                        onScroll={scrollHandler}
