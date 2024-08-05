@@ -508,8 +508,12 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
         'onAudioMixingStateChanged',
         event => {
           const state = mapStateToEnum(event.state);
+          const currentTrack = event.trackIdentifier;
           if (state !== undefined) {
             setTrackState(state);
+          }
+          if (currentTrack !== undefined) {
+            setCurrentlyPlayingTrack(currentTrack);
           }
         },
       );
@@ -541,6 +545,25 @@ const PartyScreen: FunctionComponent<Props> = ({navigation, route}) => {
       .catch((error: any) => {
         console.error('Error getting current playing track:', error);
       });
+
+  Platform.OS === 'ios' &&
+    AgoraModule.getCurrentPlayingTrack()
+      .then((currentTrack: string) => {
+        setCurrentlyPlayingTrack(currentTrack);
+      })
+      .catch((_error: any) => {});
+
+  useEffect(() => {
+    const fetchCurrentTrack = async () =>
+      Platform.OS === 'android' &&
+      (await AgoraMusicHandler.getCurrentPlayingTrack().then(
+        (track: string) => {
+          setCurrentlyPlayingTrack(track);
+        },
+      ));
+
+    fetchCurrentTrack();
+  }, [AgoraMusicHandler, AgoraModule]);
 
   useEffect(() => {
     if (Platform.OS === 'android' && isHost) {
