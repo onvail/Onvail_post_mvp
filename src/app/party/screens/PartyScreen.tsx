@@ -180,7 +180,6 @@ const BounceButton: React.FC<{
 
 const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const { party, partyBackgroundColor } = route.params;
-     const sound = useRef<any>(null);
      const { user } = useUser();
      const { isMuted, toggleMute, toggleIsSpeakerEnabled, leave, isSpeakerEnabled } = useAgora(
           party?._id,
@@ -212,7 +211,11 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const [snapPointIndex, setSnapPointIndex] = useState(0);
      const [activeTabName, setActiveTabName] = useState<string>("");
      const [tabNavigation, setTabNavigation] = useState<any>(null);
+     const [isPlaying, setIsPlaying] = useState<boolean>(false);
+     const [isLoading, setIsLoading] = useState<boolean>(false);
+     const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(0);
      const [snapIndexController, setSnapIndexController] = useState<any>(null);
+     const sound = useRef<Audio.Sound | null>(null);
 
      const partyId = party?._id;
 
@@ -254,6 +257,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                date: party?.date,
                title: song?.name,
                artist: party?.artist?.name,
+               uri: song.file_url,
           }));
      }, [party?.artist?.name, party?.date, songs, party?.albumPicture]);
 
@@ -286,6 +290,10 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      }, [navigation, partyId, user, leave]);
 
      const leavePartyHandler = useCallback(async () => {
+          if (sound.current) {
+               await sound.current.unloadAsync();
+          }
+
           await leaveParty();
           setIsLeavePartyModalVisible(false);
           await TrackPlayer.stop();
@@ -293,6 +301,10 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      }, [leaveParty]);
 
      const endPartyHandler = async () => {
+          if (sound.current) {
+               await sound.current.unloadAsync();
+          }
+
           await endParty();
           setIsEndPartyModalVisible(false);
           await TrackPlayer.stop();
@@ -405,307 +417,131 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           }
      };
 
-     const {
-          playerState,
-          checkIfTrackQueueIsDifferent,
-          skipToNext,
-          skipToPrevious,
-          handlePauseAndPlayTrack,
-          stream,
-          updatePlayerWithStream,
-          isPlaying,
-          position,
-     } = useMusicPlayer({
-          track: allTracks,
-     });
-
-     const volumeHandler = useCallback(async () => {
-          await VolumeManager.setVolume(volume);
-     }, [volume]);
-
-     useEffect(() => {
-          volumeHandler();
-     }, [volume, volumeHandler]);
-
-     const [isPlayingMusic, setIsPlayingMusic] = useState(false);
-     const [isLoadingMusic, setIsLoadingMusic] = useState(false);
-
-     useEffect(() => {
-          if (sound?.current && isHost) {
-               if (isPlayingMusic) {
-                    sound.current.setOnPlaybackStatusUpdate((status: any) => {
-                         if (status.isLoaded && status.positionMillis) {
-                              // Convert the current position and other metadata into a format to send
-                              const chunk = {
-                                   position: status.positionMillis,
-                                   duration: status.durationMillis,
-                              };
-
-                              console.log({ chunk });
-
-                              // Send chunk data over socket
-                              socket.emit("play", {
-                                   cmd: "play",
-                                   timeStamp: utcTimeStamp,
-                                   party: party?._id,
-                                   stream: { ...stream, shouldPlay: true, isStreaming: true },
-                                   chunk,
-                              });
-                         }
-                    });
-               } else {
-                    sound.current.setOnPlaybackStatusUpdate((status: any) => {
-                         if (status.isLoaded && status.positionMillis) {
-                              // Convert the current position and other metadata into a format to send
-                              const chunk = {
-                                   position: status.positionMillis,
-                                   duration: status.durationMillis,
-                              };
-
-                              console.log({ chunk });
-
-                              // Send chunk data over socket
-                              socket.emit("play", {
-                                   cmd: "play",
-                                   timeStamp: utcTimeStamp,
-                                   party: party?._id,
-                                   stream: {
-                                        ...stream,
-                                        shouldPlay: isPlayingMusic,
-                                        isStreaming: isPlayingMusic,
-                                   },
-                                   chunk,
-                              });
-                         }
-                    });
-               }
-          }
-          // Stream audio data
-     }, [isPlayingMusic, sound?.current, isHost]);
-
-     const playAndStreamMusic = async () => {
-          setIsLoadingMusic(true);
-          // Load and play a music file
-          if (!sound?.current) {
-               const { sound: newSound } = await Audio.Sound.createAsync(
-                    { uri: "https://onvail-media.s3.eu-north-1.amazonaws.com/Rema_-_OZEBA.mp3" },
-                    { shouldPlay: true },
-               );
-               sound.current = newSound;
-          } else {
-               sound.current.playAsync();
-          }
-
-          setIsLoadingMusic(false);
-          setIsPlayingMusic(true);
-     };
-
-     const pauseMusic = async () => {
+     const loadTrack = async (index: number) => {
+          setIsLoading(true);
           if (sound.current) {
-               try {
-                    await sound.current.pauseAsync();
-                    setIsPlayingMusic(false);
-
-                    // Notify others that the music is paused
-                    socket.current.emit("play", {
-                         cmd: "play",
-                         timeStamp: utcTimeStamp,
-                         party: party?._id,
-                         stream: { ...stream, shouldPlay: false, isStreaming: false },
-                    });
-
-                    console.log("Music paused");
-               } catch (error) {
-                    // setError(error.message); // Set error state
-                    console.error("Error pausing music:", error);
-               }
+               await sound.current.unloadAsync();
           }
-     };
 
-     useEffect(() => {
-          const setupSound = async () => {
+          try {
                const { sound: newSound } = await Audio.Sound.createAsync(
-                    { uri: "https://onvail-media.s3.eu-north-1.amazonaws.com/Rema_-_OZEBA.mp3" },
+                    { uri: allTracks[index].uri },
                     { shouldPlay: false },
                );
                sound.current = newSound;
-          };
 
-          setupSound();
-
-          return () => {
-               socket.current.disconnect();
-               if (sound.current) {
-                    sound.current.unloadAsync();
-               }
-          };
-     }, []);
-
-     // useEffect(() => {
-     //      if (isHost) {
-     //           socket.emit("play", {
-     //                cmd: "play",
-     //                timeStamp: utcTimeStamp,
-     //                party: party?._id,
-     //                stream: { ...stream, shouldPlay: isPlaying, isStreaming: true },
-     //           });
-     //      }
-     // }, [position, isHost]);
-
-     // console.log({ stream });
-     const handlePlay = async () => {
-          const previousState = await getPlaybackState();
-
-          // console.log("trying to play", { previousState });
-          try {
-               await handlePauseAndPlayTrack();
-               await new Promise((resolve) => setTimeout(resolve, 100));
-               const currentState = await getPlaybackState();
-
-               if (currentState !== previousState) {
-                    socket.emit("play", {
-                         cmd: "play",
-                         timeStamp: utcTimeStamp,
-                         party: party?._id,
-                         stream: { ...stream, shouldPlay: !isPlaying },
-                    });
-               }
+               setCurrentTrackIndex(index);
           } catch (error) {
-               console.log(error);
+               console.error("Error loading track:", error);
+          } finally {
+               setIsLoading(false);
           }
      };
-
-     const handlePrevious = async () => {
-          await skipToPrevious().then(() => {
-               socket.emit("previous", {
-                    party: party?._id,
-                    timeStamp: utcTimeStamp,
-                    cmd: "previous",
-                    stream: { ...stream, shouldPlay: isPlaying },
-               });
-          });
-     };
-
-     const handleNext = async () => {
-          await skipToNext().then(() => {
-               socket.emit("forward", {
-                    party: party?._id,
-                    cmd: "forward",
-                    timeStamp: utcTimeStamp,
-                    stream: { ...stream, shouldPlay: isPlaying },
-               });
-          });
-     };
-
-     const buffering = isSameQueue && playerState === "buffering";
-
-     console.log({ buffering, isPlaying });
-
-     const handleSameQueueItemState = useCallback(async () => {
-          const sameQueue = await checkIfTrackQueueIsDifferent();
-          setIsSameQueue(sameQueue);
-          return sameQueue;
-     }, [checkIfTrackQueueIsDifferent]);
 
      useEffect(() => {
-          handleSameQueueItemState();
-     }, [handleSameQueueItemState]);
-
-     let IconComponent;
-
-     if (isPlayingMusic) {
-          IconComponent = <PauseIcon />;
-     } else if (isLoadingMusic) {
-          IconComponent = <ActivityIndicator />;
-     } else {
-          IconComponent = <PlayIcon />;
-     }
-
-     const mountTrackForGuests = useCallback(async () => {
-          if (!isHost) {
-               TrackPlayer.add(allTracks);
+          if (isHost && sound.current) {
+               sound.current.setOnPlaybackStatusUpdate((status) => {
+                    console.log({ status });
+                    if (status.isLoaded) {
+                         if (status.didJustFinish && !status.isLooping) {
+                              setIsPlaying(false);
+                         }
+                         if (isHost && status.positionMillis) {
+                              socket.emit("play", {
+                                   cmd: "play",
+                                   timeStamp: moment().tz("UTC").format(),
+                                   party: party._id,
+                                   stream: {
+                                        position: status.positionMillis,
+                                        duration: status.durationMillis,
+                                        shouldPlay: isPlaying,
+                                   },
+                              });
+                         }
+                    } else if (status.error) {
+                         console.error(`Playback error: ${status.error}`);
+                    }
+               });
           }
-     }, [allTracks, isHost]);
+     }, [isHost, isPlaying, party._id]);
 
-     interface SocketData {
-          cmd: string;
-          timeStamp: string;
-          party: string;
-          user?: any;
-          stream?: Stream;
-          isStreaming?: boolean;
-     }
+     const togglePlayPause = async () => {
+          if (sound.current) {
+               if (isPlaying) {
+                    await sound.current.pauseAsync();
+                    setIsPlaying(false);
+               } else {
+                    await sound.current.playAsync();
+                    setIsPlaying(true);
+               }
+               console.log({ sound: sound.current });
+          }
+     };
+
+     // Play the previous track
+     const handlePrevious = async () => {
+          if (currentTrackIndex > 0) {
+               loadTrack(currentTrackIndex - 1);
+          }
+     };
+
+     // Play the next track
+     const handleNext = async () => {
+          if (currentTrackIndex < tracks.length - 1) {
+               loadTrack(currentTrackIndex + 1);
+          }
+     };
+
+     // Adjust the volume
+     const adjustVolume = async (value: number) => {
+          setVolume(value);
+          if (sound.current) {
+               await sound.current.setVolumeAsync(value);
+          }
+     };
 
      const handleSocketEvents = useCallback(
-          async (data: SocketData) => {
-               const currentTime = moment().tz("UTC");
-               const eventTime = moment.tz(data.timeStamp, "UTC");
-               const timeDifference = moment(currentTime).diff(eventTime) / 1000;
-               console.log({ data });
-               const playBackState = await getPlaybackState();
-               if (isHost) {
-                    return;
-               }
-               switch (data.cmd) {
-                    case "play":
-                         if (data?.chunk && sound.current) {
-                              const status = await sound.current.getStatusAsync();
-                              if (data?.stream?.shouldPlay !== false) {
-                                   // Only seek and play if the position differs significantly
-                                   if (
-                                        Math.abs(status.positionMillis - data?.chunk.position) > 500
-                                   ) {
-                                        await sound.current.setPositionAsync(data?.chunk.position);
-                                        if (data?.stream?.shouldPlay) {
-                                             console.log(
-                                                  "typeof data?.shouldPlay",
-                                                  typeof data?.stream?.shouldPlay,
-                                             );
-                                             await sound.current.playAsync();
-                                        } else {
-                                             await sound.current.pauseAsync();
-                                        }
-                                   }
-                              } else {
-                                   await sound.current.pauseAsync();
-                              }
-                         }
-                         // if (playBackState.state === State.Playing) {
-                         //      await TrackPlayer.pause().then((res) => console.log("pause", res));
-                         // } else {
-                         // await updatePlayerWithStream(data?.stream as Stream);
-                         // await TrackPlayer.play().then((res) => console.log(res));
-                         // await TrackPlayer.seekTo(timeDifference);
-                         // }
-                         break;
-                    case "stop":
-                         await TrackPlayer.stop();
-                         break;
-                    case "previous":
-                         await TrackPlayer.skipToPrevious();
-                         await TrackPlayer.seekTo(timeDifference);
-                         break;
-                    case "forward":
-                         await TrackPlayer.seekTo(timeDifference);
-                         break;
-                    default:
-                         break;
+          async (data) => {
+               const { cmd, timeStamp, stream } = data;
+               if (!isHost && sound.current) {
+                    const status = await sound.current.getStatusAsync();
+                    const isPlayingRemote = stream?.shouldPlay;
+                    const positionDifference = Math.abs(status.positionMillis - stream.position);
+                    console.log({ status: status.isPlaying });
+                    if (positionDifference > 500) {
+                         await sound.current.setPositionAsync(stream.position);
+                    }
+
+                    if (isPlayingRemote && !status.isPlaying) {
+                         await sound.current.playAsync();
+                         setIsPlaying(true);
+                    } else if (!isPlayingRemote) {
+                         await sound.current.pauseAsync();
+                         setIsPlaying(false);
+                    }
                }
           },
-          [isHost],
+          [isHost, isPlaying],
      );
 
      useEffect(() => {
-          mountTrackForGuests();
+          if (allTracks.length > 0) {
+               loadTrack(0);
+          }
+
+          if (isHost) {
+               return;
+          }
+
           socket.on("receive", handleSocketEvents);
 
           return () => {
-               TrackPlayer.stop();
-               // TrackPlayer.reset();
+               if (sound.current) {
+                    sound.current.unloadAsync();
+               }
                socket.off("receive", handleSocketEvents);
-               console.log("stopped");
           };
-     }, [isHost]);
+     }, [allTracks]);
 
      const handleCommentChange = (text: string) => {
           commentRef.current = text;
@@ -772,21 +608,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                               {isHost ? "End" : "Leave"}
                          </CustomText>
                     </TouchableOpacity>
-                    {/* <TouchableOpacity
-                         style={tw` ${
-                              Platform.OS === "android" ? "mt-6" : "mt-0"
-                         } h-10 w-20 items-center justify-center self-end`}
-                         onPress={() => playAndStreamMusic()}
-                    >
-                         <CustomText
-                              style={{
-                                   color: screenColors?.accent,
-                                   fontWeight: "700",
-                              }}
-                         >
-                              Play Demo
-                         </CustomText>
-                    </TouchableOpacity> */}
+
                     <View style={tw`mt-8 mb-3 items-center`}>
                          <CustomImage
                               uri={party.albumPicture}
@@ -806,12 +628,16 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                                         <Icon icon="rewind" color="white" size={25} />
                                    </Pressable>
                                    <Pressable
-                                        onPress={() =>
-                                             isPlayingMusic ? pauseMusic() : playAndStreamMusic()
-                                        }
+                                        onPress={togglePlayPause}
                                         style={tw`w-10 items-center`}
                                    >
-                                        {IconComponent}
+                                        {isLoading ? (
+                                             <ActivityIndicator />
+                                        ) : isPlaying ? (
+                                             <PauseIcon />
+                                        ) : (
+                                             <PlayIcon />
+                                        )}
                                    </Pressable>
                                    <Pressable onPress={handleNext}>
                                         <Icon icon="fast-forward" color="white" size={25} />
@@ -827,7 +653,8 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                                    minimumTrackTintColor="#FFFFFF"
                                    maximumTrackTintColor="#000000"
                                    thumbTintColor="#FFFF"
-                                   onValueChange={(value) => setVolume(value)}
+                                   value={volume}
+                                   onValueChange={(value) => adjustVolume(value)}
                               />
                               <Icon icon={"volume-medium"} color="white" />
                          </View>
