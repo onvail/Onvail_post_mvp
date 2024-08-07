@@ -1,6 +1,3 @@
-/* eslint-disable react/no-unstable-nested-components */
-/* eslint-disable react-native/no-inline-styles */
-/* eslint-disable quotes */
 import React, {
      FunctionComponent,
      useCallback,
@@ -77,6 +74,7 @@ import CommentCards from "src/app/components/Cards/CommentCards";
 import GuestsList from "../components/GuestsList";
 import tinycolor from "tinycolor2";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import NetInfo from "@react-native-community/netinfo";
 import { Audio } from "expo-av";
 
 const Tab = createMaterialTopTabNavigator();
@@ -215,6 +213,10 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const [isLoading, setIsLoading] = useState<boolean>(false);
      const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(0);
      const [snapIndexController, setSnapIndexController] = useState<any>(null);
+     const [isHostNetworkUnstable, setIsHostNetworkUnstable] = useState<boolean>(false);
+     const [isGuestNetworkUnstable, setIsGuestNetworkUnstable] = useState<boolean>(false);
+     const [isHostPlaying, setIsHostPlaying] = useState<boolean>(false);
+
      const sound = useRef<Audio.Sound | null>(null);
 
      const partyId = party?._id;
@@ -417,7 +419,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           }
      };
 
-     const loadTrack = async (index: number) => {
+     const loadTrack = async (index: number, play = false) => {
           setIsLoading(true);
           if (sound.current) {
                await sound.current.unloadAsync();
@@ -426,7 +428,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           try {
                const { sound: newSound } = await Audio.Sound.createAsync(
                     { uri: allTracks[index].uri },
-                    { shouldPlay: false },
+                    { shouldPlay: play },
                );
                sound.current = newSound;
 
@@ -440,10 +442,17 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
 
      useEffect(() => {
           if (isHost && sound.current) {
-               sound.current.setOnPlaybackStatusUpdate((status) => {
+               sound.current.setOnPlaybackStatusUpdate(async (status) => {
                     console.log({ status });
                     if (status.isLoaded) {
                          if (status.didJustFinish && !status.isLooping) {
+                              if (allTracks.length > 1) {
+                                   const nextTrackIndex =
+                                        (currentTrackIndex + 1) % allTracks.length;
+                                   await loadTrack(nextTrackIndex);
+                              } else {
+                                   await loadTrack(0);
+                              }
                               setIsPlaying(false);
                          }
                          if (isHost && status.positionMillis) {
@@ -463,7 +472,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     }
                });
           }
-     }, [isHost, isPlaying, party._id]);
+     }, [isHost, isPlaying, party._id, currentTrackIndex, allTracks]);
 
      const togglePlayPause = async () => {
           if (sound.current) {
@@ -487,7 +496,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
 
      // Play the next track
      const handleNext = async () => {
-          if (currentTrackIndex < tracks.length - 1) {
+          if (currentTrackIndex < allTracks.length - 1) {
                loadTrack(currentTrackIndex + 1);
           }
      };
@@ -503,11 +512,23 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const handleSocketEvents = useCallback(
           async (data) => {
                const { cmd, timeStamp, stream } = data;
-               if (!isHost && sound.current) {
+               // console.log({ data });
+               // console.log({ sound: sound.current, isLoading });
+
+               // if (stream?.shouldPlay !== isHostPlaying) {
+               //      setIsHostPlaying(stream?.shouldPlay);
+               // }
+
+               if (!isHost && sound.current && data.cmd === "play") {
                     const status = await sound.current.getStatusAsync();
                     const isPlayingRemote = stream?.shouldPlay;
                     const positionDifference = Math.abs(status.positionMillis - stream.position);
-                    console.log({ status: status.isPlaying });
+                    console.log({ status: status.isPlaying, isPlayingRemote });
+                    // if (typeof status.isPlaying === undefined) {
+                    //      sound.current?.unloadAsync();
+                    //      loadTrack(0);
+                    // }
+
                     if (positionDifference > 500) {
                          await sound.current.setPositionAsync(stream.position);
                     }
@@ -519,9 +540,19 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                          await sound.current.pauseAsync();
                          setIsPlaying(false);
                     }
+               } else if (data?.cmd === "host_network_unstable") {
+                    Toast.show({
+                         type: ALERT_TYPE.WARNING,
+                         title: "Network Instability",
+                         textBody: "The Host's network is unstable....",
+                    });
                }
+
+               // else if (!sound.current && stream?.shouldPlay && !isLoading) {
+               //      loadTrack(0, true);
+               // }
           },
-          [isHost, isPlaying],
+          [isHost, isPlaying, sound.current, isLoading, isHostPlaying],
      );
 
      useEffect(() => {
@@ -542,6 +573,57 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                socket.off("receive", handleSocketEvents);
           };
      }, [allTracks]);
+
+     // Monitor network connectivity
+     useEffect(() => {
+          const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+               if (!state.isConnected) {
+                    if (isHost) {
+                         setIsHostNetworkUnstable(true);
+                         socket.emit("host_network_unstable", {
+                              party: party._id,
+                              cmd: "host_network_unstable",
+                         });
+                    } else {
+                         setIsGuestNetworkUnstable(true);
+                    }
+               } else {
+                    setIsHostNetworkUnstable(false);
+                    setIsGuestNetworkUnstable(false);
+               }
+          });
+
+          return () => {
+               unsubscribeNetInfo();
+          };
+     }, [isHost, party._id]);
+
+     useEffect(() => {
+          if (isGuestNetworkUnstable) {
+               Toast.show({
+                    type: ALERT_TYPE.WARNING,
+                    title: "Network Issue",
+                    textBody: "Your network is unstable. Reconnecting...",
+               });
+
+               // Try to reconnect and play the song if the host is playing
+               if (!isHost && sound.current) {
+                    sound.current.getStatusAsync().then((status) => {
+                         if (!status.isPlaying && status.shouldPlay) {
+                              sound.current.playAsync();
+                         }
+                    });
+               }
+          }
+
+          if (isHostNetworkUnstable) {
+               Toast.show({
+                    type: ALERT_TYPE.DANGER,
+                    title: "Network Issue",
+                    textBody: "Host network is unstable.",
+               });
+          }
+     }, [isGuestNetworkUnstable, isHostNetworkUnstable, isHost]);
 
      const handleCommentChange = (text: string) => {
           commentRef.current = text;
@@ -615,6 +697,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                               resizeMode="cover"
                               style={tw`h-60 w-60 rounded-lg`}
                          />
+                         {isHostPlaying && !isHost && <CustomText>Host Is Playing</CustomText>}
                          <View style={tw`mt-8 flex-row items-center justify-between`}>
                               <HighLightLeft />
                               <CustomText style={tw`font-poppinsBold w-10`}>LIVE</CustomText>
@@ -625,7 +708,12 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                          {isHost && (
                               <RowContainer style={tw`mt-6 w-[60%] justify-around items-center`}>
                                    <Pressable onPress={handlePrevious}>
-                                        <Icon icon="rewind" color="white" size={25} />
+                                        <Icon
+                                             icon="rewind"
+                                             color="white"
+                                             size={25}
+                                             iconProvider="MaterialIcon"
+                                        />
                                    </Pressable>
                                    <Pressable
                                         onPress={togglePlayPause}
@@ -640,12 +728,21 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                                         )}
                                    </Pressable>
                                    <Pressable onPress={handleNext}>
-                                        <Icon icon="fast-forward" color="white" size={25} />
+                                        <Icon
+                                             icon="fast-forward"
+                                             color="white"
+                                             size={25}
+                                             iconProvider="MaterialIcon"
+                                        />
                                    </Pressable>
                               </RowContainer>
                          )}
                          <View style={tw`flex-row w-[90%] mt-6 items-center`}>
-                              <Icon icon={"volume-low"} color="white" />
+                              <Icon
+                                   icon={"volume-mute"}
+                                   color="white"
+                                   iconProvider="MaterialIcon"
+                              />
                               <Slider
                                    style={tw`w-70`}
                                    minimumValue={0}
@@ -656,7 +753,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                                    value={volume}
                                    onValueChange={(value) => adjustVolume(value)}
                               />
-                              <Icon icon={"volume-medium"} color="white" />
+                              <Icon icon={"volume-up"} color="white" iconProvider="MaterialIcon" />
                          </View>
                     </View>
                     <FlashList
