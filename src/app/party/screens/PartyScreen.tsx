@@ -17,6 +17,7 @@ import {
      StyleSheet,
      Dimensions,
      ScrollView,
+     Alert,
 } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Icon from "src/app/components/Icons/Icon";
@@ -47,6 +48,7 @@ import {
      collection,
      doc,
      getDocs,
+     getFirestore,
      onSnapshot,
      orderBy,
      query,
@@ -56,8 +58,6 @@ import { db } from "../../../../firebaseConfig";
 import { BottomSheetFooter, BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import LottieView from "lottie-react-native";
 import Animated, {
-     interpolate,
-     runOnJS,
      useAnimatedStyle,
      useSharedValue,
      withRepeat,
@@ -76,6 +76,7 @@ import tinycolor from "tinycolor2";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import NetInfo from "@react-native-community/netinfo";
 import { Audio } from "expo-av";
+import _ from "lodash";
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -182,7 +183,6 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const { isMuted, toggleMute, toggleIsSpeakerEnabled, leave, isSpeakerEnabled } = useAgora(
           party?._id,
      );
-     const utcTimeStamp = moment().tz("UTC");
      const HighLightLeft = generalIcon.HighLightLeft;
      const HighLightRight = generalIcon.HighLightRight;
      const PauseIcon = generalIcon.PauseIcon;
@@ -194,7 +194,6 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const HandDownIcon = generalIcon.HandDownIcon;
 
      const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
-     const [isSameQueue, setIsSameQueue] = useState<boolean>(false);
      const [guestList, setGuestList] = useState<User[]>([]);
 
      const [volume, setVolume] = useState<number>(0.5);
@@ -215,9 +214,10 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const [snapIndexController, setSnapIndexController] = useState<any>(null);
      const [isHostNetworkUnstable, setIsHostNetworkUnstable] = useState<boolean>(false);
      const [isGuestNetworkUnstable, setIsGuestNetworkUnstable] = useState<boolean>(false);
-     const [isHostPlaying, setIsHostPlaying] = useState<boolean>(false);
-
+     const [showLoading, setShowLoading] = useState<boolean>(false);
+     const [isAlertShown, setIsAlertShown] = useState<boolean>(false);
      const sound = useRef<Audio.Sound | null>(null);
+     const debouncedShowLoading = useMemo(() => _.debounce(setShowLoading, 500), []);
 
      const partyId = party?._id;
 
@@ -440,50 +440,84 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           }
      };
 
+     const updatePlaybackState = async (stream: Stream) => {
+          const partyDocRef = doc(db, "party", partyId);
+          await updateDoc(partyDocRef, {
+               playbackState: {
+                    position: stream.position,
+                    duration: stream.duration,
+                    shouldPlay: stream.shouldPlay,
+                    lastUpdated: moment().tz("UTC").format(),
+                    uri: allTracks?.[currentTrackIndex],
+               },
+          });
+     };
+
      useEffect(() => {
           if (isHost && sound.current) {
                sound.current.setOnPlaybackStatusUpdate(async (status) => {
-                    console.log({ status });
                     if (status.isLoaded) {
                          if (status.didJustFinish && !status.isLooping) {
-                              if (allTracks.length > 1) {
-                                   const nextTrackIndex =
-                                        (currentTrackIndex + 1) % allTracks.length;
-                                   await loadTrack(nextTrackIndex);
-                              } else {
-                                   await loadTrack(0);
-                              }
+                              const nextTrackIndex = (currentTrackIndex + 1) % allTracks.length;
+                              await loadTrack(nextTrackIndex);
                               setIsPlaying(false);
                          }
                          if (isHost && status.positionMillis) {
-                              socket.emit("play", {
-                                   cmd: "play",
-                                   timeStamp: moment().tz("UTC").format(),
-                                   party: party._id,
-                                   stream: {
-                                        position: status.positionMillis,
-                                        duration: status.durationMillis,
-                                        shouldPlay: isPlaying,
-                                   },
-                              });
+                              const stream: Stream = {
+                                   position: status.positionMillis,
+                                   duration: status.durationMillis,
+                                   shouldPlay: isPlaying,
+                              };
+                              await updatePlaybackState(stream);
                          }
-                    } else if (status.error) {
-                         console.error(`Playback error: ${status.error}`);
                     }
                });
           }
      }, [isHost, isPlaying, party._id, currentTrackIndex, allTracks]);
 
      const togglePlayPause = async () => {
-          if (sound.current) {
-               if (isPlaying) {
-                    await sound.current.pauseAsync();
-                    setIsPlaying(false);
-               } else {
-                    await sound.current.playAsync();
-                    setIsPlaying(true);
+          try {
+               if (sound.current) {
+                    debouncedShowLoading(true); // Start showing the loading indicator after the debounce delay
+                    if (isPlaying) {
+                         await sound.current.pauseAsync();
+                         setIsPlaying(false);
+                    } else {
+                         await sound.current.playAsync();
+                         setIsPlaying(true);
+                    }
                }
-               console.log({ sound: sound.current });
+          } catch (error) {
+               console.error("Error during play/pause:", error);
+               Toast.show({
+                    type: ALERT_TYPE.DANGER,
+                    title: "Playback Error",
+                    textBody: "Unable to play the track. Please try again.",
+               });
+          } finally {
+               debouncedShowLoading(false); // Stop showing the loading indicator
+          }
+     };
+
+     const retryPlay = async (retries = 3) => {
+          for (let i = 0; i < retries; i++) {
+               try {
+                    setIsLoading(true);
+                    await sound.current?.playAsync();
+                    setIsPlaying(true);
+                    break; // Exit the loop if playback starts successfully
+               } catch (error) {
+                    console.error(`Retry ${i + 1} failed:`, error);
+                    if (i === retries - 1) {
+                         Toast.show({
+                              type: ALERT_TYPE.DANGER,
+                              title: "Playback Error",
+                              textBody: "Failed to play the track after multiple attempts.",
+                         });
+                    }
+               } finally {
+                    setIsLoading(false);
+               }
           }
      };
 
@@ -509,69 +543,172 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           }
      };
 
-     const handleSocketEvents = useCallback(
-          async (data) => {
-               const { cmd, timeStamp, stream } = data;
-               // console.log({ data });
-               // console.log({ sound: sound.current, isLoading });
+     const handlePlaybackFailure = () => {
+          setIsAlertShown(true); // Set alert state to true
 
-               // if (stream?.shouldPlay !== isHostPlaying) {
-               //      setIsHostPlaying(stream?.shouldPlay);
-               // }
+          Alert.alert(
+               "Playback Error",
+               "There was an issue syncing with the host. What would you like to do?",
+               [
+                    {
+                         text: "Retry",
+                         onPress: () => {
+                              retryPlay();
+                              setIsAlertShown(false);
+                         },
+                    },
+                    {
+                         text: "Leave Party",
+                         onPress: () => {
+                              leavePartyHandler();
+                              setIsAlertShown(false);
+                         },
+                    },
+               ],
+               { cancelable: true },
+          );
+     };
 
-               if (!isHost && sound.current && data.cmd === "play") {
-                    const status = await sound.current.getStatusAsync();
-                    const isPlayingRemote = stream?.shouldPlay;
-                    const positionDifference = Math.abs(status.positionMillis - stream.position);
-                    console.log({ status: status.isPlaying, isPlayingRemote });
-                    // if (typeof status.isPlaying === undefined) {
-                    //      sound.current?.unloadAsync();
-                    //      loadTrack(0);
-                    // }
+     const debouncedHandlePlaybackFailure = _.debounce(handlePlaybackFailure, 3000);
 
-                    if (positionDifference > 500) {
-                         await sound.current.setPositionAsync(stream.position);
+     const loadSoundWithRetry = async (uri: string, retries = 3) => {
+          for (let i = 0; i < retries; i++) {
+               try {
+                    await sound.current?.loadAsync({ uri });
+                    return true;
+               } catch (error) {
+                    console.error(`Attempt ${i + 1} to load sound failed:`, error);
+                    if (i === retries - 1) {
+                         Toast.show({
+                              type: ALERT_TYPE.DANGER,
+                              title: "Playback Error",
+                              textBody: "Failed to load the track after multiple attempts.",
+                         });
+                         return false;
                     }
-
-                    if (isPlayingRemote && !status.isPlaying) {
-                         await sound.current.playAsync();
-                         setIsPlaying(true);
-                    } else if (!isPlayingRemote) {
-                         await sound.current.pauseAsync();
-                         setIsPlaying(false);
-                    }
-               } else if (data?.cmd === "host_network_unstable") {
-                    Toast.show({
-                         type: ALERT_TYPE.WARNING,
-                         title: "Network Instability",
-                         textBody: "The Host's network is unstable....",
-                    });
                }
+          }
+          return false;
+     };
+     const listenToPlaybackState = () => {
+          if (!isHost) {
+               let retryCount = 0;
+               const maxRetries = 20;
 
-               // else if (!sound.current && stream?.shouldPlay && !isLoading) {
-               //      loadTrack(0, true);
-               // }
-          },
-          [isHost, isPlaying, sound.current, isLoading, isHostPlaying],
-     );
+               const partyDocRef = doc(db, "party", partyId);
+               const unsubscribe = onSnapshot(partyDocRef, async (doc) => {
+                    try {
+                         const data = doc.data();
+                         const playbackState = data?.playbackState;
+
+                         if (playbackState && sound.current) {
+                              const status = await sound.current.getStatusAsync();
+                              const isPlayingRemote = playbackState.shouldPlay;
+                              const positionDifference = Math.abs(
+                                   status.positionMillis - playbackState.position,
+                              );
+
+                              const currentTime = moment().tz("UTC");
+                              const lastUpdateTime = moment(playbackState.lastUpdated);
+                              const timeSinceLastUpdate = currentTime.diff(
+                                   lastUpdateTime,
+                                   "seconds",
+                              );
+
+                              // Check if the stream data is still being received
+                              if (timeSinceLastUpdate > 5) {
+                                   retryCount++;
+                                   if (retryCount >= maxRetries) {
+                                        Toast.show({
+                                             type: ALERT_TYPE.WARNING,
+                                             title: "Sync Issue",
+                                             textBody: "Host's stream data seems to be delayed.",
+                                        });
+                                        handlePlaybackFailure();
+                                        return;
+                                   }
+                                   return; // Skip further processing to retry
+                              }
+
+                              // Check if the sound is loaded before playing
+                              if (!status.isLoaded) {
+                                   debouncedShowLoading(true); // Show loading indicator
+                                   const soundLoaded = await loadSoundWithRetry(playbackState.uri);
+                                   if (!soundLoaded) {
+                                        handlePlaybackFailure();
+                                        return; // Exit early if loading fails
+                                   }
+                              }
+
+                              // Adjust position if necessary
+                              if (positionDifference > 500) {
+                                   await sound.current.setPositionAsync(playbackState.position);
+                              }
+
+                              // Play or pause based on host's playback state
+                              if (isPlayingRemote && !status.isPlaying) {
+                                   retryCount++;
+                                   await sound.current.playAsync();
+                                   setIsPlaying(true);
+
+                                   // Automatically dismiss the alert if it is shown
+                                   if (isAlertShown) {
+                                        setIsAlertShown(false);
+                                        Alert?.dismiss();
+                                   }
+                              } else if (!isPlayingRemote && status.isPlaying) {
+                                   await sound.current.pauseAsync();
+                                   setIsPlaying(false);
+                              }
+
+                              // Reset the retry counter if playback is successful
+                              if (status.isPlaying && retryCount > 0) {
+                                   retryCount = 0;
+                              }
+
+                              debouncedShowLoading(false);
+                         } else {
+                              retryCount++;
+                              if (retryCount >= maxRetries) {
+                                   Toast.show({
+                                        type: ALERT_TYPE.DANGER,
+                                        title: "Playback Error",
+                                        textBody: "Failed to retrieve playback data from the host.",
+                                   });
+                                   handlePlaybackFailure();
+                              }
+                         }
+                    } catch (error) {
+                         console.error("Error syncing playback:", error);
+                         retryCount++;
+                         if (retryCount >= maxRetries) {
+                              Toast.show({
+                                   type: ALERT_TYPE.DANGER,
+                                   title: "Playback Error",
+                                   textBody: "Failed to sync playback with the host. Retrying...",
+                              });
+                              handlePlaybackFailure();
+                         }
+                    } finally {
+                         debouncedShowLoading(false); // Ensure the loading indicator is hidden
+                    }
+               });
+
+               return () => unsubscribe();
+          }
+     };
+
+     useEffect(() => {
+          if (!isHost) {
+               const unsubscribe = listenToPlaybackState();
+               return () => unsubscribe();
+          }
+     }, [isHost, party._id]);
 
      useEffect(() => {
           if (allTracks.length > 0) {
                loadTrack(0);
           }
-
-          if (isHost) {
-               return;
-          }
-
-          socket.on("receive", handleSocketEvents);
-
-          return () => {
-               if (sound.current) {
-                    sound.current.unloadAsync();
-               }
-               socket.off("receive", handleSocketEvents);
-          };
      }, [allTracks]);
 
      // Monitor network connectivity
@@ -697,7 +834,6 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                               resizeMode="cover"
                               style={tw`h-60 w-60 rounded-lg`}
                          />
-                         {isHostPlaying && !isHost && <CustomText>Host Is Playing</CustomText>}
                          <View style={tw`mt-8 flex-row items-center justify-between`}>
                               <HighLightLeft />
                               <CustomText style={tw`font-poppinsBold w-10`}>LIVE</CustomText>
@@ -705,6 +841,12 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                                    <HighLightRight />
                               </Pressable>
                          </View>
+                         {showLoading && (
+                              <View style={tw`mt-4`}>
+                                   <ActivityIndicator color="#FFFFFF" />
+                                   <CustomText style={tw`mt-2`}>Syncing with host...</CustomText>
+                              </View>
+                         )}
                          {isHost && (
                               <RowContainer style={tw`mt-6 w-[60%] justify-around items-center`}>
                                    <Pressable onPress={handlePrevious}>
