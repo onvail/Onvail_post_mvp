@@ -196,7 +196,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const bottomSheetRef = useRef<CustomBottomSheetRef>(null);
      const [guestList, setGuestList] = useState<User[]>([]);
 
-     const [volume, setVolume] = useState<number>(0.5);
+     const [volume, setVolume] = useState<number>(1);
      const [comments, setComments] = useState<FireStoreComments[]>([]);
      const [isUploadingComment, setIsUploadingComment] = useState<boolean>(false);
      const commentRef = useRef<string>("");
@@ -419,25 +419,40 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           }
      };
 
-     const loadTrack = async (index: number, play = false) => {
+     const loadTrack = async (index: number | null, play = false, url?: string) => {
           setIsLoading(true);
-          if (sound.current) {
-               await sound.current.unloadAsync();
+          console.log("entered", url);
+
+          const { status } = await Audio.requestPermissionsAsync();
+          console.log({ status });
+          if (status !== "granted") {
+               Alert.alert("Permission to access audio is required!");
+               return;
           }
 
+          if (sound?.current) {
+               await sound.current.unloadAsync();
+          }
+          console.log("entered2222", url ?? allTracks[index as number]?.uri);
           try {
+               console.log("33333333");
                const { sound: newSound } = await Audio.Sound.createAsync(
-                    { uri: allTracks[index].uri },
+                    { uri: url ?? allTracks[index as number]?.uri },
                     { shouldPlay: play },
                );
                sound.current = newSound;
-
-               setCurrentTrackIndex(index);
+               setIsLoading(false);
+               await sound.current.setVolumeAsync(1);
+               setVolume(1);
+               if (index) setCurrentTrackIndex(index);
           } catch (error) {
                console.error("Error loading track:", error);
-          } finally {
                setIsLoading(false);
           }
+
+          // finally {
+          //      setIsLoading(false);
+          // }
      };
 
      const updatePlaybackState = async (stream: Stream) => {
@@ -448,7 +463,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     duration: stream.duration,
                     shouldPlay: stream.shouldPlay,
                     lastUpdated: moment().tz("UTC").format(),
-                    uri: allTracks?.[currentTrackIndex],
+                    uri: allTracks?.[currentTrackIndex]?.uri,
                },
           });
      };
@@ -478,7 +493,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
      const togglePlayPause = async () => {
           try {
                if (sound.current) {
-                    debouncedShowLoading(true); // Start showing the loading indicator after the debounce delay
+                    debouncedShowLoading(true);
                     if (isPlaying) {
                          await sound.current.pauseAsync();
                          setIsPlaying(false);
@@ -495,7 +510,7 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                     textBody: "Unable to play the track. Please try again.",
                });
           } finally {
-               debouncedShowLoading(false); // Stop showing the loading indicator
+               debouncedShowLoading(false);
           }
      };
 
@@ -543,154 +558,53 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           }
      };
 
-     const handlePlaybackFailure = () => {
-          setIsAlertShown(true); // Set alert state to true
+     // const debouncedHandlePlaybackFailure = _.debounce(handlePlaybackFailure, 3000);
 
-          Alert.alert(
-               "Playback Error",
-               "There was an issue syncing with the host. What would you like to do?",
-               [
-                    {
-                         text: "Retry",
-                         onPress: () => {
-                              retryPlay();
-                              setIsAlertShown(false);
-                         },
-                    },
-                    {
-                         text: "Leave Party",
-                         onPress: () => {
-                              leavePartyHandler();
-                              setIsAlertShown(false);
-                         },
-                    },
-               ],
-               { cancelable: true },
-          );
-     };
-
-     const debouncedHandlePlaybackFailure = _.debounce(handlePlaybackFailure, 3000);
-
-     const loadSoundWithRetry = async (uri: string, retries = 3) => {
-          for (let i = 0; i < retries; i++) {
-               try {
-                    await sound.current?.loadAsync({ uri });
-                    return true;
-               } catch (error) {
-                    console.error(`Attempt ${i + 1} to load sound failed:`, error);
-                    if (i === retries - 1) {
-                         Toast.show({
-                              type: ALERT_TYPE.DANGER,
-                              title: "Playback Error",
-                              textBody: "Failed to load the track after multiple attempts.",
-                         });
-                         return false;
-                    }
-               }
-          }
-          return false;
-     };
-     const listenToPlaybackState = () => {
+     const listenToPlaybackState = (isLoading: boolean) => {
           if (!isHost) {
-               let retryCount = 0;
-               const maxRetries = 20;
-
                const partyDocRef = doc(db, "party", partyId);
+               const maxRetries = 3;
+               let retryCount = 0;
+
                const unsubscribe = onSnapshot(partyDocRef, async (doc) => {
                     try {
                          const data = doc.data();
                          const playbackState = data?.playbackState;
+                         console.log({ sound: sound.current, isLoading, uri: playbackState.uri });
 
-                         if (playbackState && sound.current) {
-                              const status = await sound.current.getStatusAsync();
-                              const isPlayingRemote = playbackState.shouldPlay;
-                              const positionDifference = Math.abs(
-                                   status.positionMillis - playbackState.position,
-                              );
+                         if (!playbackState || !playbackState.uri) return;
 
-                              const currentTime = moment().tz("UTC");
-                              const lastUpdateTime = moment(playbackState.lastUpdated);
-                              const timeSinceLastUpdate = currentTime.diff(
-                                   lastUpdateTime,
-                                   "seconds",
-                              );
+                         if (!sound.current && !isLoading) {
+                              await loadTrack(null, playbackState.shouldPlay, playbackState.uri);
+                         } else if (sound.current) {
+                              const status = await sound?.current.getStatusAsync();
 
-                              // Check if the stream data is still being received
-                              if (timeSinceLastUpdate > 5) {
-                                   retryCount++;
-                                   if (retryCount >= maxRetries) {
-                                        Toast.show({
-                                             type: ALERT_TYPE.WARNING,
-                                             title: "Sync Issue",
-                                             textBody: "Host's stream data seems to be delayed.",
-                                        });
-                                        handlePlaybackFailure();
-                                        return;
-                                   }
-                                   return; // Skip further processing to retry
-                              }
-
-                              // Check if the sound is loaded before playing
-                              if (!status.isLoaded) {
-                                   debouncedShowLoading(true); // Show loading indicator
-                                   const soundLoaded = await loadSoundWithRetry(playbackState.uri);
-                                   if (!soundLoaded) {
-                                        handlePlaybackFailure();
-                                        return; // Exit early if loading fails
-                                   }
-                              }
-
-                              // Adjust position if necessary
-                              if (positionDifference > 500) {
-                                   await sound.current.setPositionAsync(playbackState.position);
-                              }
-
-                              // Play or pause based on host's playback state
-                              if (isPlayingRemote && !status.isPlaying) {
+                              if (playbackState.shouldPlay && !status.isPlaying) {
                                    retryCount++;
                                    await sound.current.playAsync();
                                    setIsPlaying(true);
-
-                                   // Automatically dismiss the alert if it is shown
-                                   if (isAlertShown) {
-                                        setIsAlertShown(false);
-                                        Alert?.dismiss();
-                                   }
-                              } else if (!isPlayingRemote && status.isPlaying) {
+                              } else if (!playbackState.shouldPlay && status.isPlaying) {
                                    await sound.current.pauseAsync();
                                    setIsPlaying(false);
                               }
 
-                              // Reset the retry counter if playback is successful
-                              if (status.isPlaying && retryCount > 0) {
-                                   retryCount = 0;
-                              }
-
-                              debouncedShowLoading(false);
-                         } else {
-                              retryCount++;
-                              if (retryCount >= maxRetries) {
-                                   Toast.show({
-                                        type: ALERT_TYPE.DANGER,
-                                        title: "Playback Error",
-                                        textBody: "Failed to retrieve playback data from the host.",
-                                   });
-                                   handlePlaybackFailure();
+                              if (retryCount > maxRetries) {
+                                   await loadTrack(
+                                        null,
+                                        playbackState.shouldPlay,
+                                        playbackState.uri,
+                                   );
                               }
                          }
-                    } catch (error) {
+                    } catch (error: any) {
                          console.error("Error syncing playback:", error);
-                         retryCount++;
-                         if (retryCount >= maxRetries) {
-                              Toast.show({
-                                   type: ALERT_TYPE.DANGER,
-                                   title: "Playback Error",
-                                   textBody: "Failed to sync playback with the host. Retrying...",
-                              });
-                              handlePlaybackFailure();
-                         }
+                         Toast.show({
+                              type: ALERT_TYPE.DANGER,
+                              title: "Playback Error",
+                              textBody: error?.message ?? "Something went Wrong",
+                         });
                     } finally {
-                         debouncedShowLoading(false); // Ensure the loading indicator is hidden
+                         setShowLoading(false);
                     }
                });
 
@@ -698,18 +612,20 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
           }
      };
 
-     useEffect(() => {
-          if (!isHost) {
-               const unsubscribe = listenToPlaybackState();
-               return () => unsubscribe();
-          }
-     }, [isHost, party._id]);
+     console.log({ sound });
 
      useEffect(() => {
-          if (allTracks.length > 0) {
+          if (!isHost) {
+               const unsubscribe = listenToPlaybackState(isLoading);
+               return () => unsubscribe();
+          }
+     }, [isHost, party._id, isLoading]);
+
+     useEffect(() => {
+          if (allTracks.length > 0 && isHost) {
                loadTrack(0);
           }
-     }, [allTracks]);
+     }, [allTracks, isHost]);
 
      // Monitor network connectivity
      useEffect(() => {
@@ -841,10 +757,10 @@ const PartyScreen: FunctionComponent<Props> = ({ navigation, route }) => {
                                    <HighLightRight />
                               </Pressable>
                          </View>
-                         {showLoading && (
+                         {isLoading && !isHost && (
                               <View style={tw`mt-4`}>
                                    <ActivityIndicator color="#FFFFFF" />
-                                   <CustomText style={tw`mt-2`}>Syncing with host...</CustomText>
+                                   <CustomText style={tw`mt-2`}>Syncing Audio...</CustomText>
                               </View>
                          )}
                          {isHost && (
